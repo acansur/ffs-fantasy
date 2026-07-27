@@ -1,11 +1,12 @@
 -- FFS Fantasy — custom users tablosu
 --
 -- ⚠️ UYARI (prototip amaçlı tasarım):
---   * password DÜZ METİN olarak saklanır (hash yok).
---   * RLS KAPALIDIR ve anon key istemcide herkese açıktır.
---   Bu ikisi birlikte, siteyi açan herkesin tüm kullanıcı satırlarını
---   (username/email/password) okuyabilmesi demektir. Gerçek kullanıcı
---   verisiyle KULLANMA. Prod için Supabase Auth + RLS'e geçilmeli.
+--   * password bcrypt HASH olarak saklanır (düz metin değil).
+--   * Ancak RLS KAPALIDIR ve anon key istemcide herkese açıktır; bu yüzden
+--     siteyi açan herkes tüm kullanıcı satırlarını (username/email/hash)
+--     okuyabilir. Hash'ler kırılmaya karşı bir miktar koruma sağlar ama
+--     satırların herkese açık okunabilir olması yine de risklidir.
+--   Prod için Supabase Auth + RLS'e geçilmeli.
 
 create table public.users (
   id            uuid        primary key default gen_random_uuid(),

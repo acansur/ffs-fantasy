@@ -1,10 +1,14 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import bcrypt from 'bcryptjs'
 import { supabase, isSupabaseConfigured } from './supabase.js'
 
-// ⚠️ PROTOTİP AUTH — düz metin şifre, istemci taraflı doğrulama.
-// Gerçek kullanıcı verisiyle kullanma. Detay: supabase/migrations/0001_create_users.sql
+// ⚠️ PROTOTİP AUTH — istemci taraflı doğrulama.
+// Şifreler bcrypt ile hash'lenir (düz metin saklanmaz), ancak RLS kapalı
+// olduğundan hash'ler yine de okunabilir. Prod için Supabase Auth + RLS gerekir.
+// Detay: supabase/migrations/0001_create_users.sql
 
 const STORAGE_KEY = 'ffs.user'
+const BCRYPT_ROUNDS = 10
 const AuthContext = createContext(null)
 
 function loadStoredUser() {
@@ -44,12 +48,13 @@ export function AuthProvider({ children }) {
     ensureReady()
     setLoading(true)
     try {
+      const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS)
       const { data, error } = await supabase
         .from('users')
         .insert({
           username: username.trim(),
           email: email.trim().toLowerCase(),
-          password, // ⚠️ plaintext (prototip)
+          password: passwordHash, // bcrypt hash — düz metin saklanmaz
           favorite_team: favoriteTeam || null,
         })
         .select()
@@ -76,15 +81,18 @@ export function AuthProvider({ children }) {
     ensureReady()
     setLoading(true)
     try {
+      // Hash'e göre SQL'de filtrelenemez (her hash farklı salt'lı); kullanıcıyı
+      // e-posta ile çekip şifreyi bcrypt.compare ile doğruluyoruz.
       const { data, error } = await supabase
         .from('users')
         .select('*')
         .eq('email', email.trim().toLowerCase())
-        .eq('password', password) // ⚠️ plaintext karşılaştırma (prototip)
         .maybeSingle()
 
       if (error) throw new Error(error.message)
-      if (!data) throw new Error('E-posta veya şifre hatalı.')
+
+      const passwordOk = data && (await bcrypt.compare(password, data.password))
+      if (!data || !passwordOk) throw new Error('E-posta veya şifre hatalı.')
 
       // last_seen güncelle (best-effort)
       const now = new Date().toISOString()
