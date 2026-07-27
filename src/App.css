@@ -951,25 +951,36 @@
   min-width: 150px;
 }
 
-.dropdown > summary {
-  list-style: none;
+.dropdown-toggle {
+  width: 100%;
   cursor: pointer;
   padding: 0.55rem 0.9rem;
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--bg-soft);
+  color: var(--text);
   font-size: 0.9rem;
+  text-align: left;
   user-select: none;
 }
 
-.dropdown > summary::-webkit-details-marker {
-  display: none;
-}
-
-.dropdown > summary::after {
+.dropdown-toggle::after {
   content: '▾';
   float: right;
   color: var(--text-muted);
+}
+
+.dropdown-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  border-top: 1px solid var(--border);
+  margin-top: 0.4rem;
+  padding-top: 0.4rem;
+}
+
+.dropdown-done {
+  font-weight: 700;
 }
 
 .dropdown-panel {

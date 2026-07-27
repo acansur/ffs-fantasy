@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useRef, useEffect } from 'react'
 import {
   PLAYERS,
   CLUBS,
@@ -24,6 +24,18 @@ export default function PlayerPickerModal({
 }) {
   const [selectedClubs, setSelectedClubs] = useState([]) // boş = tümü
   const [sortKey, setSortKey] = useState('points-desc')
+  const [clubOpen, setClubOpen] = useState(false)
+  const clubRef = useRef(null)
+
+  // Kulüp filtresi dışına tıklayınca kapat
+  useEffect(() => {
+    if (!clubOpen) return
+    const onDown = (e) => {
+      if (clubRef.current && !clubRef.current.contains(e.target)) setClubOpen(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [clubOpen])
 
   const title = allowedPos ? POSITIONS[allowedPos].label : 'Yedek Oyuncu'
 
@@ -56,31 +68,49 @@ export default function PlayerPickerModal({
         </div>
 
         <div className="modal-controls">
-          <details className="dropdown">
-            <summary>{clubLabel}</summary>
-            <div className="dropdown-panel">
-              {Object.entries(CLUBS).map(([code, club]) => (
-                <label key={code} className="check-row">
-                  <input
-                    type="checkbox"
-                    checked={selectedClubs.includes(code)}
-                    onChange={() => toggleClub(code)}
-                  />
-                  <span className="club-dot" style={{ background: club.bg }} />
-                  {club.name}
-                </label>
-              ))}
-              {selectedClubs.length > 0 && (
-                <button
-                  type="button"
-                  className="link-btn"
-                  onClick={() => setSelectedClubs([])}
-                >
-                  Filtreyi temizle
-                </button>
-              )}
-            </div>
-          </details>
+          <div className="dropdown" ref={clubRef}>
+            <button
+              type="button"
+              className="dropdown-toggle"
+              onClick={() => setClubOpen((o) => !o)}
+              aria-expanded={clubOpen}
+            >
+              {clubLabel}
+            </button>
+            {clubOpen && (
+              <div className="dropdown-panel">
+                {Object.entries(CLUBS).map(([code, club]) => (
+                  <label key={code} className="check-row">
+                    <input
+                      type="checkbox"
+                      checked={selectedClubs.includes(code)}
+                      onChange={() => toggleClub(code)}
+                    />
+                    <span className="club-dot" style={{ background: club.bg }} />
+                    {club.name}
+                  </label>
+                ))}
+                <div className="dropdown-foot">
+                  {selectedClubs.length > 0 && (
+                    <button
+                      type="button"
+                      className="link-btn"
+                      onClick={() => setSelectedClubs([])}
+                    >
+                      Temizle
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="link-btn dropdown-done"
+                    onClick={() => setClubOpen(false)}
+                  >
+                    Tamam
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
 
           <select
             className="sort-select"
