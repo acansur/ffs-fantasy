@@ -1,0 +1,21 @@
+// Süper Lig takımları (favori takım seçimi için)
+export const TEAMS = [
+  'Galatasaray',
+  'Fenerbahçe',
+  'Beşiktaş',
+  'Trabzonspor',
+  'Başakşehir',
+  'Adana Demirspor',
+  'Kasımpaşa',
+  'Konyaspor',
+  'Antalyaspor',
+  'Alanyaspor',
+  'Sivasspor',
+  'Kayserispor',
+  'Gaziantep FK',
+  'Hatayspor',
+  'Rizespor',
+  'Samsunspor',
+  'Eyüpspor',
+  'Göztepe',
+]

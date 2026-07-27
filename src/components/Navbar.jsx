@@ -1,4 +1,5 @@
-import { NavLink, Link } from 'react-router-dom'
+import { NavLink, Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../lib/auth.jsx'
 
 const links = [
   { to: '/', label: 'Ana Sayfa', end: true },
@@ -7,6 +8,14 @@ const links = [
 ]
 
 export default function Navbar() {
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
+
+  const onLogout = () => {
+    logout()
+    navigate('/')
+  }
+
   return (
     <header className="navbar">
       <div className="navbar-inner">
@@ -26,9 +35,22 @@ export default function Navbar() {
             </NavLink>
           ))}
         </nav>
-        <Link to="/takimim" className="btn btn-primary btn-sm">
-          Giriş Yap
-        </Link>
+
+        {user ? (
+          <div className="nav-user">
+            <span className="nav-username">Merhaba, {user.username}</span>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={onLogout}>
+              Çıkış
+            </button>
+          </div>
+        ) : (
+          <div className="nav-user">
+            <Link to="/giris" className="nav-link">Giriş</Link>
+            <Link to="/kayit" className="btn btn-primary btn-sm">
+              Kayıt Ol
+            </Link>
+          </div>
+        )}
       </div>
     </header>
   )
