@@ -6,69 +6,67 @@ import {
   CLUBS,
   FORMATIONS,
   DEFAULT_FORMATION,
-  BENCH_SIZE,
+  slotCounts,
   initials,
 } from '../lib/squadData.js'
 
-// Satır anahtarı → mevki kodu eşlemesi
-const LINE_POS = { gk: 'KL', def: 'DF', mid: 'OS', fwd: 'FW' } // bench → null (tüm mevkiler)
+const POS_ORDER = ['KL', 'DF', 'OS', 'FW']
 
+// Boş kadro yapısı: field ve bench için mevki başına null dizileri
 function makeSquad(formation) {
-  const f = FORMATIONS[formation]
-  return {
-    gk: null,
-    def: Array(f.DF).fill(null),
-    mid: Array(f.OS).fill(null),
-    fwd: Array(f.FW).fill(null),
-    bench: Array(BENCH_SIZE).fill(null),
-  }
+  const { field, bench } = slotCounts(formation)
+  const build = (counts) =>
+    POS_ORDER.reduce((acc, pos) => ({ ...acc, [pos]: Array(counts[pos]).fill(null) }), {})
+  return { field: build(field), bench: build(bench) }
 }
 
-// Diziliş değişince mevcut seçimleri koru (satırı kırp/doldur)
-function resizeLine(arr, n) {
-  const next = arr.slice(0, n)
-  while (next.length < n) next.push(null)
+// Diziliş değişince: her mevkideki seçili oyuncuları topla, önce sahayı sonra
+// yedeği dolduracak şekilde yeniden dağıt (hiçbir seçim kaybolmaz).
+function redistribute(squad, formation) {
+  const { field, bench } = slotCounts(formation)
+  const next = { field: {}, bench: {} }
+  for (const pos of POS_ORDER) {
+    const pool = [...squad.field[pos], ...squad.bench[pos]].filter(Boolean)
+    const fieldSlots = Array(field[pos]).fill(null)
+    const benchSlots = Array(bench[pos]).fill(null)
+    let i = 0
+    for (; i < fieldSlots.length && i < pool.length; i++) fieldSlots[i] = pool[i]
+    for (let j = 0; i < pool.length && j < benchSlots.length; i++, j++) benchSlots[j] = pool[i]
+    next.field[pos] = fieldSlots
+    next.bench[pos] = benchSlots
+  }
   return next
 }
 
-// Tek bir oyuncu yuvası
-function Slot({ player, pos, isCaptain, onOpen, onToggleCaptain }) {
-  const meta = POSITIONS[pos] // yedek için POSITIONS[null] undefined olabilir → aşağıda korunuyor
+// Tek oyuncu yuvası. Boş/dolu fark etmez tıklanınca popup açılır.
+function Slot({ player, pos, isCaptain, onOpen }) {
+  const meta = POSITIONS[pos]
 
   if (!player) {
     return (
       <button
         type="button"
         className="slot slot-empty"
-        style={meta ? { '--pos-color': meta.color } : undefined}
+        style={{ '--pos-color': meta.color }}
         onClick={onOpen}
       >
-        <span className="slot-jersey empty">{pos ?? '＋'}</span>
-        <span className="slot-name muted">{meta ? meta.label : 'Yedek'}</span>
+        <span className="slot-jersey empty">{pos}</span>
+        <span className="slot-name muted">{meta.label}</span>
       </button>
     )
   }
 
   const club = CLUBS[player.club]
   return (
-    <div className="slot slot-filled">
-      <button type="button" className="slot-jersey-btn" onClick={onOpen} title="Değiştir">
-        <span className="slot-jersey" style={{ background: club.bg, color: club.fg }}>
-          {initials(player.name)}
-        </span>
-      </button>
-      <button
-        type="button"
-        className={`cap-btn${isCaptain ? ' active' : ''}`}
-        onClick={onToggleCaptain}
-        title={isCaptain ? 'Kaptanlığı kaldır' : 'Kaptan yap'}
-      >
-        C
-      </button>
+    <button type="button" className="slot slot-filled" onClick={onOpen} title="Düzenle">
+      {isCaptain && <span className="cap-badge">C</span>}
+      <span className="slot-jersey" style={{ background: club.bg, color: club.fg }}>
+        {initials(player.name)}
+      </span>
       <span className="slot-name" style={{ background: club.bg, color: club.fg }}>
         {player.name.split(' ').slice(-1)[0]}
       </span>
-    </div>
+    </button>
   )
 }
 
@@ -77,71 +75,64 @@ export default function Takimim() {
   const [formation, setFormation] = useState(DEFAULT_FORMATION)
   const [squad, setSquad] = useState(() => makeSquad(DEFAULT_FORMATION))
   const [captainId, setCaptainId] = useState(null)
-  const [picker, setPicker] = useState(null) // { line, index } | null
+  const [picker, setPicker] = useState(null) // { zone: 'field'|'bench', pos, index } | null
 
   const changeFormation = (next) => {
     setFormation(next)
-    const f = FORMATIONS[next]
-    setSquad((s) => ({
-      ...s,
-      def: resizeLine(s.def, f.DF),
-      mid: resizeLine(s.mid, f.OS),
-      fwd: resizeLine(s.fwd, f.FW),
-    }))
+    setSquad((s) => redistribute(s, next))
   }
 
-  // Kadrodaki tüm oyuncular ve id'leri
   const allPicked = useMemo(() => {
-    const list = [squad.gk, ...squad.def, ...squad.mid, ...squad.fwd, ...squad.bench].filter(Boolean)
-    return list
+    const list = []
+    for (const zone of ['field', 'bench']) {
+      for (const pos of POS_ORDER) list.push(...squad[zone][pos])
+    }
+    return list.filter(Boolean)
   }, [squad])
-  const takenIds = useMemo(() => new Set(allPicked.map((p) => p.id)), [allPicked])
 
+  const takenIds = useMemo(() => new Set(allPicked.map((p) => p.id)), [allPicked])
   const totalValue = allPicked.reduce((sum, p) => sum + p.price, 0)
 
-  const openPicker = (line, index) => setPicker({ line, index })
+  const openPicker = (zone, pos, index) => setPicker({ zone, pos, index })
   const closePicker = () => setPicker(null)
+
+  const pickerCurrent = picker ? squad[picker.zone][picker.pos][picker.index] : null
 
   const assignPlayer = (playerOrNull) => {
     if (!picker) return
-    const { line, index } = picker
-    setSquad((s) => {
-      if (line === 'gk') return { ...s, gk: playerOrNull }
-      const arr = [...s[line]]
-      arr[index] = playerOrNull
-      return { ...s, [line]: arr }
-    })
-    // boşaltılan oyuncu kaptan idiyse kaptanlığı düşür
-    if (!playerOrNull) {
-      const removed = picker.line === 'gk' ? squad.gk : squad[picker.line][picker.index]
-      if (removed && removed.id === captainId) setCaptainId(null)
+    const { zone, pos, index } = picker
+    // Boşaltılan oyuncu kaptansa kaptanlığı düşür
+    if (!playerOrNull && pickerCurrent && pickerCurrent.id === captainId) {
+      setCaptainId(null)
     }
+    setSquad((s) => {
+      const arr = [...s[zone][pos]]
+      arr[index] = playerOrNull
+      return { ...s, [zone]: { ...s[zone], [pos]: arr } }
+    })
     closePicker()
   }
 
-  const toggleCaptain = (playerId) => {
-    setCaptainId((cur) => (cur === playerId ? null : playerId))
+  const makeCaptain = () => {
+    if (!pickerCurrent) return
+    // Tek kaptan: aynı oyuncuya tekrar basılırsa kaldır, değilse bu oyuncuyu kaptan yap
+    setCaptainId((cur) => (cur === pickerCurrent.id ? null : pickerCurrent.id))
+    closePicker()
   }
 
-  // Aktif picker için mevki ve mevcut oyuncu
-  const pickerPos = picker ? (picker.line === 'bench' ? null : LINE_POS[picker.line]) : null
-  const pickerCurrent = picker
-    ? picker.line === 'gk'
-      ? squad.gk
-      : squad[picker.line][picker.index]
-    : null
-
-  const renderLine = (line, pos) =>
-    squad[line].map((player, i) => (
+  const renderRow = (zone, pos) =>
+    squad[zone][pos].map((player, i) => (
       <Slot
-        key={`${line}-${i}`}
+        key={`${zone}-${pos}-${i}`}
         player={player}
         pos={pos}
         isCaptain={player ? player.id === captainId : false}
-        onOpen={() => openPicker(line, i)}
-        onToggleCaptain={() => player && toggleCaptain(player.id)}
+        onOpen={() => openPicker(zone, pos, i)}
       />
     ))
+
+  // Yedek yuvaları tek satırda, mevki sırasına göre
+  const benchSlots = POS_ORDER.flatMap((pos) => renderRow('bench', pos))
 
   return (
     <div className="squad">
@@ -168,7 +159,7 @@ export default function Takimim() {
           <div className="squad-summary">
             <div>
               <strong>{allPicked.length}</strong>
-              <span>/ 11+4</span>
+              <span>/ 15 oyuncu</span>
             </div>
             <div>
               <strong>{totalValue.toFixed(1)}</strong>
@@ -187,34 +178,28 @@ export default function Takimim() {
 
           <div className="field-rows">
             {/* Üstten alta: forvet, orta saha, defans, kaleci */}
-            <div className="squad-row">{renderLine('fwd', 'FW')}</div>
-            <div className="squad-row">{renderLine('mid', 'OS')}</div>
-            <div className="squad-row">{renderLine('def', 'DF')}</div>
-            <div className="squad-row">
-              <Slot
-                player={squad.gk}
-                pos="KL"
-                isCaptain={squad.gk ? squad.gk.id === captainId : false}
-                onOpen={() => openPicker('gk', 0)}
-                onToggleCaptain={() => squad.gk && toggleCaptain(squad.gk.id)}
-              />
-            </div>
+            <div className="squad-row">{renderRow('field', 'FW')}</div>
+            <div className="squad-row">{renderRow('field', 'OS')}</div>
+            <div className="squad-row">{renderRow('field', 'DF')}</div>
+            <div className="squad-row">{renderRow('field', 'KL')}</div>
           </div>
         </div>
 
         <div className="bench">
           <span className="bench-label">Yedek Kulübesi</span>
-          <div className="bench-row">{renderLine('bench', null)}</div>
+          <div className="bench-row">{benchSlots}</div>
         </div>
       </div>
 
       {picker && (
         <PlayerPickerModal
-          allowedPos={pickerPos}
+          allowedPos={picker.pos}
           takenIds={takenIds}
           currentId={pickerCurrent ? pickerCurrent.id : null}
+          isCaptain={pickerCurrent ? pickerCurrent.id === captainId : false}
           onSelect={(p) => assignPlayer(p)}
           onClear={() => assignPlayer(null)}
+          onMakeCaptain={makeCaptain}
           onClose={closePicker}
         />
       )}

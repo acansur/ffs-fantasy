@@ -20,8 +20,24 @@ export const FORMATIONS = {
   '5-4-1': { DF: 5, OS: 4, FW: 1 },
 }
 
-export const DEFAULT_FORMATION = '4-3-3'
-export const BENCH_SIZE = 4
+export const DEFAULT_FORMATION = '4-4-2'
+
+// Kadro kompozisyonu (toplam 15): mevki başına oyuncu sayısı.
+// Saha (ilk 11) dizilişe göre belirlenir; yedekler = toplam − saha.
+export const SQUAD_TOTALS = { KL: 2, DF: 5, OS: 5, FW: 3 }
+
+// Bir diziliş için saha ve yedek yuva sayıları (mevki başına).
+export function slotCounts(formation) {
+  const f = FORMATIONS[formation]
+  const field = { KL: 1, DF: f.DF, OS: f.OS, FW: f.FW }
+  const bench = {
+    KL: SQUAD_TOTALS.KL - field.KL,
+    DF: SQUAD_TOTALS.DF - field.DF,
+    OS: SQUAD_TOTALS.OS - field.OS,
+    FW: SQUAD_TOTALS.FW - field.FW,
+  }
+  return { field, bench }
+}
 
 // Kulüpler ve renkleri (dolu oyuncu yuvasında forma rengi olarak kullanılır)
 export const CLUBS = {

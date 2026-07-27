@@ -13,11 +13,13 @@ import {
 // - Kulüp filtresi çoklu seçim (details/summary dropdown).
 // - Sıralama dropdown (puan/fiyat, azalan/artan).
 export default function PlayerPickerModal({
-  allowedPos, // 'KL' | 'DF' | 'OS' | 'FW' | null (yedek → tüm mevkiler)
+  allowedPos, // 'KL' | 'DF' | 'OS' | 'FW'
   takenIds, // başka yuvalarda seçili oyuncu id'leri (devre dışı)
   currentId, // bu yuvadaki oyuncunun id'si (varsa)
+  isCaptain, // bu yuvadaki oyuncu kaptan mı
   onSelect,
   onClear,
+  onMakeCaptain,
   onClose,
 }) {
   const [selectedClubs, setSelectedClubs] = useState([]) // boş = tümü
@@ -93,9 +95,18 @@ export default function PlayerPickerModal({
         </div>
 
         {currentId && (
-          <button type="button" className="btn btn-ghost btn-sm modal-clear" onClick={onClear}>
-            Bu yuvayı boşalt
-          </button>
+          <div className="modal-actions">
+            <button
+              type="button"
+              className={`btn btn-sm btn-captain${isCaptain ? ' active' : ''}`}
+              onClick={onMakeCaptain}
+            >
+              {isCaptain ? '✓ Kaptan (kaldır)' : 'Kaptan yap'}
+            </button>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={onClear}>
+              Bu yuvayı boşalt
+            </button>
+          </div>
         )}
 
         <ul className="player-list">
