@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useAuth } from '../lib/auth.jsx'
 import PlayerPickerModal from '../components/PlayerPickerModal.jsx'
 import {
@@ -7,12 +7,20 @@ import {
   FORMATIONS,
   DEFAULT_FORMATION,
   slotCounts,
-  initials,
+  SQUAD_TOTALS,
+  TOTAL_BUDGET,
+  CURRENT_WEEK,
+  VIEWS,
+  SCORING,
+  SCORING_TABS,
+  surname6,
+  surname,
+  slotInfo,
 } from '../lib/squadData.js'
+import './Takimim.css'
 
 const POS_ORDER = ['KL', 'DF', 'OS', 'FW']
 
-// Boş kadro yapısı: field ve bench için mevki başına null dizileri
 function makeSquad(formation) {
   const { field, bench } = slotCounts(formation)
   const build = (counts) =>
@@ -20,52 +28,60 @@ function makeSquad(formation) {
   return { field: build(field), bench: build(bench) }
 }
 
-// Diziliş değişince: her mevkideki seçili oyuncuları topla, önce sahayı sonra
-// yedeği dolduracak şekilde yeniden dağıt (hiçbir seçim kaybolmaz).
+function resizeInto(pool, n) {
+  const slots = Array(n).fill(null)
+  for (let i = 0; i < n && i < pool.length; i++) slots[i] = pool[i]
+  return slots
+}
+
+// Diziliş değişince seçimleri koru: mevki havuzunu önce sahaya, sonra yedeğe dağıt.
 function redistribute(squad, formation) {
   const { field, bench } = slotCounts(formation)
   const next = { field: {}, bench: {} }
   for (const pos of POS_ORDER) {
     const pool = [...squad.field[pos], ...squad.bench[pos]].filter(Boolean)
-    const fieldSlots = Array(field[pos]).fill(null)
-    const benchSlots = Array(bench[pos]).fill(null)
-    let i = 0
-    for (; i < fieldSlots.length && i < pool.length; i++) fieldSlots[i] = pool[i]
-    for (let j = 0; i < pool.length && j < benchSlots.length; i++, j++) benchSlots[j] = pool[i]
-    next.field[pos] = fieldSlots
-    next.bench[pos] = benchSlots
+    next.field[pos] = resizeInto(pool, field[pos])
+    next.bench[pos] = resizeInto(pool.slice(field[pos]), bench[pos])
   }
   return next
 }
 
-// Tek oyuncu yuvası. Boş/dolu fark etmez tıklanınca popup açılır.
-function Slot({ player, pos, isCaptain, onOpen }) {
+function Slot({ player, pos, isCaptain, view, onOpen }) {
   const meta = POSITIONS[pos]
 
   if (!player) {
     return (
       <button
         type="button"
-        className="slot slot-empty"
-        style={{ '--pos-color': meta.color }}
+        className="tm-slot empty"
+        style={{ '--pos': meta.color }}
         onClick={onOpen}
         aria-label={`${meta.label} ekle`}
       >
-        <span className="slot-jersey empty">+</span>
-        <span className="slot-name muted">{meta.label}</span>
+        <span className="tm-disc">
+          <span className="tm-plus">+</span>
+        </span>
+        <span className="tm-tag muted">{meta.label}</span>
       </button>
     )
   }
 
   const club = CLUBS[player.club]
   return (
-    <button type="button" className="slot slot-filled" onClick={onOpen} title="Düzenle">
-      {isCaptain && <span className="cap-badge">C</span>}
-      <span className="slot-jersey" style={{ background: club.bg, color: club.fg }}>
-        {initials(player.name)}
+    <button
+      type="button"
+      className="tm-slot filled"
+      style={{ '--pos': meta.color, '--bg': club.bg, '--fg': club.fg }}
+      onClick={onOpen}
+      title="Düzenle"
+    >
+      {isCaptain && <span className="tm-cap">C</span>}
+      <span className="tm-disc jersey">
+        <span className="tm-disc-name">{surname6(player.name)}</span>
       </span>
-      <span className="slot-name" style={{ background: club.bg, color: club.fg }}>
-        {player.name.split(' ').slice(-1)[0]}
+      <span className="tm-tag">
+        <span className="tm-tag-name">{surname(player.name)}</span>
+        <span className="tm-tag-info">{slotInfo(player, view)}</span>
       </span>
     </button>
   )
@@ -76,7 +92,16 @@ export default function Takimim() {
   const [formation, setFormation] = useState(DEFAULT_FORMATION)
   const [squad, setSquad] = useState(() => makeSquad(DEFAULT_FORMATION))
   const [captainId, setCaptainId] = useState(null)
-  const [picker, setPicker] = useState(null) // { zone: 'field'|'bench', pos, index } | null
+  const [picker, setPicker] = useState(null)
+  const [view, setView] = useState('next')
+  const [scoringTab, setScoringTab] = useState('Genel')
+  const [saveMsg, setSaveMsg] = useState('')
+
+  useEffect(() => {
+    if (!saveMsg) return
+    const t = setTimeout(() => setSaveMsg(''), 2500)
+    return () => clearTimeout(t)
+  }, [saveMsg])
 
   const changeFormation = (next) => {
     setFormation(next)
@@ -92,20 +117,26 @@ export default function Takimim() {
   }, [squad])
 
   const takenIds = useMemo(() => new Set(allPicked.map((p) => p.id)), [allPicked])
-  const totalValue = allPicked.reduce((sum, p) => sum + p.price, 0)
+  const spent = allPicked.reduce((sum, p) => sum + p.price, 0)
+  const remaining = TOTAL_BUDGET - spent
+  const captainPlayer = allPicked.find((p) => p.id === captainId) || null
+
+  const posCounts = useMemo(() => {
+    const counts = { KL: 0, DF: 0, OS: 0, FW: 0 }
+    for (const zone of ['field', 'bench']) {
+      for (const pos of POS_ORDER) counts[pos] += squad[zone][pos].filter(Boolean).length
+    }
+    return counts
+  }, [squad])
 
   const openPicker = (zone, pos, index) => setPicker({ zone, pos, index })
   const closePicker = () => setPicker(null)
-
   const pickerCurrent = picker ? squad[picker.zone][picker.pos][picker.index] : null
 
   const assignPlayer = (playerOrNull) => {
     if (!picker) return
     const { zone, pos, index } = picker
-    // Boşaltılan oyuncu kaptansa kaptanlığı düşür
-    if (!playerOrNull && pickerCurrent && pickerCurrent.id === captainId) {
-      setCaptainId(null)
-    }
+    if (!playerOrNull && pickerCurrent && pickerCurrent.id === captainId) setCaptainId(null)
     setSquad((s) => {
       const arr = [...s[zone][pos]]
       arr[index] = playerOrNull
@@ -116,9 +147,14 @@ export default function Takimim() {
 
   const makeCaptain = () => {
     if (!pickerCurrent) return
-    // Tek kaptan: aynı oyuncuya tekrar basılırsa kaldır, değilse bu oyuncuyu kaptan yap
     setCaptainId((cur) => (cur === pickerCurrent.id ? null : pickerCurrent.id))
     closePicker()
+  }
+
+  const saveSquad = () => {
+    if (allPicked.length < 15) setSaveMsg(`Kadro eksik (${allPicked.length}/15)`)
+    else if (!captainId) setSaveMsg('Önce kaptan seç!')
+    else setSaveMsg('Kadro kaydedildi ✓')
   }
 
   const renderRow = (zone, pos) =>
@@ -127,69 +163,177 @@ export default function Takimim() {
         key={`${zone}-${pos}-${i}`}
         player={player}
         pos={pos}
+        view={view}
         isCaptain={player ? player.id === captainId : false}
         onOpen={() => openPicker(zone, pos, i)}
       />
     ))
 
-  // Yedek yuvaları tek satırda, mevki sırasına göre
   const benchSlots = POS_ORDER.flatMap((pos) => renderRow('bench', pos))
 
   return (
-    <div className="squad">
-      <header className="squad-head">
-        <div>
-          <h1>Takımım</h1>
-          <p className="page-sub">
-            {user ? `${user.username}, kadronu kur.` : 'Kadronu kur ve dizilişini belirle.'}
-          </p>
+    <div className="tm-page">
+      {/* Üst bar */}
+      <div className="tm-topbar">
+        <div className="tm-team">
+          <span className="tm-team-badge">FFS</span>
+          <div>
+            <div className="tm-team-name">{user ? user.username : 'Takımım'}</div>
+            <div className="tm-team-sub">Fantasy Süper Lig</div>
+          </div>
         </div>
-        <div className="squad-controls">
-          <label className="formation-field">
-            <span>Diziliş</span>
-            <select
-              value={formation}
-              onChange={(e) => changeFormation(e.target.value)}
-              className="formation-select"
-            >
-              {Object.keys(FORMATIONS).map((f) => (
-                <option key={f} value={f}>{f}</option>
+        <div className="tm-week">Hafta {CURRENT_WEEK}</div>
+      </div>
+
+      {/* Stat şeridi */}
+      <div className="tm-stripe">
+        <div className="tm-stat">
+          <span>Toplam Bütçe</span>
+          <strong>{TOTAL_BUDGET.toFixed(1)}M</strong>
+        </div>
+        <div className="tm-stat">
+          <span>Kalan Bütçe</span>
+          <strong className={remaining < 0 ? 'neg' : ''}>{remaining.toFixed(1)}M</strong>
+        </div>
+        <div className="tm-stat">
+          <span>Kadro</span>
+          <strong>{allPicked.length}/15</strong>
+        </div>
+        <div className={`tm-stat${captainId ? '' : ' warn'}`}>
+          <span>Kaptan</span>
+          <strong>{captainId ? surname(captainPlayer.name) : '⚠ Seçilmedi'}</strong>
+        </div>
+      </div>
+
+      <div className="tm-layout">
+        {/* Sol: kontroller + saha */}
+        <div className="tm-left">
+          <div className="tm-controls">
+            <label className="tm-select">
+              <span>Diziliş</span>
+              <select value={formation} onChange={(e) => changeFormation(e.target.value)}>
+                {Object.keys(FORMATIONS).map((f) => (
+                  <option key={f} value={f}>{f}</option>
+                ))}
+              </select>
+            </label>
+            <label className="tm-select">
+              <span>Görünüm</span>
+              <select value={view} onChange={(e) => setView(e.target.value)}>
+                {VIEWS.map((v) => (
+                  <option key={v.key} value={v.key}>{v.label}</option>
+                ))}
+              </select>
+            </label>
+            <button type="button" className="tm-save" onClick={saveSquad}>
+              Kadroyu Kaydet
+            </button>
+            {saveMsg && <span className="tm-save-msg">{saveMsg}</span>}
+          </div>
+
+          <div className="tm-pitch">
+            <div className="tm-lines">
+              <div className="tm-mid" />
+              <div className="tm-circle" />
+              <div className="tm-spot" />
+              <div className="tm-box top" />
+              <div className="tm-box bottom" />
+              <div className="tm-goal top" />
+              <div className="tm-goal bottom" />
+              <div className="tm-corner tl" />
+              <div className="tm-corner tr" />
+              <div className="tm-corner bl" />
+              <div className="tm-corner br" />
+            </div>
+            <div className="tm-rows">
+              <div className="tm-row">{renderRow('field', 'FW')}</div>
+              <div className="tm-row">{renderRow('field', 'OS')}</div>
+              <div className="tm-row">{renderRow('field', 'DF')}</div>
+              <div className="tm-row">{renderRow('field', 'KL')}</div>
+            </div>
+          </div>
+
+          <div className="tm-bench">
+            <span className="tm-bench-label">Yedek Kulübesi</span>
+            <div className="tm-bench-row">{benchSlots}</div>
+          </div>
+        </div>
+
+        {/* Sağ panel */}
+        <aside className="tm-panel">
+          <div className="tm-card">
+            <h3>Kadro Özeti</h3>
+            <div className="tm-summary-grid">
+              <div>
+                <span>Seçilen</span>
+                <strong>{allPicked.length}/15</strong>
+              </div>
+              <div>
+                <span>Kalan Bütçe</span>
+                <strong>{remaining.toFixed(1)}M</strong>
+              </div>
+              <div>
+                <span>Kaptan</span>
+                <strong>{captainPlayer ? surname(captainPlayer.name) : '—'}</strong>
+              </div>
+              <div>
+                <span>Harcanan</span>
+                <strong>{spent.toFixed(1)}M</strong>
+              </div>
+            </div>
+          </div>
+
+          <div className="tm-card">
+            <h3>Mevki Dağılımı</h3>
+            <div className="tm-pos-grid">
+              {POS_ORDER.map((pos) => {
+                const sel = posCounts[pos]
+                const tot = SQUAD_TOTALS[pos]
+                return (
+                  <div
+                    key={pos}
+                    className={`tm-pos${sel === tot ? ' full' : ''}`}
+                    style={{ '--pos': POSITIONS[pos].color }}
+                  >
+                    <span>{POSITIONS[pos].label}</span>
+                    <strong>{sel}/{tot}</strong>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          <div className="tm-card">
+            <h3>Puanlama Rehberi</h3>
+            <div className="tm-tabs">
+              {SCORING_TABS.map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  className={`tm-tab${scoringTab === tab ? ' active' : ''}`}
+                  onClick={() => setScoringTab(tab)}
+                >
+                  {tab}
+                </button>
               ))}
-            </select>
-          </label>
-          <div className="squad-summary">
-            <div>
-              <strong>{allPicked.length}</strong>
-              <span>/ 15 oyuncu</span>
             </div>
-            <div>
-              <strong>{totalValue.toFixed(1)}</strong>
-              <span>M değer</span>
-            </div>
+            <ul className="tm-scoring">
+              {SCORING[scoringTab].map((row) => {
+                const cls = row.pts.startsWith('+')
+                  ? 'pos'
+                  : row.pts.startsWith('-')
+                    ? 'neg'
+                    : 'mult'
+                return (
+                  <li key={row.label}>
+                    <span>{row.label}</span>
+                    <span className={`tm-pts ${cls}`}>{row.pts}</span>
+                  </li>
+                )
+              })}
+            </ul>
           </div>
-        </div>
-      </header>
-
-      <div className="squad-pitch">
-        <div className="field">
-          <div className="field-line field-mid" />
-          <div className="field-circle" />
-          <div className="field-box field-box-top" />
-          <div className="field-box field-box-bottom" />
-
-          <div className="field-rows">
-            {/* Üstten alta: forvet, orta saha, defans, kaleci */}
-            <div className="squad-row">{renderRow('field', 'FW')}</div>
-            <div className="squad-row">{renderRow('field', 'OS')}</div>
-            <div className="squad-row">{renderRow('field', 'DF')}</div>
-            <div className="squad-row">{renderRow('field', 'KL')}</div>
-          </div>
-        </div>
-
-        <div className="bench">
-          <span className="bench-label">Yedek Kulübesi</span>
-          <div className="bench-row">{benchSlots}</div>
-        </div>
+        </aside>
       </div>
 
       {picker && (
