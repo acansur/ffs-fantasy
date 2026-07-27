@@ -49,9 +49,9 @@ function Slot({ player, pos, isCaptain, onOpen }) {
         className="slot slot-empty"
         style={{ '--pos-color': meta.color }}
         onClick={onOpen}
+        aria-label={`${meta.label} ekle`}
       >
-        <span className="slot-jersey empty">{pos}</span>
-        <span className="slot-name muted">{meta.label}</span>
+        <span className="slot-jersey empty">+</span>
       </button>
     )
   }
