@@ -119,6 +119,7 @@ export default function Takimim() {
   const takenIds = useMemo(() => new Set(allPicked.map((p) => p.id)), [allPicked])
   const spent = allPicked.reduce((sum, p) => sum + p.price, 0)
   const remaining = TOTAL_BUDGET - spent
+  const overBudget = remaining < 0
   const captainPlayer = allPicked.find((p) => p.id === captainId) || null
 
   const posCounts = useMemo(() => {
@@ -152,6 +153,7 @@ export default function Takimim() {
   }
 
   const saveSquad = () => {
+    if (overBudget) return // buton zaten devre dışı; savunma amaçlı
     if (allPicked.length < 15) setSaveMsg(`Kadro eksik (${allPicked.length}/15)`)
     else if (!captainId) setSaveMsg('Önce kaptan seç!')
     else setSaveMsg('Kadro kaydedildi ✓')
@@ -225,10 +227,14 @@ export default function Takimim() {
                 ))}
               </select>
             </label>
-            <button type="button" className="tm-save" onClick={saveSquad}>
+            <button type="button" className="tm-save" onClick={saveSquad} disabled={overBudget}>
               Kadroyu Kaydet
             </button>
-            {saveMsg && <span className="tm-save-msg">{saveMsg}</span>}
+            {overBudget ? (
+              <span className="tm-budget-warn">Bütçen aşıldı — kadroyu kaydedemezsin.</span>
+            ) : (
+              saveMsg && <span className="tm-save-msg">{saveMsg}</span>
+            )}
           </div>
 
           <div className="tm-pitch">
