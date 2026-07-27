@@ -269,28 +269,6 @@ export default function Takimim() {
         {/* Sağ panel */}
         <aside className="tm-panel">
           <div className="tm-card">
-            <h3>Kadro Özeti</h3>
-            <div className="tm-summary-grid">
-              <div>
-                <span>Seçilen</span>
-                <strong>{allPicked.length}/15</strong>
-              </div>
-              <div>
-                <span>Kalan Bütçe</span>
-                <strong>{remaining.toFixed(1)}M</strong>
-              </div>
-              <div>
-                <span>Kaptan</span>
-                <strong>{captainPlayer ? surname(captainPlayer.name) : '—'}</strong>
-              </div>
-              <div>
-                <span>Harcanan</span>
-                <strong>{spent.toFixed(1)}M</strong>
-              </div>
-            </div>
-          </div>
-
-          <div className="tm-card">
             <h3>Mevki Dağılımı</h3>
             <div className="tm-pos-grid">
               {POS_ORDER.map((pos) => {
