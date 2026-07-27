@@ -70,9 +70,23 @@ export default function Home() {
             <div className="pitch-circle" />
             <div className="pitch-box pitch-box-top" />
             <div className="pitch-box pitch-box-bottom" />
-            {['FW', 'FW', 'MF', 'MF', 'MF', 'DF', 'DF', 'DF', 'DF', 'GK'].map((pos, i) => (
-              <span key={i} className={`player player-${pos.toLowerCase()}`}>{pos}</span>
-            ))}
+            <div className="pitch-rows">
+              {/* 4-4-2 dizilişi — üstten alta: forvet, orta saha, defans, kaleci */}
+              {[
+                { pos: 'FW', count: 2 },
+                { pos: 'MF', count: 4 },
+                { pos: 'DF', count: 4 },
+                { pos: 'GK', count: 1 },
+              ].map((row) => (
+                <div className="pitch-row" key={row.pos}>
+                  {Array.from({ length: row.count }).map((_, i) => (
+                    <span key={i} className={`player player-${row.pos.toLowerCase()}`}>
+                      {row.pos}
+                    </span>
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
