@@ -105,6 +105,11 @@
   color: var(--pos-fw);
 }
 
+.tm-stat strong.tm-deadline {
+  font-size: 1.05rem;
+  color: var(--gold);
+}
+
 .tm-stat.warn {
   border-color: rgba(240, 165, 0, 0.5);
   background: rgba(240, 165, 0, 0.1);

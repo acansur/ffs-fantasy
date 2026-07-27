@@ -10,6 +10,7 @@ import {
   SQUAD_TOTALS,
   TOTAL_BUDGET,
   CURRENT_WEEK,
+  DEADLINE,
   VIEWS,
   SCORING,
   SCORING_TABS,
@@ -198,8 +199,8 @@ export default function Takimim() {
           <strong className={remaining < 0 ? 'neg' : ''}>{remaining.toFixed(1)}M</strong>
         </div>
         <div className="tm-stat">
-          <span>Kadro</span>
-          <strong>{allPicked.length}/15</strong>
+          <span>Deadline</span>
+          <strong className="tm-deadline">{DEADLINE}</strong>
         </div>
         <div className={`tm-stat${captainId ? '' : ' warn'}`}>
           <span>Kaptan</span>

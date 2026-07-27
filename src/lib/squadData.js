@@ -13,6 +13,9 @@ export const POSITIONS = {
 export const TOTAL_BUDGET = 100.0
 export const CURRENT_WEEK = 5
 
+// Kadro son teslim tarihi (mock — ilerleyen aşamada gerçek veriyle bağlanacak)
+export const DEADLINE = '14 Ağu 20:30'
+
 // Sahadaki oyuncu bilgisi için görünüm seçenekleri
 export const VIEWS = [
   { key: 'next', label: 'Sonraki maç' },
