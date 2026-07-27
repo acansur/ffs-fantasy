@@ -52,6 +52,7 @@ function Slot({ player, pos, isCaptain, onOpen }) {
         aria-label={`${meta.label} ekle`}
       >
         <span className="slot-jersey empty">+</span>
+        <span className="slot-name muted">{meta.label}</span>
       </button>
     )
   }
