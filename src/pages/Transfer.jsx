@@ -100,13 +100,81 @@ export default function Transfer() {
       if (idx >= 0) target = { pos, index: idx }
     }
     if (!target) {
-      setMsg(`${POSITIONS[pos].label} için boş yuva yok.`)
+      setMsg(`⚠ ${POSITIONS[pos].label} için boş yuva yok.`)
       return
     }
     setDraftSlot(pos, target.index, player)
     setSelectedSlot(null)
   }
 
+  // Otomatik doldur: boş mevkileri, bütçe + kulüp limiti kurallarına göre,
+  // mümkün olan en yüksek değerli oyuncularla doldurur (kalanları da
+  // dolduracak minimum maliyeti rezerve ederek bütçeyi aşmaz).
+  const autoFill = () => {
+    const next = cloneRoster(draft)
+    const used = new Set()
+    const clubCount = {}
+    let budgetLeft = TOTAL_BUDGET
+    const needed = { KL: 0, DF: 0, OS: 0, FW: 0 }
+    for (const pos of POS_ORDER) {
+      for (const slot of next[pos]) {
+        if (slot.player) {
+          used.add(slot.player.id)
+          clubCount[slot.player.club] = (clubCount[slot.player.club] || 0) + 1
+          budgetLeft -= slot.player.price
+        } else {
+          needed[pos] += 1
+        }
+      }
+    }
+
+    // Kalan tüm boş mevkileri en ucuz uygun oyuncularla doldurmanın maliyeti (rezerv)
+    const minReserve = (need, u0, c0) => {
+      const u = new Set(u0)
+      const c = { ...c0 }
+      let sum = 0
+      for (const pos of POS_ORDER) {
+        for (let i = 0; i < need[pos]; i++) {
+          const opt = PLAYERS
+            .filter((p) => p.pos === pos && !u.has(p.id) && (c[p.club] || 0) < MAX_PER_CLUB)
+            .sort((a, b) => a.price - b.price)[0]
+          if (!opt) return Infinity
+          u.add(opt.id)
+          c[opt.club] = (c[opt.club] || 0) + 1
+          sum += opt.price
+        }
+      }
+      return sum
+    }
+
+    // Tüm adaylar değere göre azalan; en yüksek değerliyi, kalanları
+    // doldurmaya yetecek bütçeyi rezerve ederek seç.
+    const candidates = PLAYERS.filter((p) => !used.has(p.id)).sort((a, b) => b.price - a.price)
+    for (const p of candidates) {
+      if (needed[p.pos] <= 0) continue
+      if ((clubCount[p.club] || 0) >= MAX_PER_CLUB) continue
+      const after = budgetLeft - p.price
+      if (after < 0) continue
+      const need2 = { ...needed, [p.pos]: needed[p.pos] - 1 }
+      const u2 = new Set(used); u2.add(p.id)
+      const c2 = { ...clubCount, [p.club]: (clubCount[p.club] || 0) + 1 }
+      if (after < minReserve(need2, u2, c2)) continue
+      const idx = next[p.pos].findIndex((s) => !s.player)
+      if (idx < 0) continue
+      next[p.pos][idx].player = p
+      used.add(p.id)
+      clubCount[p.club] = (clubCount[p.club] || 0) + 1
+      budgetLeft -= p.price
+      needed[p.pos] -= 1
+    }
+
+    const stillEmpty = POS_ORDER.reduce((n, pos) => n + next[pos].filter((s) => !s.player).length, 0)
+    setDraft(next)
+    setSelectedSlot(null)
+    setMsg(stillEmpty > 0 ? `⚠ Bütçe yetmedi, ${stillEmpty} mevki boş kaldı.` : 'Kadro otomatik dolduruldu ✓')
+  }
+
+  const emptyCount = 15 - filledCount
   const canSave = filledCount === 15 && !overBudget
 
   const onSave = () => {
@@ -152,7 +220,7 @@ export default function Transfer() {
         </div>
       </div>
 
-      {msg && <div className="tr-msg">⚠ {msg}</div>}
+      {msg && <div className={`tr-msg${msg.startsWith('⚠') ? ' warn' : ' ok'}`}>{msg}</div>}
 
       <div className="tr-layout">
         {/* Sol: sabit 15 mevki */}
@@ -273,9 +341,14 @@ export default function Transfer() {
         ) : (
           <span className="tr-count-note">{filledCount}/15 oyuncu seçildi</span>
         )}
-        <button type="button" className="tr-save" onClick={onSave} disabled={!canSave}>
-          Kaydet ve Kadroya Dön
-        </button>
+        <div className="tr-actionbar-right">
+          <button type="button" className="tr-autofill" onClick={autoFill} disabled={emptyCount === 0}>
+            ⚡ Otomatik Doldur
+          </button>
+          <button type="button" className="tr-save" onClick={onSave} disabled={!canSave}>
+            Kaydet ve Kadroya Dön
+          </button>
+        </div>
       </div>
     </div>
   )
