@@ -256,6 +256,7 @@ export default function Transfer() {
                       <span className="tr-postag" style={{ '--pos': meta.color }}>{pos}</span>
                       <span className="tr-disc jersey">{initials(slot.player.name)}</span>
                       <span className="tr-slot-tag">{slot.player.name.split(' ').slice(-1)[0]}</span>
+                      <span className="tr-slot-price">₺{slot.player.price}M</span>
                     </button>
                     {sel && (
                       <button type="button" className="tr-remove" title="Mevkiden çıkar" onClick={(e) => removeFromSlot(pos, index, e)}>

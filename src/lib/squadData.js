@@ -17,9 +17,10 @@ export const CURRENT_WEEK = 5
 export const DEADLINE = '14 Ağu 20:30'
 
 // Sahadaki oyuncu bilgisi için görünüm seçenekleri
+// Kadro ekranı görünüm seçenekleri (değer burada gösterilmez — o yalnızca
+// transfer ekranındadır)
 export const VIEWS = [
   { key: 'next', label: 'Sonraki maç' },
-  { key: 'value', label: 'Oyuncu değeri' },
   { key: 'weekly', label: 'Haftalık puan' },
   { key: 'date', label: 'Tarih' },
 ]
