@@ -21,10 +21,13 @@ import './Takimim.css'
 
 const POS_ORDER = ['KL', 'DF', 'OS', 'FW']
 
-function SquadSlot({ entry, view, isCaptain, isSelected, isTarget, onClick, captainPopup }) {
+function SquadSlot({ entry, view, isCaptain, isSelected, isTarget, onClick, captainPopup, posTag }) {
   const { slot, pos } = entry
   const meta = POSITIONS[pos]
   const player = slot.player
+  const tag = posTag ? (
+    <span className="tm-postag" style={{ '--pos': meta.color }}>{posTag}</span>
+  ) : null
 
   if (!player) {
     return (
@@ -35,10 +38,11 @@ function SquadSlot({ entry, view, isCaptain, isSelected, isTarget, onClick, capt
         onClick={onClick}
         aria-label={`${meta.label} (boş)`}
       >
+        {tag}
         <span className="tm-disc">
           <span className="tm-plus">+</span>
         </span>
-        <span className="tm-tag muted">{meta.label}</span>
+        {!posTag && <span className="tm-tag muted">{meta.label}</span>}
       </button>
     )
   }
@@ -53,6 +57,7 @@ function SquadSlot({ entry, view, isCaptain, isSelected, isTarget, onClick, capt
         onClick={onClick}
       >
         {isCaptain && <span className="tm-cap">C</span>}
+        {tag}
         <span className="tm-disc jersey">
           <span className="tm-disc-name">{surname6(player.name)}</span>
         </span>
@@ -103,7 +108,6 @@ export default function Takimim() {
   const formation = formationLabel(counts)
   const filledCount = rosterList.length
 
-  // Saha ve yedek yuvalarını türet
   const fieldByPos = useMemo(() => {
     const map = {}
     for (const pos of POS_ORDER) {
@@ -149,7 +153,7 @@ export default function Takimim() {
     else setSaveMsg('Kadro kaydedildi ✓')
   }
 
-  const renderSlot = (entry) => {
+  const renderSlot = (entry, opts = {}) => {
     const { pos, index, slot } = entry
     const selectedHere = isSel(pos, index)
     const captainPopup =
@@ -157,16 +161,13 @@ export default function Takimim() {
         <div className="tm-cap-popup" onClick={(e) => e.stopPropagation()}>
           {slot.player.id === captainId ? (
             <button type="button" onClick={() => { clearCaptain(); setSelected(null) }}>
-              Kaptanlığı çıkar
+              Kaptanlığı kaldır
             </button>
           ) : (
             <button type="button" onClick={() => { makeCaptain(slot.player.id); setSelected(null) }}>
               Kaptan yap
             </button>
           )}
-          <button type="button" className="ghost" onClick={() => setSelected(null)}>
-            Çıkar
-          </button>
         </div>
       ) : null
 
@@ -180,6 +181,7 @@ export default function Takimim() {
         isTarget={Boolean(selected) && !selectedHere}
         onClick={() => onSlotClick(pos, index)}
         captainPopup={captainPopup}
+        posTag={opts.posTag}
       />
     )
   }
@@ -197,27 +199,11 @@ export default function Takimim() {
         </div>
         <div className="tm-topbar-right">
           <div className="tm-week-picker">
-            <button
-              type="button"
-              aria-label="Önceki hafta"
-              disabled={week <= 1}
-              onClick={() => setWeek(Math.max(1, week - 1))}
-            >
-              ‹
-            </button>
+            <button type="button" aria-label="Önceki hafta" disabled={week <= 1} onClick={() => setWeek(Math.max(1, week - 1))}>‹</button>
             <span>Week {week}</span>
-            <button
-              type="button"
-              aria-label="Sonraki hafta"
-              disabled={week >= WEEK_COUNT}
-              onClick={() => setWeek(Math.min(WEEK_COUNT, week + 1))}
-            >
-              ›
-            </button>
+            <button type="button" aria-label="Sonraki hafta" disabled={week >= WEEK_COUNT} onClick={() => setWeek(Math.min(WEEK_COUNT, week + 1))}>›</button>
           </div>
-          <div className="tm-formation-badge" title="Dizilişin otomatik güncellenir">
-            {formation}
-          </div>
+          <div className="tm-formation-badge" title="Dizilişin otomatik güncellenir">{formation}</div>
           <div className="tm-deadline-chip">Deadline: {DEADLINE}</div>
         </div>
       </div>
@@ -242,20 +228,22 @@ export default function Takimim() {
         </div>
       </div>
 
+      {/* Üst aksiyon: Transfer Yap (yukarıda) + görünüm */}
+      <div className="tm-toprow">
+        <Link to="/transfer" className="tm-transfer-btn">⇄ Transfer Yap</Link>
+        <label className="tm-select">
+          <span>Görünüm</span>
+          <select value={view} onChange={(e) => setView(e.target.value)}>
+            {VIEWS.map((v) => (
+              <option key={v.key} value={v.key}>{v.label}</option>
+            ))}
+          </select>
+        </label>
+      </div>
+
       <div className="tm-layout">
         <div className="tm-left">
-          <div className="tm-controls">
-            <label className="tm-select">
-              <span>Görünüm</span>
-              <select value={view} onChange={(e) => setView(e.target.value)}>
-                {VIEWS.map((v) => (
-                  <option key={v.key} value={v.key}>{v.label}</option>
-                ))}
-              </select>
-            </label>
-            <p className="tm-hint">Bir oyuncuya, sonra başka bir yuvaya tıklayarak yer değiştir.</p>
-          </div>
-
+          <p className="tm-hint">Bir oyuncuya, sonra başka bir yuvaya tıklayarak yer değiştir.</p>
           {moveMsg && <div className="tm-move-warn">⚠ {moveMsg}</div>}
 
           <div className="tm-pitch">
@@ -273,16 +261,17 @@ export default function Takimim() {
               <div className="tm-corner br" />
             </div>
             <div className="tm-rows">
-              <div className="tm-row">{fieldByPos.FW.map(renderSlot)}</div>
-              <div className="tm-row">{fieldByPos.OS.map(renderSlot)}</div>
-              <div className="tm-row">{fieldByPos.DF.map(renderSlot)}</div>
-              <div className="tm-row">{fieldByPos.KL.map(renderSlot)}</div>
+              <div className="tm-row">{fieldByPos.FW.map((e) => renderSlot(e))}</div>
+              <div className="tm-row">{fieldByPos.OS.map((e) => renderSlot(e))}</div>
+              <div className="tm-row">{fieldByPos.DF.map((e) => renderSlot(e))}</div>
+              <div className="tm-row">{fieldByPos.KL.map((e) => renderSlot(e))}</div>
             </div>
           </div>
 
           <div className="tm-bench">
-            <span className="tm-bench-label">Yedek Kulübesi · kaleci ilk sırada sabit</span>
-            <div className="tm-bench-row">{benchEntries.map(renderSlot)}</div>
+            <div className="tm-bench-row">
+              {benchEntries.map((e) => renderSlot(e, { posTag: e.pos }))}
+            </div>
           </div>
         </div>
 
@@ -295,11 +284,7 @@ export default function Takimim() {
                 const sel = roster[pos].filter((s) => s.player).length
                 const tot = SQUAD_TOTALS[pos]
                 return (
-                  <div
-                    key={pos}
-                    className={`tm-pos${sel === tot ? ' full' : ''}`}
-                    style={{ '--pos': POSITIONS[pos].color }}
-                  >
+                  <div key={pos} className={`tm-pos${sel === tot ? ' full' : ''}`} style={{ '--pos': POSITIONS[pos].color }}>
                     <span>{POSITIONS[pos].label}</span>
                     <strong>{sel}/{tot}</strong>
                   </div>
@@ -312,12 +297,7 @@ export default function Takimim() {
             <h3>Puanlama Rehberi</h3>
             <div className="tm-tabs">
               {SCORING_TABS.map((tab) => (
-                <button
-                  key={tab}
-                  type="button"
-                  className={`tm-tab${scoringTab === tab ? ' active' : ''}`}
-                  onClick={() => setScoringTab(tab)}
-                >
+                <button key={tab} type="button" className={`tm-tab${scoringTab === tab ? ' active' : ''}`} onClick={() => setScoringTab(tab)}>
                   {tab}
                 </button>
               ))}
@@ -337,9 +317,9 @@ export default function Takimim() {
         </aside>
       </div>
 
-      {/* Sticky aksiyon çubuğu */}
+      {/* Sticky kaydet çubuğu */}
       <div className="tm-actionbar">
-        <Link to="/transfer" className="tm-transfer-btn">⇄ Transfer Yap</Link>
+        <span className="tm-squad-count">{filledCount}/15 oyuncu</span>
         <div className="tm-actionbar-right">
           {overBudget && <span className="tm-budget-warn">Bütçen aşıldı — kaydedemezsin.</span>}
           {saveMsg && !overBudget && <span className="tm-save-msg">{saveMsg}</span>}

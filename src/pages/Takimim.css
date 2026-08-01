@@ -5,7 +5,7 @@
   --green-l: #2a7d55;
   --gold: #f0a500;
   --gold-d: #cc8c00;
-  --line: rgba(255, 255, 255, 0.55);
+  --line: rgba(255, 255, 255, 0.72);
   --card: #12241b;
   --card-line: rgba(255, 255, 255, 0.08);
   --ink: #e9f2ec;
@@ -207,19 +207,22 @@
 /* ---- Saha ---- */
 .tm-pitch {
   position: relative;
-  border-radius: 14px 14px 0 0;
-  border: 2px solid var(--line);
+  border-radius: 16px 16px 0 0;
+  border: 3px solid var(--line);
   border-bottom: none;
-  padding: 1.4rem 0.7rem;
+  padding: 2.2rem 1.1rem;
   overflow: hidden;
   background:
+    radial-gradient(120% 80% at 50% 0%, rgba(255, 255, 255, 0.07), transparent 55%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(0, 0, 0, 0.22)),
     repeating-linear-gradient(
       0deg,
-      var(--green) 0,
-      var(--green) 9%,
-      var(--green-2) 9%,
-      var(--green-2) 18%
+      #1c6644 0,
+      #1c6644 8%,
+      #175639 8%,
+      #175639 16%
     );
+  box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.35);
 }
 
 .tm-lines {
@@ -340,23 +343,23 @@
   z-index: 2;
   display: flex;
   flex-direction: column;
-  gap: 0.8rem;
+  gap: 1.15rem;
 }
 
 .tm-row {
   display: flex;
   justify-content: space-around;
   align-items: flex-start;
-  gap: 0.4rem;
+  gap: 0.5rem;
 }
 
 /* ---- Yedek kulübesi ---- */
 .tm-bench {
-  background: #0e1b15;
-  border: 2px solid var(--line);
-  border-top: 2px dashed rgba(255, 255, 255, 0.3);
-  border-radius: 0 0 14px 14px;
-  padding: 0.9rem 0.7rem 1.1rem;
+  background: linear-gradient(180deg, #10201a, #0c1712);
+  border: 3px solid var(--line);
+  border-top: 2px dashed rgba(255, 255, 255, 0.35);
+  border-radius: 0 0 16px 16px;
+  padding: 1.3rem 1.1rem 1.4rem;
 }
 
 .tm-bench-label {
@@ -382,8 +385,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.35rem;
-  width: 78px;
+  gap: 0.4rem;
+  width: 96px;
   padding: 0;
   border: none;
   background: none;
@@ -394,11 +397,11 @@
 .tm-disc {
   display: grid;
   place-items: center;
-  width: 62px;
-  height: 62px;
+  width: 76px;
+  height: 76px;
   border-radius: 50%;
   border: 3px solid var(--pos, #fff);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45), inset 0 2px 4px rgba(255, 255, 255, 0.15);
   transition: transform 0.12s;
 }
 
@@ -417,14 +420,14 @@
 }
 
 .tm-disc-name {
-  font-size: 0.6rem;
+  font-size: 0.72rem;
   font-weight: 800;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
 }
 
 .tm-plus {
-  font-size: 1.9rem;
-  font-weight: 300;
+  font-size: 2.3rem;
+  font-weight: 200;
   color: rgba(255, 255, 255, 0.92);
   line-height: 1;
 }
@@ -433,31 +436,43 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  max-width: 84px;
-  padding: 0.15rem 0.5rem;
-  border-radius: 7px;
-  background: rgba(0, 0, 0, 0.6);
-  line-height: 1.25;
+  max-width: 100px;
+  padding: 0.2rem 0.6rem;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.68);
+  line-height: 1.3;
 }
 
 .tm-tag.muted {
-  background: rgba(0, 0, 0, 0.35);
-  color: rgba(255, 255, 255, 0.75);
+  background: rgba(0, 0, 0, 0.4);
+  color: rgba(255, 255, 255, 0.78);
 }
 
 .tm-tag-name {
-  font-size: 0.74rem;
+  font-size: 0.82rem;
   font-weight: 700;
-  max-width: 74px;
+  max-width: 90px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .tm-tag-info {
-  font-size: 0.66rem;
+  font-size: 0.72rem;
   font-weight: 600;
   color: var(--gold);
+}
+
+/* Yedek mevki etiketi (yuvanın üstünde) */
+.tm-postag {
+  padding: 0.08rem 0.5rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--pos) 30%, #0c1712);
+  border: 1px solid var(--pos);
+  color: #fff;
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
 }
 
 .tm-cap {
@@ -687,12 +702,27 @@
   white-space: nowrap;
 }
 
+/* ---- Üst aksiyon sırası (Transfer Yap yukarıda) ---- */
+.tm-toprow {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.tm-squad-count {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--ink-mut);
+}
+
 /* ---- Kontrol ipucu + taşıma uyarısı ---- */
 .tm-hint {
-  margin: 0;
+  margin: 0 0 0.8rem;
   font-size: 0.82rem;
   color: var(--ink-mut);
-  align-self: center;
 }
 
 .tm-move-warn {
@@ -805,6 +835,9 @@
   .tm-stripe {
     grid-template-columns: 1fr 1fr;
   }
+  .tm-pitch {
+    padding: 1.4rem 0.4rem;
+  }
   .tm-slot {
     width: 60px;
   }
@@ -814,7 +847,7 @@
     border-width: 2px;
   }
   .tm-disc-name {
-    font-size: 0.52rem;
+    font-size: 0.54rem;
   }
   .tm-tag-name {
     font-size: 0.66rem;
@@ -822,6 +855,9 @@
   }
   .tm-tag-info {
     font-size: 0.6rem;
+  }
+  .tm-plus {
+    font-size: 1.8rem;
   }
   .tm-row,
   .tm-bench-row {

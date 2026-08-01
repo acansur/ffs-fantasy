@@ -1,6 +1,6 @@
 import { useMemo, useState, useRef, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useSquad } from '../lib/squadStore.jsx'
+import { useSquad, cloneRoster, rosterPlayers } from '../lib/squadStore.jsx'
 import {
   PLAYERS,
   POSITIONS,
@@ -18,8 +18,10 @@ const POS_TABS = [{ key: null, label: 'Tümü' }, ...POS_ORDER.map((p) => ({ key
 
 export default function Transfer() {
   const navigate = useNavigate()
-  const { roster, setSlot, rosterList, remaining, clubCounts } = useSquad()
+  const { roster: committed, commitRoster } = useSquad()
 
+  // Taslak: kaydedilene kadar kadroya yansımaz
+  const [draft, setDraft] = useState(() => cloneRoster(committed))
   const [selectedSlot, setSelectedSlot] = useState(null)
   const [posFilter, setPosFilter] = useState(null)
   const [selectedClubs, setSelectedClubs] = useState([])
@@ -42,11 +44,18 @@ export default function Transfer() {
     return () => clearTimeout(t)
   }, [msg])
 
-  const rosterIds = useMemo(() => new Set(rosterList.map((p) => p.id)), [rosterList])
-  const filledCount = rosterList.length
-  const overBudget = remaining < 0
+  const draftList = useMemo(() => rosterPlayers(draft), [draft])
+  const rosterIds = useMemo(() => new Set(draftList.map((p) => p.id)), [draftList])
+  const clubCounts = useMemo(() => {
+    const c = {}
+    for (const p of draftList) c[p.club] = (c[p.club] || 0) + 1
+    return c
+  }, [draftList])
 
-  // Aynı kulüpten >3 ihlali (normalde engelleniyor)
+  const filledCount = draftList.length
+  const spent = draftList.reduce((s, p) => s + p.price, 0)
+  const remaining = TOTAL_BUDGET - spent
+  const overBudget = remaining < 0
   const clubViolations = Object.entries(clubCounts).filter(([, n]) => n > MAX_PER_CLUB)
 
   const list = useMemo(() => {
@@ -55,6 +64,14 @@ export default function Transfer() {
     if (selectedClubs.length) l = l.filter((p) => selectedClubs.includes(p.club))
     return sortByValue(l, sortDir)
   }, [posFilter, selectedClubs, sortDir])
+
+  const setDraftSlot = (pos, index, player) => {
+    setDraft((d) => {
+      const next = cloneRoster(d)
+      next[pos][index].player = player
+      return next
+    })
+  }
 
   const toggleClub = (code) =>
     setSelectedClubs((prev) => (prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]))
@@ -70,7 +87,7 @@ export default function Transfer() {
 
   const removeFromSlot = (pos, index, e) => {
     e.stopPropagation()
-    setSlot(pos, index, null)
+    setDraftSlot(pos, index, null)
     setSelectedSlot(null)
   }
 
@@ -79,14 +96,14 @@ export default function Transfer() {
     let target = null
     if (selectedSlot && selectedSlot.pos === pos) target = selectedSlot
     else {
-      const idx = roster[pos].findIndex((s) => !s.player)
+      const idx = draft[pos].findIndex((s) => !s.player)
       if (idx >= 0) target = { pos, index: idx }
     }
     if (!target) {
       setMsg(`${POSITIONS[pos].label} için boş yuva yok.`)
       return
     }
-    setSlot(pos, target.index, player)
+    setDraftSlot(pos, target.index, player)
     setSelectedSlot(null)
   }
 
@@ -94,6 +111,7 @@ export default function Transfer() {
 
   const onSave = () => {
     if (!canSave) return
+    commitRoster(draft)
     navigate('/takimim')
   }
 
@@ -141,7 +159,7 @@ export default function Transfer() {
         <div className="tr-field">
           {POS_ORDER.slice().reverse().map((pos) => (
             <div key={pos} className="tr-field-row">
-              {roster[pos].map((slot, index) => {
+              {draft[pos].map((slot, index) => {
                 const meta = POSITIONS[pos]
                 const sel = selectedSlot && selectedSlot.pos === pos && selectedSlot.index === index
                 if (!slot.player) {
@@ -153,8 +171,8 @@ export default function Transfer() {
                       style={{ '--pos': meta.color }}
                       onClick={() => onSlotClick(pos, index)}
                     >
+                      <span className="tr-postag" style={{ '--pos': meta.color }}>{pos}</span>
                       <span className="tr-disc"><span className="tr-plus">+</span></span>
-                      <span className="tr-slot-tag muted">{pos}</span>
                     </button>
                   )
                 }
@@ -167,16 +185,12 @@ export default function Transfer() {
                       style={{ '--pos': meta.color, '--bg': club.bg, '--fg': club.fg }}
                       onClick={() => onSlotClick(pos, index)}
                     >
+                      <span className="tr-postag" style={{ '--pos': meta.color }}>{pos}</span>
                       <span className="tr-disc jersey">{initials(slot.player.name)}</span>
                       <span className="tr-slot-tag">{slot.player.name.split(' ').slice(-1)[0]}</span>
                     </button>
                     {sel && (
-                      <button
-                        type="button"
-                        className="tr-remove"
-                        title="Mevkiden çıkar"
-                        onClick={(e) => removeFromSlot(pos, index, e)}
-                      >
+                      <button type="button" className="tr-remove" title="Mevkiden çıkar" onClick={(e) => removeFromSlot(pos, index, e)}>
                         −
                       </button>
                     )}
@@ -191,12 +205,7 @@ export default function Transfer() {
         <div className="tr-list-panel">
           <div className="tr-pos-tabs">
             {POS_TABS.map((t) => (
-              <button
-                key={t.label}
-                type="button"
-                className={`tr-pos-tab${posFilter === t.key ? ' active' : ''}`}
-                onClick={() => setPosFilter(t.key)}
-              >
+              <button key={t.label} type="button" className={`tr-pos-tab${posFilter === t.key ? ' active' : ''}`} onClick={() => setPosFilter(t.key)}>
                 {t.label}
               </button>
             ))}
@@ -211,34 +220,21 @@ export default function Transfer() {
                 <div className="dropdown-panel">
                   {Object.entries(CLUBS).map(([code, club]) => (
                     <label key={code} className="check-row">
-                      <input
-                        type="checkbox"
-                        checked={selectedClubs.includes(code)}
-                        onChange={() => toggleClub(code)}
-                      />
+                      <input type="checkbox" checked={selectedClubs.includes(code)} onChange={() => toggleClub(code)} />
                       <span className="club-dot" style={{ background: club.bg }} />
                       {club.name}
                     </label>
                   ))}
                   <div className="dropdown-foot">
                     {selectedClubs.length > 0 && (
-                      <button type="button" className="link-btn" onClick={() => setSelectedClubs([])}>
-                        Temizle
-                      </button>
+                      <button type="button" className="link-btn" onClick={() => setSelectedClubs([])}>Temizle</button>
                     )}
-                    <button type="button" className="link-btn dropdown-done" onClick={() => setClubOpen(false)}>
-                      Tamam
-                    </button>
+                    <button type="button" className="link-btn dropdown-done" onClick={() => setClubOpen(false)}>Tamam</button>
                   </div>
                 </div>
               )}
             </div>
-            <select
-              className="sort-select"
-              value={sortDir}
-              onChange={(e) => setSortDir(e.target.value)}
-              aria-label="Sıralama"
-            >
+            <select className="sort-select" value={sortDir} onChange={(e) => setSortDir(e.target.value)} aria-label="Sıralama">
               <option value="desc">Değer (azalan)</option>
               <option value="asc">Değer (artan)</option>
             </select>
@@ -252,9 +248,7 @@ export default function Transfer() {
               const disabled = inRoster || clubMaxed
               return (
                 <li key={p.id} className={`tr-player${disabled ? ' disabled' : ''}`}>
-                  <span className="tr-p-jersey" style={{ background: club.bg, color: club.fg }}>
-                    {initials(p.name)}
-                  </span>
+                  <span className="tr-p-jersey" style={{ background: club.bg, color: club.fg }}>{initials(p.name)}</span>
                   <span className="tr-p-meta">
                     <span className="tr-p-name">{p.name}</span>
                     <span className="tr-p-sub">
@@ -264,15 +258,7 @@ export default function Transfer() {
                     </span>
                   </span>
                   <span className="tr-p-price">{p.price.toFixed(1)}M</span>
-                  <button
-                    type="button"
-                    className="tr-add"
-                    disabled={disabled}
-                    onClick={() => addPlayer(p)}
-                    aria-label={`${p.name} ekle`}
-                  >
-                    +
-                  </button>
+                  <button type="button" className="tr-add" disabled={disabled} onClick={() => addPlayer(p)} aria-label={`${p.name} ekle`}>+</button>
                 </li>
               )
             })}
