@@ -625,6 +625,175 @@
   background: rgba(240, 165, 0, 0.15);
 }
 
+/* ---- Üst bar: hafta seçici, diziliş etiketi, deadline ---- */
+.tm-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+
+.tm-week-picker {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.4rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.tm-week-picker span {
+  font-weight: 700;
+  font-size: 0.9rem;
+  min-width: 62px;
+  text-align: center;
+}
+
+.tm-week-picker button {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--ink);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.tm-week-picker button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.tm-formation-badge {
+  padding: 0.4rem 0.9rem;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+.tm-deadline-chip {
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  background: rgba(240, 165, 0, 0.15);
+  border: 1px solid rgba(240, 165, 0, 0.4);
+  color: var(--gold);
+  font-weight: 700;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+/* ---- Kontrol ipucu + taşıma uyarısı ---- */
+.tm-hint {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--ink-mut);
+  align-self: center;
+}
+
+.tm-move-warn {
+  margin-bottom: 0.8rem;
+  padding: 0.55rem 0.9rem;
+  border-radius: 10px;
+  background: rgba(239, 68, 68, 0.14);
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  color: #fca5a5;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+/* ---- Seçili / hedef yuva ---- */
+.tm-slot-wrap {
+  position: relative;
+  display: flex;
+}
+
+.tm-slot.selected .tm-disc {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+  transform: translateY(-2px) scale(1.06);
+}
+
+.tm-slot.target .tm-disc {
+  box-shadow: 0 0 0 2px rgba(240, 165, 0, 0.4), 0 4px 10px rgba(0, 0, 0, 0.4);
+}
+
+/* ---- Kaptan popup ---- */
+.tm-cap-popup {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.4rem;
+  border-radius: 10px;
+  background: #0e1b15;
+  border: 1px solid var(--card-line);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+}
+
+.tm-cap-popup button {
+  padding: 0.4rem 0.7rem;
+  border-radius: 7px;
+  border: none;
+  cursor: pointer;
+  background: var(--gold);
+  color: #3a2800;
+  font-weight: 700;
+  font-size: 0.8rem;
+  font-family: inherit;
+}
+
+.tm-cap-popup button.ghost {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--ink);
+}
+
+/* ---- Sticky aksiyon çubuğu ---- */
+.tm-actionbar {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.25rem;
+  padding: 0.8rem 1rem;
+  background: rgba(10, 20, 15, 0.92);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--card-line);
+  border-radius: 14px;
+}
+
+.tm-actionbar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.tm-transfer-btn {
+  padding: 0.65rem 1.3rem;
+  border-radius: 10px;
+  background: rgba(59, 130, 246, 0.16);
+  border: 1px solid rgba(59, 130, 246, 0.5);
+  color: #bfdbfe;
+  font-weight: 800;
+  font-size: 0.95rem;
+}
+
+.tm-transfer-btn:hover {
+  background: rgba(59, 130, 246, 0.26);
+}
+
 /* ---- Responsive ---- */
 @media (max-width: 900px) {
   .tm-layout {
@@ -661,5 +830,19 @@
   .tm-topbar {
     flex-direction: column;
     align-items: flex-start;
+  }
+  .tm-topbar-right {
+    width: 100%;
+  }
+  .tm-actionbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.7rem;
+  }
+  .tm-actionbar-right {
+    justify-content: space-between;
+  }
+  .tm-transfer-btn {
+    text-align: center;
   }
 }

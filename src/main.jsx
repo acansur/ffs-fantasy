@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import '@fontsource-variable/inter'
 import { AuthProvider } from './lib/auth.jsx'
+import { SquadProvider } from './lib/squadStore.jsx'
 import './index.css'
 import App from './App.jsx'
 
@@ -10,7 +11,9 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
-        <App />
+        <SquadProvider>
+          <App />
+        </SquadProvider>
       </AuthProvider>
     </BrowserRouter>
   </StrictMode>,

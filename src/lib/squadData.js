@@ -41,6 +41,42 @@ export const DEFAULT_FORMATION = '4-4-2'
 // Saha (ilk 11) dizilişe göre belirlenir; yedekler = toplam − saha.
 export const SQUAD_TOTALS = { KL: 2, DF: 5, OS: 5, FW: 3 }
 
+// UI mevki kodu → veritabanı position_type eşlemesi
+export const POS_DB = { KL: 'GK', DF: 'DF', OS: 'MF', FW: 'FW' }
+
+// İlk 11 mevki limitleri: [min, max]
+export const START_LIMITS = { KL: [1, 1], DF: [3, 5], OS: [3, 5], FW: [1, 3] }
+
+// Aynı kulüpten en fazla bu kadar oyuncu alınabilir
+export const MAX_PER_CLUB = 3
+
+// Hafta seçici için toplam hafta sayısı (mock)
+export const WEEK_COUNT = 8
+
+// Varsayılan kadro (mock) — 15 oyuncu, bütçe içinde (99.0M), kulüp başına ≤3
+export const DEFAULT_ROSTER = {
+  KL: ['k3', 'k2'],
+  DF: ['d1', 'd2', 'd3', 'd4', 'd6'],
+  OS: ['m1', 'm2', 'm3', 'm5', 'm6'],
+  FW: ['f4', 'f5', 'f6'],
+}
+
+// Varsayılan ilk 11 (4-4-2): 1KL + 4DF + 4OS + 2FW
+export const DEFAULT_STARTERS = [
+  'k3', 'd1', 'd2', 'd3', 'd4', 'm1', 'm2', 'm3', 'm5', 'f4', 'f5',
+]
+
+// İlk 11 mevki sayımından diziliş etiketi (örn. "4-4-2")
+export function formationLabel(counts) {
+  return `${counts.DF}-${counts.OS}-${counts.FW}`
+}
+
+// Değere göre sırala (dir: 'desc' | 'asc')
+export function sortByValue(list, dir = 'desc') {
+  const arr = [...list]
+  return arr.sort((a, b) => (dir === 'asc' ? a.price - b.price : b.price - a.price))
+}
+
 // Bir diziliş için saha ve yedek yuva sayıları (mevki başına).
 export function slotCounts(formation) {
   const f = FORMATIONS[formation]

@@ -1,19 +1,18 @@
 import { useMemo, useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../lib/auth.jsx'
-import PlayerPickerModal from '../components/PlayerPickerModal.jsx'
+import { useSquad } from '../lib/squadStore.jsx'
 import {
   POSITIONS,
   CLUBS,
-  FORMATIONS,
-  DEFAULT_FORMATION,
-  slotCounts,
   SQUAD_TOTALS,
   TOTAL_BUDGET,
-  CURRENT_WEEK,
   DEADLINE,
+  WEEK_COUNT,
   VIEWS,
   SCORING,
   SCORING_TABS,
+  formationLabel,
   surname6,
   surname,
   slotInfo,
@@ -22,42 +21,19 @@ import './Takimim.css'
 
 const POS_ORDER = ['KL', 'DF', 'OS', 'FW']
 
-function makeSquad(formation) {
-  const { field, bench } = slotCounts(formation)
-  const build = (counts) =>
-    POS_ORDER.reduce((acc, pos) => ({ ...acc, [pos]: Array(counts[pos]).fill(null) }), {})
-  return { field: build(field), bench: build(bench) }
-}
-
-function resizeInto(pool, n) {
-  const slots = Array(n).fill(null)
-  for (let i = 0; i < n && i < pool.length; i++) slots[i] = pool[i]
-  return slots
-}
-
-// Diziliş değişince seçimleri koru: mevki havuzunu önce sahaya, sonra yedeğe dağıt.
-function redistribute(squad, formation) {
-  const { field, bench } = slotCounts(formation)
-  const next = { field: {}, bench: {} }
-  for (const pos of POS_ORDER) {
-    const pool = [...squad.field[pos], ...squad.bench[pos]].filter(Boolean)
-    next.field[pos] = resizeInto(pool, field[pos])
-    next.bench[pos] = resizeInto(pool.slice(field[pos]), bench[pos])
-  }
-  return next
-}
-
-function Slot({ player, pos, isCaptain, view, onOpen }) {
+function SquadSlot({ entry, view, isCaptain, isSelected, isTarget, onClick, captainPopup }) {
+  const { slot, pos } = entry
   const meta = POSITIONS[pos]
+  const player = slot.player
 
   if (!player) {
     return (
       <button
         type="button"
-        className="tm-slot empty"
+        className={`tm-slot empty${isTarget ? ' target' : ''}`}
         style={{ '--pos': meta.color }}
-        onClick={onOpen}
-        aria-label={`${meta.label} ekle`}
+        onClick={onClick}
+        aria-label={`${meta.label} (boş)`}
       >
         <span className="tm-disc">
           <span className="tm-plus">+</span>
@@ -69,110 +45,144 @@ function Slot({ player, pos, isCaptain, view, onOpen }) {
 
   const club = CLUBS[player.club]
   return (
-    <button
-      type="button"
-      className="tm-slot filled"
-      style={{ '--pos': meta.color, '--bg': club.bg, '--fg': club.fg }}
-      onClick={onOpen}
-      title="Düzenle"
-    >
-      {isCaptain && <span className="tm-cap">C</span>}
-      <span className="tm-disc jersey">
-        <span className="tm-disc-name">{surname6(player.name)}</span>
-      </span>
-      <span className="tm-tag">
-        <span className="tm-tag-name">{surname(player.name)}</span>
-        <span className="tm-tag-info">{slotInfo(player, view)}</span>
-      </span>
-    </button>
+    <div className="tm-slot-wrap">
+      <button
+        type="button"
+        className={`tm-slot filled${isSelected ? ' selected' : ''}${isTarget ? ' target' : ''}`}
+        style={{ '--pos': meta.color, '--bg': club.bg, '--fg': club.fg }}
+        onClick={onClick}
+      >
+        {isCaptain && <span className="tm-cap">C</span>}
+        <span className="tm-disc jersey">
+          <span className="tm-disc-name">{surname6(player.name)}</span>
+        </span>
+        <span className="tm-tag">
+          <span className="tm-tag-name">{surname(player.name)}</span>
+          <span className="tm-tag-info">{slotInfo(player, view)}</span>
+        </span>
+      </button>
+      {captainPopup}
+    </div>
   )
 }
 
 export default function Takimim() {
   const { user } = useAuth()
-  const [formation, setFormation] = useState(DEFAULT_FORMATION)
-  const [squad, setSquad] = useState(() => makeSquad(DEFAULT_FORMATION))
-  const [captainId, setCaptainId] = useState(null)
-  const [picker, setPicker] = useState(null)
+  const {
+    roster,
+    swapSlots,
+    captainId,
+    makeCaptain,
+    clearCaptain,
+    week,
+    setWeek,
+    rosterList,
+    remaining,
+    counts,
+  } = useSquad()
+
   const [view, setView] = useState('next')
   const [scoringTab, setScoringTab] = useState('Genel')
+  const [selected, setSelected] = useState(null)
+  const [moveMsg, setMoveMsg] = useState('')
   const [saveMsg, setSaveMsg] = useState('')
 
+  useEffect(() => {
+    if (!moveMsg) return
+    const t = setTimeout(() => setMoveMsg(''), 2500)
+    return () => clearTimeout(t)
+  }, [moveMsg])
   useEffect(() => {
     if (!saveMsg) return
     const t = setTimeout(() => setSaveMsg(''), 2500)
     return () => clearTimeout(t)
   }, [saveMsg])
 
-  const changeFormation = (next) => {
-    setFormation(next)
-    setSquad((s) => redistribute(s, next))
-  }
-
-  const allPicked = useMemo(() => {
-    const list = []
-    for (const zone of ['field', 'bench']) {
-      for (const pos of POS_ORDER) list.push(...squad[zone][pos])
-    }
-    return list.filter(Boolean)
-  }, [squad])
-
-  const takenIds = useMemo(() => new Set(allPicked.map((p) => p.id)), [allPicked])
-  const spent = allPicked.reduce((sum, p) => sum + p.price, 0)
-  const remaining = TOTAL_BUDGET - spent
   const overBudget = remaining < 0
-  const captainPlayer = allPicked.find((p) => p.id === captainId) || null
+  const captainPlayer = rosterList.find((p) => p.id === captainId) || null
+  const formation = formationLabel(counts)
+  const filledCount = rosterList.length
 
-  const posCounts = useMemo(() => {
-    const counts = { KL: 0, DF: 0, OS: 0, FW: 0 }
-    for (const zone of ['field', 'bench']) {
-      for (const pos of POS_ORDER) counts[pos] += squad[zone][pos].filter(Boolean).length
+  // Saha ve yedek yuvalarını türet
+  const fieldByPos = useMemo(() => {
+    const map = {}
+    for (const pos of POS_ORDER) {
+      map[pos] = roster[pos]
+        .map((slot, index) => ({ slot, pos, index }))
+        .filter((e) => e.slot.starter)
     }
-    return counts
-  }, [squad])
+    return map
+  }, [roster])
 
-  const openPicker = (zone, pos, index) => setPicker({ zone, pos, index })
-  const closePicker = () => setPicker(null)
-  const pickerCurrent = picker ? squad[picker.zone][picker.pos][picker.index] : null
+  const benchEntries = useMemo(() => {
+    const list = []
+    for (const pos of POS_ORDER) {
+      roster[pos].forEach((slot, index) => {
+        if (!slot.starter) list.push({ slot, pos, index })
+      })
+    }
+    return list.sort((a, b) => (a.slot.benchOrder ?? 99) - (b.slot.benchOrder ?? 99))
+  }, [roster])
 
-  const assignPlayer = (playerOrNull) => {
-    if (!picker) return
-    const { zone, pos, index } = picker
-    if (!playerOrNull && pickerCurrent && pickerCurrent.id === captainId) setCaptainId(null)
-    setSquad((s) => {
-      const arr = [...s[zone][pos]]
-      arr[index] = playerOrNull
-      return { ...s, [zone]: { ...s[zone], [pos]: arr } }
-    })
-    closePicker()
-  }
+  const isSel = (pos, index) => selected && selected.pos === pos && selected.index === index
 
-  const makeCaptain = () => {
-    if (!pickerCurrent) return
-    setCaptainId((cur) => (cur === pickerCurrent.id ? null : pickerCurrent.id))
-    closePicker()
+  const onSlotClick = (pos, index) => {
+    const slot = roster[pos][index]
+    if (!selected) {
+      if (!slot.player) return
+      setSelected({ pos, index })
+      return
+    }
+    if (isSel(pos, index)) {
+      setSelected(null)
+      return
+    }
+    const err = swapSlots(selected, { pos, index })
+    setMoveMsg(err || '')
+    setSelected(null)
   }
 
   const saveSquad = () => {
-    if (overBudget) return // buton zaten devre dışı; savunma amaçlı
-    if (allPicked.length < 15) setSaveMsg(`Kadro eksik (${allPicked.length}/15)`)
+    if (overBudget) return
+    if (filledCount < 15) setSaveMsg(`Kadro eksik (${filledCount}/15) — transfer yap`)
     else if (!captainId) setSaveMsg('Önce kaptan seç!')
     else setSaveMsg('Kadro kaydedildi ✓')
   }
 
-  const renderRow = (zone, pos) =>
-    squad[zone][pos].map((player, i) => (
-      <Slot
-        key={`${zone}-${pos}-${i}`}
-        player={player}
-        pos={pos}
-        view={view}
-        isCaptain={player ? player.id === captainId : false}
-        onOpen={() => openPicker(zone, pos, i)}
-      />
-    ))
+  const renderSlot = (entry) => {
+    const { pos, index, slot } = entry
+    const selectedHere = isSel(pos, index)
+    const captainPopup =
+      selectedHere && slot.player ? (
+        <div className="tm-cap-popup" onClick={(e) => e.stopPropagation()}>
+          {slot.player.id === captainId ? (
+            <button type="button" onClick={() => { clearCaptain(); setSelected(null) }}>
+              Kaptanlığı çıkar
+            </button>
+          ) : (
+            <button type="button" onClick={() => { makeCaptain(slot.player.id); setSelected(null) }}>
+              Kaptan yap
+            </button>
+          )}
+          <button type="button" className="ghost" onClick={() => setSelected(null)}>
+            Çıkar
+          </button>
+        </div>
+      ) : null
 
-  const benchSlots = POS_ORDER.flatMap((pos) => renderRow('bench', pos))
+    return (
+      <SquadSlot
+        key={`${pos}-${index}`}
+        entry={entry}
+        view={view}
+        isCaptain={slot.player ? slot.player.id === captainId : false}
+        isSelected={selectedHere}
+        isTarget={Boolean(selected) && !selectedHere}
+        onClick={() => onSlotClick(pos, index)}
+        captainPopup={captainPopup}
+      />
+    )
+  }
 
   return (
     <div className="tm-page">
@@ -185,7 +195,31 @@ export default function Takimim() {
             <div className="tm-team-sub">Fantasy Süper Lig</div>
           </div>
         </div>
-        <div className="tm-week">Hafta {CURRENT_WEEK}</div>
+        <div className="tm-topbar-right">
+          <div className="tm-week-picker">
+            <button
+              type="button"
+              aria-label="Önceki hafta"
+              disabled={week <= 1}
+              onClick={() => setWeek(Math.max(1, week - 1))}
+            >
+              ‹
+            </button>
+            <span>Week {week}</span>
+            <button
+              type="button"
+              aria-label="Sonraki hafta"
+              disabled={week >= WEEK_COUNT}
+              onClick={() => setWeek(Math.min(WEEK_COUNT, week + 1))}
+            >
+              ›
+            </button>
+          </div>
+          <div className="tm-formation-badge" title="Dizilişin otomatik güncellenir">
+            {formation}
+          </div>
+          <div className="tm-deadline-chip">Deadline: {DEADLINE}</div>
+        </div>
       </div>
 
       {/* Stat şeridi */}
@@ -198,28 +232,19 @@ export default function Takimim() {
           <span>Kalan Bütçe</span>
           <strong className={remaining < 0 ? 'neg' : ''}>{remaining.toFixed(1)}M</strong>
         </div>
-        <div className="tm-stat">
-          <span>Deadline</span>
-          <strong className="tm-deadline">{DEADLINE}</strong>
-        </div>
         <div className={`tm-stat${captainId ? '' : ' warn'}`}>
           <span>Kaptan</span>
           <strong>{captainId ? surname(captainPlayer.name) : '⚠ Seçilmedi'}</strong>
         </div>
+        <div className="tm-stat">
+          <span>Deadline</span>
+          <strong className="tm-deadline">{DEADLINE}</strong>
+        </div>
       </div>
 
       <div className="tm-layout">
-        {/* Sol: kontroller + saha */}
         <div className="tm-left">
           <div className="tm-controls">
-            <label className="tm-select">
-              <span>Diziliş</span>
-              <select value={formation} onChange={(e) => changeFormation(e.target.value)}>
-                {Object.keys(FORMATIONS).map((f) => (
-                  <option key={f} value={f}>{f}</option>
-                ))}
-              </select>
-            </label>
             <label className="tm-select">
               <span>Görünüm</span>
               <select value={view} onChange={(e) => setView(e.target.value)}>
@@ -228,15 +253,10 @@ export default function Takimim() {
                 ))}
               </select>
             </label>
-            <button type="button" className="tm-save" onClick={saveSquad} disabled={overBudget}>
-              Kadroyu Kaydet
-            </button>
-            {overBudget ? (
-              <span className="tm-budget-warn">Bütçen aşıldı — kadroyu kaydedemezsin.</span>
-            ) : (
-              saveMsg && <span className="tm-save-msg">{saveMsg}</span>
-            )}
+            <p className="tm-hint">Bir oyuncuya, sonra başka bir yuvaya tıklayarak yer değiştir.</p>
           </div>
+
+          {moveMsg && <div className="tm-move-warn">⚠ {moveMsg}</div>}
 
           <div className="tm-pitch">
             <div className="tm-lines">
@@ -253,16 +273,16 @@ export default function Takimim() {
               <div className="tm-corner br" />
             </div>
             <div className="tm-rows">
-              <div className="tm-row">{renderRow('field', 'FW')}</div>
-              <div className="tm-row">{renderRow('field', 'OS')}</div>
-              <div className="tm-row">{renderRow('field', 'DF')}</div>
-              <div className="tm-row">{renderRow('field', 'KL')}</div>
+              <div className="tm-row">{fieldByPos.FW.map(renderSlot)}</div>
+              <div className="tm-row">{fieldByPos.OS.map(renderSlot)}</div>
+              <div className="tm-row">{fieldByPos.DF.map(renderSlot)}</div>
+              <div className="tm-row">{fieldByPos.KL.map(renderSlot)}</div>
             </div>
           </div>
 
           <div className="tm-bench">
-            <span className="tm-bench-label">Yedek Kulübesi</span>
-            <div className="tm-bench-row">{benchSlots}</div>
+            <span className="tm-bench-label">Yedek Kulübesi · kaleci ilk sırada sabit</span>
+            <div className="tm-bench-row">{benchEntries.map(renderSlot)}</div>
           </div>
         </div>
 
@@ -272,7 +292,7 @@ export default function Takimim() {
             <h3>Mevki Dağılımı</h3>
             <div className="tm-pos-grid">
               {POS_ORDER.map((pos) => {
-                const sel = posCounts[pos]
+                const sel = roster[pos].filter((s) => s.player).length
                 const tot = SQUAD_TOTALS[pos]
                 return (
                   <div
@@ -304,11 +324,7 @@ export default function Takimim() {
             </div>
             <ul className="tm-scoring">
               {SCORING[scoringTab].map((row) => {
-                const cls = row.pts.startsWith('+')
-                  ? 'pos'
-                  : row.pts.startsWith('-')
-                    ? 'neg'
-                    : 'mult'
+                const cls = row.pts.startsWith('+') ? 'pos' : row.pts.startsWith('-') ? 'neg' : 'mult'
                 return (
                   <li key={row.label}>
                     <span>{row.label}</span>
@@ -321,18 +337,17 @@ export default function Takimim() {
         </aside>
       </div>
 
-      {picker && (
-        <PlayerPickerModal
-          allowedPos={picker.pos}
-          takenIds={takenIds}
-          currentId={pickerCurrent ? pickerCurrent.id : null}
-          isCaptain={pickerCurrent ? pickerCurrent.id === captainId : false}
-          onSelect={(p) => assignPlayer(p)}
-          onClear={() => assignPlayer(null)}
-          onMakeCaptain={makeCaptain}
-          onClose={closePicker}
-        />
-      )}
+      {/* Sticky aksiyon çubuğu */}
+      <div className="tm-actionbar">
+        <Link to="/transfer" className="tm-transfer-btn">⇄ Transfer Yap</Link>
+        <div className="tm-actionbar-right">
+          {overBudget && <span className="tm-budget-warn">Bütçen aşıldı — kaydedemezsin.</span>}
+          {saveMsg && !overBudget && <span className="tm-save-msg">{saveMsg}</span>}
+          <button type="button" className="tm-save" onClick={saveSquad} disabled={overBudget}>
+            Kadroyu Kaydet
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
