@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth.jsx'
 
 const features = [
@@ -31,9 +31,10 @@ const teams = [
 
 export default function Home() {
   const { user } = useAuth()
-  // "Hemen Başla" / "Ücretsiz Katıl": giriş yapmışsa kadroya, değilse kayıt ekranına
-  const startTo = user ? '/takimim' : '/kayit'
-  const joinTo = user ? '/takimim' : '/kayit'
+  const navigate = useNavigate()
+  // "Hemen Başla" / "Ücretsiz Katıl": TIKLAMA ANINDA auth durumunu kontrol et —
+  // giriş yapmışsa kadroya (/takimim), yapmamışsa kayıt ekranına (/kayit).
+  const goStart = () => navigate(user ? '/takimim' : '/kayit')
 
   return (
     <>
@@ -48,9 +49,9 @@ export default function Home() {
             puan topla ve arkadaşlarınla ligin zirvesi için yarış.
           </p>
           <div className="hero-actions">
-            <Link to={startTo} className="btn btn-primary">
+            <button type="button" onClick={goStart} className="btn btn-primary">
               Hemen Başla
-            </Link>
+            </button>
             <Link to="/kurallar" className="btn btn-ghost">
               Kurallar
             </Link>
@@ -123,9 +124,9 @@ export default function Home() {
       <section className="cta">
         <h2>Kadronu kurmaya hazır mısın?</h2>
         <p>Ücretsiz katıl, ilk haftadan itibaren puan toplamaya başla.</p>
-        <Link to={joinTo} className="btn btn-primary btn-lg">
+        <button type="button" onClick={goStart} className="btn btn-primary btn-lg">
           Ücretsiz Katıl
-        </Link>
+        </button>
       </section>
     </>
   )
