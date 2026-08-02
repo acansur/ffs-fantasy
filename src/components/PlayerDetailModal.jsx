@@ -35,6 +35,8 @@ export default function PlayerDetailModal({
   fixture,
   onMakeCaptain,
   onClearCaptain,
+  onMoveToBench,
+  onMoveToStarter,
   onClose,
 }) {
   const [open, setOpen] = useState(false)
@@ -126,16 +128,27 @@ export default function PlayerDetailModal({
           </table>
         )}
 
-        {/* Kaptan seçimi — yalnızca ilk 11 oyuncuları için */}
-        {isStarter && (
-          <button
-            className={`pdm-captain${isCaptain ? ' active' : ''}`}
-            disabled={locked}
-            onClick={isCaptain ? onClearCaptain : onMakeCaptain}
-          >
-            {isCaptain ? 'Kaptanlığı Kaldır' : 'Kaptan Yap'}
-          </button>
-        )}
+        {/* Aksiyonlar: kaptan (yalnızca ilk 11) + yer değiştirme */}
+        <div className="pdm-actions">
+          {isStarter && (
+            <button
+              className={`pdm-captain${isCaptain ? ' active' : ''}`}
+              disabled={locked}
+              onClick={isCaptain ? onClearCaptain : onMakeCaptain}
+            >
+              {isCaptain ? 'Kaptanlığı Kaldır' : 'Kaptan Yap'}
+            </button>
+          )}
+          {isStarter ? (
+            <button className="pdm-move" disabled={locked} onClick={onMoveToBench}>
+              Yedeğe Al
+            </button>
+          ) : (
+            <button className="pdm-move" disabled={locked} onClick={onMoveToStarter}>
+              İlk 11'e Al
+            </button>
+          )}
+        </div>
       </div>
     </div>
   )

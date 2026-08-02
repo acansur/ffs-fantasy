@@ -220,19 +220,29 @@
   border-top: 1px solid #2a2a2a;
 }
 
-/* Kaptan butonu */
-.pdm-captain {
+/* Aksiyon butonları */
+.pdm-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.8rem 1.2rem 1.4rem;
+}
+
+.pdm-captain,
+.pdm-move {
   display: block;
-  width: calc(100% - 2.4rem);
-  margin: 0.6rem 1.2rem 1.4rem;
+  width: 100%;
   padding: 0.85rem;
   border-radius: 10px;
   border: none;
-  background: #3b7ddd;
-  color: #fff;
   font-size: 0.98rem;
   font-weight: 800;
   cursor: pointer;
+}
+
+.pdm-captain {
+  background: #3b7ddd;
+  color: #fff;
 }
 
 .pdm-captain.active {
@@ -241,7 +251,14 @@
   color: #e8f02e;
 }
 
-.pdm-captain:disabled {
+/* Yer değiştirme butonu (Yedeğe Al / İlk 11'e Al) */
+.pdm-move {
+  background: #e8f02e;
+  color: #000;
+}
+
+.pdm-captain:disabled,
+.pdm-move:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }

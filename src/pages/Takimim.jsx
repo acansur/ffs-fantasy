@@ -92,11 +92,13 @@ export default function Takimim() {
     counts,
     dirty,
     saveArrangement,
+    swapSlots,
   } = useSquad()
 
   const [view, setView] = useState('next')
   const [scoringTab, setScoringTab] = useState('Genel')
   const [detail, setDetail] = useState(null) // { pos, index } — açık oyuncu detay modalı
+  const [swapMode, setSwapMode] = useState(null) // { source:{pos,index}, targetType:'bench'|'starter' }
   const [saveMsg, setSaveMsg] = useState('')
 
   const now = Date.now()
@@ -108,6 +110,7 @@ export default function Takimim() {
   const onSelectWeek = (r) => {
     setWeek(r)
     setDetail(null)
+    setSwapMode(null)
   }
 
   // Transfer ekranı hızlı açılsın diye oyuncu listesini arka planda önyükle
@@ -146,10 +149,34 @@ export default function Takimim() {
     return list.sort((a, b) => (a.slot.benchOrder ?? 99) - (b.slot.benchOrder ?? 99))
   }, [roster])
 
-  // Dolu yuvaya tıklayınca oyuncu detay modalı açılır (boş yuva no-op)
+  // Yuva tıklaması: yer değiştirme modundaysa hedef seç; değilse detay modalı aç
   const onSlotClick = (pos, index) => {
+    if (swapMode) {
+      if (locked) {
+        setSwapMode(null)
+        return
+      }
+      const targetSlot = roster[pos][index]
+      const validType = swapMode.targetType === 'bench' ? !targetSlot.starter : targetSlot.starter
+      if (!validType) {
+        // Yanlış tür yuvaya (ya da kaynağın kendisine) tıklama iptal eder
+        setSwapMode(null)
+        return
+      }
+      const err = swapSlots(swapMode.source, { pos, index })
+      setSwapMode(null)
+      setSaveMsg(err || 'Yer değiştirildi ✓')
+      return
+    }
     if (!roster[pos][index].player) return
     setDetail({ pos, index })
+  }
+
+  // Modaldan yer değiştirmeyi başlat: modal kapanır, hedef yuvalar vurgulanır
+  const startSwap = (targetType) => {
+    if (!detail || locked) return
+    setSwapMode({ source: detail, targetType })
+    setDetail(null)
   }
 
   const saveSquad = async () => {
@@ -160,6 +187,12 @@ export default function Takimim() {
 
   const renderSlot = (entry, opts = {}) => {
     const { pos, index, slot } = entry
+    const isSwapSource =
+      Boolean(swapMode) && swapMode.source.pos === pos && swapMode.source.index === index
+    const isTarget =
+      Boolean(swapMode) &&
+      !isSwapSource &&
+      (swapMode.targetType === 'bench' ? !slot.starter : slot.starter)
     return (
       <SquadSlot
         key={`${pos}-${index}`}
@@ -167,8 +200,11 @@ export default function Takimim() {
         view={view}
         isCaptain={slot.player ? slot.player.id === captainId : false}
         isSelected={Boolean(detail) && detail.pos === pos && detail.index === index}
-        isTarget={false}
-        onClick={() => onSlotClick(pos, index)}
+        isTarget={isTarget}
+        onClick={(e) => {
+          e.stopPropagation()
+          onSlotClick(pos, index)
+        }}
         captainPopup={null}
         posTag={opts.posTag}
       />
@@ -181,7 +217,7 @@ export default function Takimim() {
   const detailFixture = detailPlayer ? getTeamFixture(fixtures, detailPlayer.club, week) : null
 
   return (
-    <div className="tm-page">
+    <div className="tm-page" onClick={() => swapMode && setSwapMode(null)}>
       {/* Üst bar */}
       <div className="tm-topbar">
         <div className="tm-team">
@@ -250,6 +286,22 @@ export default function Takimim() {
         <div className="tm-left">
           {locked ? (
             <div className="tm-lock-note">🔒 Week {week} kilitli — deadline geçti, kadro değişikliği yapılamaz.</div>
+          ) : swapMode ? (
+            <div className="tm-swap-note">
+              {swapMode.targetType === 'bench'
+                ? 'Oyuncuyu göndereceğin yedek yuvasını seç.'
+                : "Oyuncuyu alacağın ilk 11 yuvasını seç."}
+              <button
+                type="button"
+                className="tm-swap-cancel"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setSwapMode(null)
+                }}
+              >
+                İptal
+              </button>
+            </div>
           ) : (
             <p className="tm-hint">Oyuncuya tıklayarak detaylarını gör ve kaptan seç.</p>
           )}
@@ -350,6 +402,8 @@ export default function Takimim() {
           fixture={detailFixture}
           onMakeCaptain={() => makeCaptain(detailPlayer.id)}
           onClearCaptain={() => clearCaptain()}
+          onMoveToBench={() => startSwap('bench')}
+          onMoveToStarter={() => startSwap('starter')}
           onClose={() => setDetail(null)}
         />
       )}
