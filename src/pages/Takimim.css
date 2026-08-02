@@ -412,6 +412,7 @@
 .tm-disc.jersey {
   background: var(--bg, #333);
   color: var(--fg, #fff);
+  overflow: hidden;
 }
 
 .tm-slot.empty .tm-disc {
@@ -449,12 +450,16 @@
 }
 
 .tm-tag-name {
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 700;
-  max-width: 90px;
-  white-space: nowrap;
+  max-width: 96px;
+  text-align: center;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.15;
 }
 
 .tm-tag-info {

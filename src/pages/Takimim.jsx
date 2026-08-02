@@ -5,6 +5,7 @@ import { useSquad } from '../lib/squadStore.jsx'
 import { loadSuperLigPlayers } from '../lib/apiFootball.js'
 import { getVisibleWeeks, isLocked, formatDeadline } from '../lib/weeks.js'
 import WeekBar from '../components/WeekBar.jsx'
+import PlayerPhoto from '../components/PlayerPhoto.jsx'
 import {
   POSITIONS,
   CLUBS,
@@ -14,7 +15,6 @@ import {
   SCORING,
   SCORING_TABS,
   formationLabel,
-  surname6,
   surname,
   slotInfo,
 } from '../lib/squadData.js'
@@ -62,10 +62,10 @@ function SquadSlot({ entry, view, isCaptain, isSelected, isTarget, onClick, capt
         {isCaptain && <span className="tm-cap">C</span>}
         {tag}
         <span className="tm-disc jersey">
-          <span className="tm-disc-name">{surname6(player.name)}</span>
+          <PlayerPhoto id={player.id} name={player.name} bg={bg} fg={fg} />
         </span>
         <span className="tm-tag">
-          <span className="tm-tag-name">{surname(player.name)}</span>
+          <span className="tm-tag-name">{player.name}</span>
           <span className="tm-tag-info">{slotInfo(player, view)}</span>
         </span>
       </button>

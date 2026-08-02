@@ -4,6 +4,7 @@ import { useSquad, cloneRoster, rosterPlayers } from '../lib/squadStore.jsx'
 import { loadSuperLigPlayers, toAppPlayers, clubColors, clubShort } from '../lib/apiFootball.js'
 import { getVisibleWeeks, formatDeadline } from '../lib/weeks.js'
 import WeekBar from '../components/WeekBar.jsx'
+import PlayerPhoto from '../components/PlayerPhoto.jsx'
 import { POSITIONS, TOTAL_BUDGET, MAX_PER_CLUB, sortByValue, initials } from '../lib/squadData.js'
 import './Transfer.css'
 
@@ -281,8 +282,10 @@ export default function Transfer() {
                       onClick={() => onSlotClick(pos, index)}
                     >
                       <span className="tr-postag" style={{ '--pos': meta.color }}>{pos}</span>
-                      <span className="tr-disc jersey">{initials(p.name)}</span>
-                      <span className="tr-slot-tag">{p.name.split(' ').slice(-1)[0]}</span>
+                      <span className="tr-disc jersey">
+                        <PlayerPhoto id={p.id} name={p.name} bg={p.clubBg} fg={p.clubFg} />
+                      </span>
+                      <span className="tr-slot-tag">{p.name}</span>
                       <span className="tr-slot-price">₺{p.price}M</span>
                     </button>
                     {sel && (
