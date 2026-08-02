@@ -66,6 +66,18 @@ export function isLocked(week, now) {
   return Boolean(week) && now >= week.deadline
 }
 
+// Bir takımın belirli haftadaki maçını bul (ev sahibi veya deplasman)
+export function getTeamFixture(fixtures, teamName, round) {
+  if (!fixtures || !teamName) return null
+  return (
+    fixtures.find(
+      (f) =>
+        roundNo(f.league?.round) === round &&
+        (f.teams?.home?.name === teamName || f.teams?.away?.name === teamName)
+    ) || null
+  )
+}
+
 // Deadline'ı Türkiye saatiyle biçimlendir (örn. "14 Ağu 21:00")
 export function formatDeadline(ms) {
   if (ms == null) return '—'

@@ -1,0 +1,247 @@
+.pdm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(3px);
+  font-family: 'Inter Variable', 'Inter', system-ui, sans-serif;
+}
+
+.pdm {
+  position: relative;
+  width: 100%;
+  max-width: 460px;
+  max-height: 92vh;
+  overflow-y: auto;
+  background: #000;
+  border: 1px solid #1e1e1e;
+  border-radius: 16px;
+  color: #fff;
+}
+
+.pdm-close {
+  position: absolute;
+  top: 0.9rem;
+  right: 0.9rem;
+  z-index: 5;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+/* Hero */
+.pdm-hero {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.6rem 1.4rem 1.4rem;
+  background: #3b7ddd;
+  border-radius: 16px 16px 0 0;
+  overflow: hidden;
+}
+
+.pdm-hero-info {
+  position: relative;
+  z-index: 2;
+  min-width: 0;
+}
+
+.pdm-name {
+  font-size: 1.9rem;
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  font-stretch: condensed;
+  text-transform: uppercase;
+}
+
+.pdm-club {
+  margin-top: 0.35rem;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.pdm-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.7rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.pdm-sep {
+  width: 1px;
+  height: 14px;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.pdm-photo {
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid rgba(255, 255, 255, 0.5);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.pdm-wave {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 65%;
+  height: 60px;
+  z-index: 1;
+}
+
+/* Maç bilgi barı */
+.pdm-matchbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 0.7rem 1rem;
+  background: #1e1e1e;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.pdm-matchbar strong {
+  color: #fff;
+  font-weight: 800;
+}
+
+.pdm-bar {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* Skor satırı */
+.pdm-score {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  padding: 1.2rem 1rem;
+  background: #000;
+}
+
+.pdm-team {
+  font-size: 1.1rem;
+  font-weight: 800;
+  min-width: 48px;
+  text-align: center;
+}
+
+.pdm-scorebox {
+  display: grid;
+  place-items: center;
+  min-width: 46px;
+  height: 46px;
+  padding: 0 0.4rem;
+  border: 2px solid #e8f02e;
+  border-radius: 8px;
+  font-size: 1.3rem;
+  font-weight: 800;
+}
+
+/* Puan toggle */
+.pdm-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 0 auto 1rem;
+  padding: 0.5rem 1.3rem;
+  border-radius: 999px;
+  border: none;
+  background: #3b7ddd;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pdm-arrow {
+  font-size: 0.7rem;
+}
+
+/* Puan kırılım tablosu */
+.pdm-breakdown {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 0.5rem;
+}
+
+.pdm-breakdown th,
+.pdm-breakdown td {
+  padding: 0.6rem 1.2rem;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.pdm-breakdown th:last-child,
+.pdm-breakdown td:last-child {
+  text-align: right;
+}
+
+.pdm-breakdown thead th {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.55);
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.pdm-breakdown tbody tr {
+  border-bottom: 1px solid #1a1a1a;
+  background: #000;
+}
+
+.pdm-breakdown .pdm-total td {
+  color: #e8f02e;
+  font-weight: 800;
+  border-top: 1px solid #2a2a2a;
+}
+
+/* Kaptan butonu */
+.pdm-captain {
+  display: block;
+  width: calc(100% - 2.4rem);
+  margin: 0.6rem 1.2rem 1.4rem;
+  padding: 0.85rem;
+  border-radius: 10px;
+  border: none;
+  background: #3b7ddd;
+  color: #fff;
+  font-size: 0.98rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.pdm-captain.active {
+  background: #1e1e1e;
+  border: 1px solid #3b7ddd;
+  color: #e8f02e;
+}
+
+.pdm-captain:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

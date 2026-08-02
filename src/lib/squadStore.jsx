@@ -118,8 +118,9 @@ export function SquadProvider({ children }) {
   weekRef.current = week
   const dirty = signature(roster, captainId) !== savedSig
 
-  // Fikstürden hesaplanan haftalar (bir kez çekilir, iki ekran paylaşır)
+  // Fikstürden hesaplanan haftalar + ham fikstür (bir kez çekilir, paylaşılır)
   const [weeks, setWeeks] = useState([])
+  const [fixtures, setFixtures] = useState([])
   const [weeksLoading, setWeeksLoading] = useState(true)
   const bootedRef = useRef(false)
   useEffect(() => {
@@ -129,6 +130,7 @@ export function SquadProvider({ children }) {
         if (!alive) return
         const w = res ? buildWeeks(res.fixtures) : []
         setWeeks(w)
+        setFixtures(res?.fixtures || [])
         setWeeksLoading(false)
         // Aktif haftayı bir kez otomatik seç
         if (w.length && !bootedRef.current) {
@@ -295,6 +297,7 @@ export function SquadProvider({ children }) {
     week,
     setWeek,
     weeks,
+    fixtures,
     weeksLoading,
     rosterList,
     spent,

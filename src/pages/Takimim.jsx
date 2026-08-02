@@ -3,9 +3,10 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../lib/auth.jsx'
 import { useSquad } from '../lib/squadStore.jsx'
 import { loadSuperLigPlayers } from '../lib/apiFootball.js'
-import { getVisibleWeeks, isLocked, formatDeadline } from '../lib/weeks.js'
+import { getVisibleWeeks, isLocked, formatDeadline, getTeamFixture } from '../lib/weeks.js'
 import WeekBar from '../components/WeekBar.jsx'
 import PlayerPhoto from '../components/PlayerPhoto.jsx'
+import PlayerDetailModal from '../components/PlayerDetailModal.jsx'
 import {
   POSITIONS,
   CLUBS,
@@ -78,13 +79,13 @@ export default function Takimim() {
   const { user } = useAuth()
   const {
     roster,
-    swapSlots,
     captainId,
     makeCaptain,
     clearCaptain,
     week,
     setWeek,
     weeks,
+    fixtures,
     weeksLoading,
     rosterList,
     remaining,
@@ -95,8 +96,7 @@ export default function Takimim() {
 
   const [view, setView] = useState('next')
   const [scoringTab, setScoringTab] = useState('Genel')
-  const [selected, setSelected] = useState(null)
-  const [moveMsg, setMoveMsg] = useState('')
+  const [detail, setDetail] = useState(null) // { pos, index } — açık oyuncu detay modalı
   const [saveMsg, setSaveMsg] = useState('')
 
   const now = Date.now()
@@ -107,7 +107,7 @@ export default function Takimim() {
 
   const onSelectWeek = (r) => {
     setWeek(r)
-    setSelected(null)
+    setDetail(null)
   }
 
   // Transfer ekranı hızlı açılsın diye oyuncu listesini arka planda önyükle
@@ -115,11 +115,6 @@ export default function Takimim() {
     loadSuperLigPlayers().catch(() => {})
   }, [])
 
-  useEffect(() => {
-    if (!moveMsg) return
-    const t = setTimeout(() => setMoveMsg(''), 2500)
-    return () => clearTimeout(t)
-  }, [moveMsg])
   useEffect(() => {
     if (!saveMsg) return
     const t = setTimeout(() => setSaveMsg(''), 2500)
@@ -151,26 +146,10 @@ export default function Takimim() {
     return list.sort((a, b) => (a.slot.benchOrder ?? 99) - (b.slot.benchOrder ?? 99))
   }, [roster])
 
-  const isSel = (pos, index) => selected && selected.pos === pos && selected.index === index
-
+  // Dolu yuvaya tıklayınca oyuncu detay modalı açılır (boş yuva no-op)
   const onSlotClick = (pos, index) => {
-    if (locked) {
-      setMoveMsg('Bu hafta kilitli — kadro değişikliği yapılamaz.')
-      return
-    }
-    const slot = roster[pos][index]
-    if (!selected) {
-      if (!slot.player) return
-      setSelected({ pos, index })
-      return
-    }
-    if (isSel(pos, index)) {
-      setSelected(null)
-      return
-    }
-    const err = swapSlots(selected, { pos, index })
-    setMoveMsg(err || '')
-    setSelected(null)
+    if (!roster[pos][index].player) return
+    setDetail({ pos, index })
   }
 
   const saveSquad = async () => {
@@ -181,36 +160,25 @@ export default function Takimim() {
 
   const renderSlot = (entry, opts = {}) => {
     const { pos, index, slot } = entry
-    const selectedHere = isSel(pos, index)
-    const captainPopup =
-      selectedHere && slot.player ? (
-        <div className="tm-cap-popup" onClick={(e) => e.stopPropagation()}>
-          {slot.player.id === captainId ? (
-            <button type="button" onClick={() => { clearCaptain(); setSelected(null) }}>
-              Kaptanlığı kaldır
-            </button>
-          ) : (
-            <button type="button" onClick={() => { makeCaptain(slot.player.id); setSelected(null) }}>
-              Kaptan yap
-            </button>
-          )}
-        </div>
-      ) : null
-
     return (
       <SquadSlot
         key={`${pos}-${index}`}
         entry={entry}
         view={view}
         isCaptain={slot.player ? slot.player.id === captainId : false}
-        isSelected={selectedHere}
-        isTarget={Boolean(selected) && !selectedHere}
+        isSelected={Boolean(detail) && detail.pos === pos && detail.index === index}
+        isTarget={false}
         onClick={() => onSlotClick(pos, index)}
-        captainPopup={captainPopup}
+        captainPopup={null}
         posTag={opts.posTag}
       />
     )
   }
+
+  // Açık modal için oyuncu bilgileri
+  const detailSlot = detail ? roster[detail.pos][detail.index] : null
+  const detailPlayer = detailSlot?.player || null
+  const detailFixture = detailPlayer ? getTeamFixture(fixtures, detailPlayer.club, week) : null
 
   return (
     <div className="tm-page">
@@ -283,9 +251,8 @@ export default function Takimim() {
           {locked ? (
             <div className="tm-lock-note">🔒 Week {week} kilitli — deadline geçti, kadro değişikliği yapılamaz.</div>
           ) : (
-            <p className="tm-hint">Bir oyuncuya, sonra başka bir yuvaya tıklayarak yer değiştir.</p>
+            <p className="tm-hint">Oyuncuya tıklayarak detaylarını gör ve kaptan seç.</p>
           )}
-          {moveMsg && <div className="tm-move-warn">⚠ {moveMsg}</div>}
 
           <div className="tm-pitch">
             <div className="tm-lines">
@@ -371,6 +338,21 @@ export default function Takimim() {
           )}
         </div>
       </div>
+
+      {/* Oyuncu detay modalı — yalnızca kadro görünümünde (Takımım) */}
+      {detailPlayer && (
+        <PlayerDetailModal
+          player={detailPlayer}
+          isStarter={detailSlot.starter}
+          isCaptain={detailPlayer.id === captainId}
+          locked={locked}
+          week={week}
+          fixture={detailFixture}
+          onMakeCaptain={() => makeCaptain(detailPlayer.id)}
+          onClearCaptain={() => clearCaptain()}
+          onClose={() => setDetail(null)}
+        />
+      )}
     </div>
   )
 }
