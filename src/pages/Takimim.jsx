@@ -1,14 +1,21 @@
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../lib/auth.jsx'
 import { useSquad } from '../lib/squadStore.jsx'
+import { fetchSuperLigFixtures } from '../lib/apiFootball.js'
+import {
+  buildWeeks,
+  getActiveRound,
+  getVisibleWeeks,
+  isLocked,
+  formatDeadline,
+} from '../lib/weeks.js'
+import WeekBar from '../components/WeekBar.jsx'
 import {
   POSITIONS,
   CLUBS,
   SQUAD_TOTALS,
   TOTAL_BUDGET,
-  DEADLINE,
-  WEEK_COUNT,
   VIEWS,
   SCORING,
   SCORING_TABS,
@@ -94,6 +101,39 @@ export default function Takimim() {
   const [moveMsg, setMoveMsg] = useState('')
   const [saveMsg, setSaveMsg] = useState('')
 
+  // Fikstürden hesaplanan haftalar
+  const [fx, setFx] = useState({ loading: true, weeks: [], error: null })
+  const bootedRef = useRef(false)
+  useEffect(() => {
+    let alive = true
+    fetchSuperLigFixtures()
+      .then((res) => {
+        if (!alive) return
+        const weeks = res ? buildWeeks(res.fixtures) : []
+        setFx({ loading: false, weeks, error: res ? null : 'Fikstür alınamadı' })
+        // Sayfa açılınca aktif haftayı bir kez otomatik seç
+        if (weeks.length && !bootedRef.current) {
+          bootedRef.current = true
+          setWeek(getActiveRound(weeks))
+        }
+      })
+      .catch((e) => alive && setFx({ loading: false, weeks: [], error: e.message || String(e) }))
+    return () => {
+      alive = false
+    }
+  }, [setWeek])
+
+  const now = Date.now()
+  const visibleWeeks = getVisibleWeeks(fx.weeks, now)
+  const selectedWeek = fx.weeks.find((w) => w.round === week) || null
+  const locked = isLocked(selectedWeek, now)
+  const deadlineText = selectedWeek ? formatDeadline(selectedWeek.deadline) : '—'
+
+  const onSelectWeek = (r) => {
+    setWeek(r)
+    setSelected(null)
+  }
+
   useEffect(() => {
     if (!moveMsg) return
     const t = setTimeout(() => setMoveMsg(''), 2500)
@@ -133,6 +173,10 @@ export default function Takimim() {
   const isSel = (pos, index) => selected && selected.pos === pos && selected.index === index
 
   const onSlotClick = (pos, index) => {
+    if (locked) {
+      setMoveMsg('Bu hafta kilitli — kadro değişikliği yapılamaz.')
+      return
+    }
     const slot = roster[pos][index]
     if (!selected) {
       if (!slot.player) return
@@ -200,15 +244,20 @@ export default function Takimim() {
           </div>
         </div>
         <div className="tm-topbar-right">
-          <div className="tm-week-picker">
-            <button type="button" aria-label="Önceki hafta" disabled={week <= 1} onClick={() => setWeek(Math.max(1, week - 1))}>‹</button>
-            <span>Week {week}</span>
-            <button type="button" aria-label="Sonraki hafta" disabled={week >= WEEK_COUNT} onClick={() => setWeek(Math.min(WEEK_COUNT, week + 1))}>›</button>
-          </div>
           <div className="tm-formation-badge" title="Dizilişin otomatik güncellenir">{formation}</div>
-          <div className="tm-deadline-chip">Deadline: {DEADLINE}</div>
+          <div className="tm-deadline-chip">Deadline: {deadlineText}</div>
         </div>
       </div>
+
+      {/* Hafta bar'ı — kadronun üstünde */}
+      <WeekBar
+        weeks={fx.weeks}
+        visible={visibleWeeks}
+        selected={week}
+        onSelect={onSelectWeek}
+        now={now}
+        loading={fx.loading}
+      />
 
       {/* Stat şeridi */}
       <div className="tm-stripe">
@@ -226,13 +275,19 @@ export default function Takimim() {
         </div>
         <div className="tm-stat">
           <span>Deadline</span>
-          <strong className="tm-deadline">{DEADLINE}</strong>
+          <strong className="tm-deadline">{deadlineText}</strong>
         </div>
       </div>
 
       {/* Üst aksiyon: Transfer Yap (yukarıda) + görünüm */}
       <div className="tm-toprow">
-        <Link to="/transfer" className="tm-transfer-btn">⇄ Transfer Yap</Link>
+        {locked ? (
+          <button type="button" className="tm-transfer-btn locked" disabled title="Bu hafta kilitli">
+            🔒 Transfer Kilitli
+          </button>
+        ) : (
+          <Link to="/transfer" className="tm-transfer-btn">⇄ Transfer Yap</Link>
+        )}
         <label className="tm-select">
           <span>Görünüm</span>
           <select value={view} onChange={(e) => setView(e.target.value)}>
@@ -245,7 +300,11 @@ export default function Takimim() {
 
       <div className="tm-layout">
         <div className="tm-left">
-          <p className="tm-hint">Bir oyuncuya, sonra başka bir yuvaya tıklayarak yer değiştir.</p>
+          {locked ? (
+            <div className="tm-lock-note">🔒 Week {week} kilitli — deadline geçti, kadro değişikliği yapılamaz.</div>
+          ) : (
+            <p className="tm-hint">Bir oyuncuya, sonra başka bir yuvaya tıklayarak yer değiştir.</p>
+          )}
           {moveMsg && <div className="tm-move-warn">⚠ {moveMsg}</div>}
 
           <div className="tm-pitch">

@@ -824,6 +824,118 @@
   background: rgba(59, 130, 246, 0.26);
 }
 
+.tm-transfer-btn.locked {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--card-line);
+  color: var(--ink-mut);
+  cursor: not-allowed;
+}
+
+/* ---- Hafta bar'ı ---- */
+.wk-bar {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 0.6rem;
+  margin: 1rem 0 0.2rem;
+}
+
+.wk-loading {
+  padding: 0.9rem;
+  color: var(--ink-mut);
+  font-size: 0.9rem;
+}
+
+.wk-arrow {
+  flex-shrink: 0;
+  width: 42px;
+  border-radius: 12px;
+  border: 1px solid var(--card-line);
+  background: var(--card);
+  color: var(--ink);
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.wk-arrow:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.wk-cells {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.wk-cell {
+  min-width: 132px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.7rem 1rem;
+  border-radius: 12px;
+  background: var(--card);
+  border: 1px solid var(--card-line);
+  color: var(--ink);
+  cursor: pointer;
+  font-family: inherit;
+  transition: transform 0.12s;
+}
+
+.wk-cell .wk-name {
+  font-weight: 800;
+  font-size: 1rem;
+}
+
+.wk-cell .wk-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--ink-mut);
+}
+
+.wk-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--pos-os);
+}
+
+.wk-cell.st-open .wk-status {
+  color: var(--pos-os);
+}
+
+.wk-cell.st-finished .wk-status {
+  color: var(--gold);
+}
+
+.wk-cell.sel {
+  border-color: var(--gold);
+  background: linear-gradient(135deg, rgba(240, 165, 0, 0.18), rgba(26, 95, 63, 0.28));
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  transform: scale(1.04);
+}
+
+.wk-cell.sel .wk-name {
+  color: var(--gold);
+}
+
+/* Kilit notu */
+.tm-lock-note {
+  margin-bottom: 0.8rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: 10px;
+  background: rgba(240, 165, 0, 0.12);
+  border: 1px solid rgba(240, 165, 0, 0.4);
+  color: var(--gold);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
 /* ---- Responsive ---- */
 @media (max-width: 900px) {
   .tm-layout {
