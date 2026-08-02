@@ -30,12 +30,44 @@ const POSITION_MAP = {
 // Mevkiye göre varsayılan oyuncu değeri (milyon)
 export const POSITION_VALUE = { KL: 6, DF: 5, OS: 6, FW: 7 }
 
-// Takım adından deterministik forma rengi ve kısa kod (API renk vermiyor)
-export function clubColor(name) {
+// Gerçek kulüp renkleri (forma: bg = birincil, fg = ikincil/yazı rengi).
+// API takım adları anahtar; kısa/uzun ad varyantları için alias eklendi.
+const CLUB_COLORS = {
+  Galatasaray: { bg: '#E30A17', fg: '#FFB300' },
+  Fenerbahçe: { bg: '#002F6C', fg: '#FFD700' },
+  Beşiktaş: { bg: '#1A1A1A', fg: '#F5F5F5' },
+  Trabzonspor: { bg: '#7B1C2B', fg: '#1B4F8A' },
+  Başakşehir: { bg: '#00337A', fg: '#F47920' },
+  Konyaspor: { bg: '#006B35', fg: '#F0F0F0' },
+  Alanyaspor: { bg: '#FF5500', fg: '#2D6A2D' },
+  Samsunspor: { bg: '#C80000', fg: '#FAFAFA' },
+  Eyüpspor: { bg: '#B80000', fg: '#FFC200' },
+  Kasımpaşa: { bg: '#002855', fg: '#EBEBEB' },
+  'Gençlerbirliği S.K.': { bg: '#D40000', fg: '#111111' },
+  Gençlerbirliği: { bg: '#D40000', fg: '#111111' },
+  'Gaziantep FK': { bg: '#1C1C1C', fg: '#CC0000' },
+  Göztepe: { bg: '#F5C400', fg: '#D10000' },
+  Rizespor: { bg: '#00743A', fg: '#002D6E' },
+  'Çaykur Rizespor': { bg: '#00743A', fg: '#002D6E' },
+  Kocaelispor: { bg: '#005C1E', fg: '#0A0A0A' },
+  'Çorum FK': { bg: '#BF0000', fg: '#121212' },
+  Amed: { bg: '#006630', fg: '#F8F8F8' },
+  'Amed Sportif': { bg: '#006630', fg: '#F8F8F8' },
+  'Erzurumspor FK': { bg: '#003A99', fg: '#F2F2F2' },
+}
+
+// Bilinmeyen takım için deterministik yedek renk
+function fallbackColor(name) {
   let h = 0
   for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0
   return `hsl(${h % 360} 50% 32%)`
 }
+
+// Takım adından forma renkleri: gerçek kulüp rengi varsa onu, yoksa yedek
+export function clubColors(name) {
+  return CLUB_COLORS[name] || { bg: fallbackColor(name), fg: '#ffffff' }
+}
+
 export function clubShort(name) {
   return name.trim().slice(0, 3).toLocaleUpperCase('tr')
 }
@@ -50,14 +82,15 @@ export function toAppPlayers(apiPlayers) {
     if (!['KL', 'DF', 'OS', 'FW'].includes(pos)) continue
     if (seen.has(p.id)) continue
     seen.add(p.id)
+    const colors = clubColors(p.team)
     out.push({
       id: p.id,
       name: p.name,
       pos,
       club: p.team, // takım adı = kulüp kimliği (filtre + aynı-kulüp kuralı)
       clubShort: clubShort(p.team),
-      clubBg: clubColor(p.team),
-      clubFg: '#ffffff',
+      clubBg: colors.bg,
+      clubFg: colors.fg,
       price: POSITION_VALUE[pos] ?? 5,
     })
   }

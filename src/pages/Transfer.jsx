@@ -1,7 +1,7 @@
 import { useMemo, useState, useRef, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useSquad, cloneRoster, rosterPlayers } from '../lib/squadStore.jsx'
-import { fetchSuperLigPlayers, toAppPlayers, clubColor, clubShort } from '../lib/apiFootball.js'
+import { fetchSuperLigPlayers, toAppPlayers, clubColors, clubShort } from '../lib/apiFootball.js'
 import { POSITIONS, TOTAL_BUDGET, DEADLINE, MAX_PER_CLUB, sortByValue, initials } from '../lib/squadData.js'
 import './Transfer.css'
 
@@ -65,7 +65,7 @@ export default function Transfer() {
 
   // Kulüp filtresi için takım listesi (renk + kısa kod)
   const teamsInfo = useMemo(
-    () => api.teams.map((t) => ({ name: t.name, short: clubShort(t.name), bg: clubColor(t.name) })),
+    () => api.teams.map((t) => ({ name: t.name, short: clubShort(t.name), bg: clubColors(t.name).bg })),
     [api.teams]
   )
 
