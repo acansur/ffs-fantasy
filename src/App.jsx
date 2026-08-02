@@ -1,4 +1,6 @@
+import { useEffect } from 'react'
 import { Routes, Route } from 'react-router-dom'
+import { fetchSuperLigFixtures } from './lib/apiFootball.js'
 import Navbar from './components/Navbar.jsx'
 import Footer from './components/Footer.jsx'
 import Home from './pages/Home.jsx'
@@ -13,6 +15,13 @@ import NotFound from './pages/NotFound.jsx'
 import './App.css'
 
 export default function App() {
+  // Fikstürü çekip konsola logla (inceleme amaçlı — sadece geliştirmede).
+  // Manuel tetiklemek için konsoldan: window.ffsFetchFixtures()
+  useEffect(() => {
+    if (typeof window !== 'undefined') window.ffsFetchFixtures = fetchSuperLigFixtures
+    if (import.meta.env.DEV) fetchSuperLigFixtures()
+  }, [])
+
   return (
     <div className="app">
       <Navbar />
