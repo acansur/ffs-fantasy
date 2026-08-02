@@ -831,29 +831,33 @@
   cursor: not-allowed;
 }
 
-/* ---- Hafta bar'ı ---- */
+/* ---- Hafta bar'ı (ince, uzun, tam genişlik) ---- */
 .wk-bar {
   display: flex;
   align-items: stretch;
-  justify-content: center;
-  gap: 0.6rem;
-  margin: 1rem 0 0.2rem;
+  gap: 0.5rem;
+  width: 100%;
+  margin: 0.9rem 0 0;
 }
 
 .wk-loading {
-  padding: 0.9rem;
+  flex: 1;
+  padding: 0.7rem 0.9rem;
+  border-radius: 10px;
+  background: var(--card);
+  border: 1px solid var(--card-line);
   color: var(--ink-mut);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
 .wk-arrow {
   flex-shrink: 0;
-  width: 42px;
-  border-radius: 12px;
+  width: 40px;
+  border-radius: 10px;
   border: 1px solid var(--card-line);
   background: var(--card);
   color: var(--ink);
-  font-size: 1.4rem;
+  font-size: 1.3rem;
   line-height: 1;
   cursor: pointer;
 }
@@ -864,38 +868,43 @@
 }
 
 .wk-cells {
+  flex: 1;
   display: flex;
-  gap: 0.6rem;
+  gap: 0.5rem;
 }
 
 .wk-cell {
-  min-width: 132px;
+  flex: 1;
+  min-width: 0;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.7rem 1rem;
-  border-radius: 12px;
+  justify-content: center;
+  gap: 0.55rem;
+  padding: 0.5rem 0.8rem;
+  border-radius: 10px;
   background: var(--card);
   border: 1px solid var(--card-line);
   color: var(--ink);
   cursor: pointer;
   font-family: inherit;
-  transition: transform 0.12s;
+  transition: transform 0.12s, background 0.15s;
 }
 
 .wk-cell .wk-name {
   font-weight: 800;
-  font-size: 1rem;
+  font-size: 0.9rem;
+  white-space: nowrap;
 }
 
 .wk-cell .wk-status {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  font-size: 0.78rem;
+  gap: 0.3rem;
+  font-size: 0.75rem;
   font-weight: 700;
   color: var(--ink-mut);
+  white-space: nowrap;
 }
 
 .wk-dot {
@@ -915,9 +924,8 @@
 
 .wk-cell.sel {
   border-color: var(--gold);
-  background: linear-gradient(135deg, rgba(240, 165, 0, 0.18), rgba(26, 95, 63, 0.28));
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
-  transform: scale(1.04);
+  background: linear-gradient(135deg, rgba(240, 165, 0, 0.2), rgba(26, 95, 63, 0.3));
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
 .wk-cell.sel .wk-name {

@@ -2,7 +2,9 @@ import { useMemo, useState, useRef, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useSquad, cloneRoster, rosterPlayers } from '../lib/squadStore.jsx'
 import { fetchSuperLigPlayers, toAppPlayers, clubColors, clubShort } from '../lib/apiFootball.js'
-import { POSITIONS, TOTAL_BUDGET, DEADLINE, MAX_PER_CLUB, sortByValue, initials } from '../lib/squadData.js'
+import { getVisibleWeeks, formatDeadline } from '../lib/weeks.js'
+import WeekBar from '../components/WeekBar.jsx'
+import { POSITIONS, TOTAL_BUDGET, MAX_PER_CLUB, sortByValue, initials } from '../lib/squadData.js'
 import './Transfer.css'
 
 const POS_ORDER = ['KL', 'DF', 'OS', 'FW']
@@ -10,7 +12,12 @@ const POS_TABS = [{ key: null, label: 'Tümü' }, ...POS_ORDER.map((p) => ({ key
 
 export default function Transfer() {
   const navigate = useNavigate()
-  const { roster: committed, commitRoster } = useSquad()
+  const { roster: committed, commitRoster, week, setWeek, weeks, weeksLoading } = useSquad()
+
+  const now = Date.now()
+  const visibleWeeks = getVisibleWeeks(weeks, now)
+  const selectedWeek = weeks.find((w) => w.round === week) || null
+  const deadlineText = selectedWeek ? formatDeadline(selectedWeek.deadline) : '—'
 
   // Taslak: kaydedilene kadar kadroya yansımaz
   const [draft, setDraft] = useState(() => cloneRoster(committed))
@@ -202,7 +209,7 @@ export default function Transfer() {
         <div className="tr-topbar-mid">
           <span className="tr-free">Free transfer: <strong>Sınırsız</strong></span>
         </div>
-        <div className="tr-deadline">Deadline: {DEADLINE}</div>
+        <div className="tr-deadline">Deadline: {deadlineText}</div>
       </div>
 
       {/* Stat şeridi */}
@@ -228,6 +235,17 @@ export default function Transfer() {
           </strong>
         </div>
       </div>
+
+      {/* Hafta bar'ı — stat kutucuklarının hemen altında */}
+      <WeekBar
+        weeks={weeks}
+        visible={visibleWeeks}
+        selected={week}
+        onSelect={setWeek}
+        now={now}
+        loading={weeksLoading}
+      />
+      <div className="tr-week-note">Hafta {week} için transfer yapıyorsunuz</div>
 
       {msg && <div className={`tr-msg${msg.startsWith('⚠') ? ' warn' : ' ok'}`}>{msg}</div>}
 

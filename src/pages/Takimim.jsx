@@ -1,15 +1,8 @@
-import { useMemo, useState, useEffect, useRef } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../lib/auth.jsx'
 import { useSquad } from '../lib/squadStore.jsx'
-import { fetchSuperLigFixtures } from '../lib/apiFootball.js'
-import {
-  buildWeeks,
-  getActiveRound,
-  getVisibleWeeks,
-  isLocked,
-  formatDeadline,
-} from '../lib/weeks.js'
+import { getVisibleWeeks, isLocked, formatDeadline } from '../lib/weeks.js'
 import WeekBar from '../components/WeekBar.jsx'
 import {
   POSITIONS,
@@ -90,6 +83,8 @@ export default function Takimim() {
     clearCaptain,
     week,
     setWeek,
+    weeks,
+    weeksLoading,
     rosterList,
     remaining,
     counts,
@@ -101,31 +96,9 @@ export default function Takimim() {
   const [moveMsg, setMoveMsg] = useState('')
   const [saveMsg, setSaveMsg] = useState('')
 
-  // Fikstürden hesaplanan haftalar
-  const [fx, setFx] = useState({ loading: true, weeks: [], error: null })
-  const bootedRef = useRef(false)
-  useEffect(() => {
-    let alive = true
-    fetchSuperLigFixtures()
-      .then((res) => {
-        if (!alive) return
-        const weeks = res ? buildWeeks(res.fixtures) : []
-        setFx({ loading: false, weeks, error: res ? null : 'Fikstür alınamadı' })
-        // Sayfa açılınca aktif haftayı bir kez otomatik seç
-        if (weeks.length && !bootedRef.current) {
-          bootedRef.current = true
-          setWeek(getActiveRound(weeks))
-        }
-      })
-      .catch((e) => alive && setFx({ loading: false, weeks: [], error: e.message || String(e) }))
-    return () => {
-      alive = false
-    }
-  }, [setWeek])
-
   const now = Date.now()
-  const visibleWeeks = getVisibleWeeks(fx.weeks, now)
-  const selectedWeek = fx.weeks.find((w) => w.round === week) || null
+  const visibleWeeks = getVisibleWeeks(weeks, now)
+  const selectedWeek = weeks.find((w) => w.round === week) || null
   const locked = isLocked(selectedWeek, now)
   const deadlineText = selectedWeek ? formatDeadline(selectedWeek.deadline) : '—'
 
@@ -249,16 +222,6 @@ export default function Takimim() {
         </div>
       </div>
 
-      {/* Hafta bar'ı — kadronun üstünde */}
-      <WeekBar
-        weeks={fx.weeks}
-        visible={visibleWeeks}
-        selected={week}
-        onSelect={onSelectWeek}
-        now={now}
-        loading={fx.loading}
-      />
-
       {/* Stat şeridi */}
       <div className="tm-stripe">
         <div className="tm-stat">
@@ -278,6 +241,16 @@ export default function Takimim() {
           <strong className="tm-deadline">{deadlineText}</strong>
         </div>
       </div>
+
+      {/* Hafta bar'ı — stat kutucuklarının hemen altında */}
+      <WeekBar
+        weeks={weeks}
+        visible={visibleWeeks}
+        selected={week}
+        onSelect={onSelectWeek}
+        now={now}
+        loading={weeksLoading}
+      />
 
       {/* Üst aksiyon: Transfer Yap (yukarıda) + görünüm */}
       <div className="tm-toprow">

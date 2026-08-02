@@ -1,5 +1,7 @@
-import { createContext, useContext, useState, useMemo, useCallback } from 'react'
+import { createContext, useContext, useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { SQUAD_TOTALS, START_LIMITS, TOTAL_BUDGET } from './squadData.js'
+import { fetchSuperLigFixtures } from './apiFootball.js'
+import { buildWeeks, getActiveRound } from './weeks.js'
 
 const POS_ORDER = ['KL', 'DF', 'OS', 'FW']
 
@@ -52,6 +54,30 @@ export function SquadProvider({ children }) {
   const [roster, setRoster] = useState(buildEmptyRoster) // kaydedilmiş (committed) kadro
   const [captainId, setCaptainId] = useState(null)
   const [week, setWeek] = useState(1)
+
+  // Fikstürden hesaplanan haftalar (bir kez çekilir, iki ekran paylaşır)
+  const [weeks, setWeeks] = useState([])
+  const [weeksLoading, setWeeksLoading] = useState(true)
+  const bootedRef = useRef(false)
+  useEffect(() => {
+    let alive = true
+    fetchSuperLigFixtures()
+      .then((res) => {
+        if (!alive) return
+        const w = res ? buildWeeks(res.fixtures) : []
+        setWeeks(w)
+        setWeeksLoading(false)
+        // Aktif haftayı bir kez otomatik seç
+        if (w.length && !bootedRef.current) {
+          bootedRef.current = true
+          setWeek(getActiveRound(w))
+        }
+      })
+      .catch(() => alive && setWeeksLoading(false))
+    return () => {
+      alive = false
+    }
+  }, [])
 
   // Transfer ekranı kaydedince tüm kadroyu buraya işler
   const commitRoster = useCallback((newRoster) => {
@@ -139,6 +165,8 @@ export function SquadProvider({ children }) {
     clearCaptain,
     week,
     setWeek,
+    weeks,
+    weeksLoading,
     rosterList,
     spent,
     remaining,
