@@ -210,6 +210,7 @@
   background: var(--bg, #333);
   color: var(--fg, #fff);
   overflow: hidden;
+  border-color: var(--bg, #333); /* çerçeve takım rengi (clubBg) */
 }
 
 .tr-slot.empty .tr-disc {
