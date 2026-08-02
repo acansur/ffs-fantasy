@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import PlayerPhoto from './PlayerPhoto.jsx'
-import { clubShort } from '../lib/apiFootball.js'
+import { clubShort, fetchPlayerFullName } from '../lib/apiFootball.js'
 import { POSITIONS } from '../lib/squadData.js'
 import './PlayerDetailModal.css'
 
@@ -41,6 +41,20 @@ export default function PlayerDetailModal({
 }) {
   const [open, setOpen] = useState(false)
 
+  // Hero'da tam ad göster: players/squads kısaltılmış ad döndüğü için
+  // (örn. "D. Alemdar") tam adı players/profiles'tan çekip günceleriz.
+  const [full, setFull] = useState(null) // { id, name }
+  useEffect(() => {
+    let alive = true
+    fetchPlayerFullName(player.id).then((n) => {
+      if (alive && n) setFull({ id: player.id, name: n })
+    })
+    return () => {
+      alive = false
+    }
+  }, [player.id])
+  const displayName = full && full.id === player.id ? full.name : player.name
+
   const posLabel = POSITIONS[player.pos]?.label || player.pos
   const status = fixture?.fixture?.status?.short
   const started = Boolean(status) && !NOT_STARTED.has(status)
@@ -60,7 +74,7 @@ export default function PlayerDetailModal({
         {/* Hero */}
         <div className="pdm-hero">
           <div className="pdm-hero-info">
-            <div className="pdm-name">{player.name}</div>
+            <div className="pdm-name">{displayName}</div>
             <div className="pdm-club">{player.club}</div>
             <div className="pdm-meta">
               <span>{posLabel}</span>

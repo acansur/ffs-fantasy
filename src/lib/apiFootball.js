@@ -97,6 +97,26 @@ export function toAppPlayers(apiPlayers) {
   return out
 }
 
+// Oyuncunun tam adı (ad + soyad). players/squads endpoint'i kısaltılmış ad
+// döner ("D. Alemdar"); tam ad players/profiles'tan firstname+lastname ile alınır.
+// Sonuç oyuncu id'sine göre önbelleğe alınır (aynı oyuncu için tek istek).
+const _fullNameCache = new Map()
+export async function fetchPlayerFullName(id) {
+  if (id == null) return null
+  if (_fullNameCache.has(id)) return _fullNameCache.get(id)
+  try {
+    const r = await fetch(`/api/football?path=players/profiles&player=${id}`)
+    const d = await r.json()
+    const p = d?.response?.[0]?.player
+    const full = p ? [p.firstname, p.lastname].filter(Boolean).join(' ').trim() : ''
+    const result = full || null
+    _fullNameCache.set(id, result)
+    return result
+  } catch {
+    return null
+  }
+}
+
 // Oyuncu listesi için modül düzeyinde önbellek (promise). Böylece Takımım
 // sayfasında arka planda başlatılıp Transfer'de anında kullanılabilir.
 let _playersPromise = null
