@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { fetchSuperLigFixtures } from './lib/apiFootball.js'
+import { useAuth } from './lib/auth.jsx'
 import Navbar from './components/Navbar.jsx'
 import Footer from './components/Footer.jsx'
 import Home from './pages/Home.jsx'
@@ -16,6 +17,8 @@ import NotFound from './pages/NotFound.jsx'
 import './App.css'
 
 export default function App() {
+  const { user } = useAuth()
+
   // Fikstürü çekip konsola logla (inceleme amaçlı — sadece geliştirmede).
   // Manuel tetiklemek için konsoldan: window.ffsFetchFixtures()
   useEffect(() => {
@@ -28,7 +31,8 @@ export default function App() {
       <Navbar />
       <main className="app-main">
         <Routes>
-          <Route path="/" element={<Home />} />
+          {/* Giriş yapmış kullanıcı ana sayfaya her gelişinde Takımım'a yönlenir */}
+          <Route path="/" element={user ? <Navigate to="/takimim" replace /> : <Home />} />
           <Route path="/lig" element={<Lig />} />
           <Route path="/takimim" element={<Takimim />} />
           <Route path="/transfer" element={<Transfer />} />
