@@ -228,7 +228,7 @@ export function slotInfo(player, view) {
     case 'value':
       return `${player.price.toFixed(1)}M`
     case 'weekly':
-      return `${player.weekly} P`
+      return player.weekly != null ? `${player.weekly} P` : '—'
     case 'date':
       return fx ? fx.date : '—'
     case 'next':

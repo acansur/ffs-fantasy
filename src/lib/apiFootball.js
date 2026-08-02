@@ -27,6 +27,43 @@ const POSITION_MAP = {
   Attacker: 'FW',
 }
 
+// Mevkiye göre varsayılan oyuncu değeri (milyon)
+export const POSITION_VALUE = { KL: 6, DF: 5, OS: 6, FW: 7 }
+
+// Takım adından deterministik forma rengi ve kısa kod (API renk vermiyor)
+export function clubColor(name) {
+  let h = 0
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0
+  return `hsl(${h % 360} 50% 32%)`
+}
+export function clubShort(name) {
+  return name.trim().slice(0, 3).toLocaleUpperCase('tr')
+}
+
+// API oyuncularını uygulama (transfer/kadro) formatına çevirir:
+// pos KL/DF/OS/FW, mevkiye göre değer, kulüp = takım adı + forma stili.
+export function toAppPlayers(apiPlayers) {
+  const seen = new Set()
+  const out = []
+  for (const p of apiPlayers) {
+    const pos = p.position === 'GK' ? 'KL' : p.position
+    if (!['KL', 'DF', 'OS', 'FW'].includes(pos)) continue
+    if (seen.has(p.id)) continue
+    seen.add(p.id)
+    out.push({
+      id: p.id,
+      name: p.name,
+      pos,
+      club: p.team, // takım adı = kulüp kimliği (filtre + aynı-kulüp kuralı)
+      clubShort: clubShort(p.team),
+      clubBg: clubColor(p.team),
+      clubFg: '#ffffff',
+      price: POSITION_VALUE[pos] ?? 5,
+    })
+  }
+  return out
+}
+
 // Süper Lig 2026-27 tüm oyuncuları (kadrolar) proxy üzerinden çeker.
 // Önce takımları, sonra her takımın kadrosunu çeker.
 // Dönüş: { teams, players } | atar (throw) hata olursa

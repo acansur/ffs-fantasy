@@ -319,6 +319,17 @@
   flex: 1;
 }
 
+.tr-loading {
+  padding: 1.5rem 1rem;
+  text-align: center;
+  color: var(--ink-mut);
+  font-size: 0.9rem;
+}
+
+.tr-loading.err {
+  color: #fca5a5;
+}
+
 .tr-player {
   display: flex;
   align-items: center;

@@ -1,16 +1,8 @@
 import { useMemo, useState, useRef, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useSquad, cloneRoster, rosterPlayers } from '../lib/squadStore.jsx'
-import {
-  PLAYERS,
-  POSITIONS,
-  CLUBS,
-  TOTAL_BUDGET,
-  DEADLINE,
-  MAX_PER_CLUB,
-  sortByValue,
-  initials,
-} from '../lib/squadData.js'
+import { fetchSuperLigPlayers, toAppPlayers, clubColor, clubShort } from '../lib/apiFootball.js'
+import { POSITIONS, TOTAL_BUDGET, DEADLINE, MAX_PER_CLUB, sortByValue, initials } from '../lib/squadData.js'
 import './Transfer.css'
 
 const POS_ORDER = ['KL', 'DF', 'OS', 'FW']
@@ -29,6 +21,19 @@ export default function Transfer() {
   const [clubOpen, setClubOpen] = useState(false)
   const [msg, setMsg] = useState('')
   const clubRef = useRef(null)
+
+  // Gerçek API oyuncuları
+  const [api, setApi] = useState({ loading: true, error: null, players: [], teams: [] })
+
+  useEffect(() => {
+    let alive = true
+    fetchSuperLigPlayers()
+      .then((res) => alive && setApi({ loading: false, error: null, players: toAppPlayers(res.players), teams: res.teams }))
+      .catch((err) => alive && setApi({ loading: false, error: err.message || String(err), players: [], teams: [] }))
+    return () => {
+      alive = false
+    }
+  }, [])
 
   useEffect(() => {
     if (!clubOpen) return
@@ -58,12 +63,18 @@ export default function Transfer() {
   const overBudget = remaining < 0
   const clubViolations = Object.entries(clubCounts).filter(([, n]) => n > MAX_PER_CLUB)
 
+  // Kulüp filtresi için takım listesi (renk + kısa kod)
+  const teamsInfo = useMemo(
+    () => api.teams.map((t) => ({ name: t.name, short: clubShort(t.name), bg: clubColor(t.name) })),
+    [api.teams]
+  )
+
   const list = useMemo(() => {
-    let l = PLAYERS
+    let l = api.players
     if (posFilter) l = l.filter((p) => p.pos === posFilter)
     if (selectedClubs.length) l = l.filter((p) => selectedClubs.includes(p.club))
     return sortByValue(l, sortDir)
-  }, [posFilter, selectedClubs, sortDir])
+  }, [api.players, posFilter, selectedClubs, sortDir])
 
   const setDraftSlot = (pos, index, player) => {
     setDraft((d) => {
@@ -73,8 +84,8 @@ export default function Transfer() {
     })
   }
 
-  const toggleClub = (code) =>
-    setSelectedClubs((prev) => (prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]))
+  const toggleClub = (name) =>
+    setSelectedClubs((prev) => (prev.includes(name) ? prev.filter((c) => c !== name) : [...prev, name]))
 
   const onSlotClick = (pos, index) => {
     if (selectedSlot && selectedSlot.pos === pos && selectedSlot.index === index) {
@@ -111,6 +122,7 @@ export default function Transfer() {
   // mümkün olan en yüksek değerli oyuncularla doldurur (kalanları da
   // dolduracak minimum maliyeti rezerve ederek bütçeyi aşmaz).
   const autoFill = () => {
+    const pool = api.players
     const next = cloneRoster(draft)
     const used = new Set()
     const clubCount = {}
@@ -128,14 +140,13 @@ export default function Transfer() {
       }
     }
 
-    // Kalan tüm boş mevkileri en ucuz uygun oyuncularla doldurmanın maliyeti (rezerv)
     const minReserve = (need, u0, c0) => {
       const u = new Set(u0)
       const c = { ...c0 }
       let sum = 0
       for (const pos of POS_ORDER) {
         for (let i = 0; i < need[pos]; i++) {
-          const opt = PLAYERS
+          const opt = pool
             .filter((p) => p.pos === pos && !u.has(p.id) && (c[p.club] || 0) < MAX_PER_CLUB)
             .sort((a, b) => a.price - b.price)[0]
           if (!opt) return Infinity
@@ -147,9 +158,7 @@ export default function Transfer() {
       return sum
     }
 
-    // Tüm adaylar değere göre azalan; en yüksek değerliyi, kalanları
-    // doldurmaya yetecek bütçeyi rezerve ederek seç.
-    const candidates = PLAYERS.filter((p) => !used.has(p.id)).sort((a, b) => b.price - a.price)
+    const candidates = pool.filter((p) => !used.has(p.id)).sort((a, b) => b.price - a.price)
     for (const p of candidates) {
       if (needed[p.pos] <= 0) continue
       if ((clubCount[p.club] || 0) >= MAX_PER_CLUB) continue
@@ -171,7 +180,7 @@ export default function Transfer() {
     const stillEmpty = POS_ORDER.reduce((n, pos) => n + next[pos].filter((s) => !s.player).length, 0)
     setDraft(next)
     setSelectedSlot(null)
-    setMsg(stillEmpty > 0 ? `⚠ Bütçe yetmedi, ${stillEmpty} mevki boş kaldı.` : 'Kadro otomatik dolduruldu ✓')
+    setMsg(stillEmpty > 0 ? `⚠ Bütçe/oyuncu yetmedi, ${stillEmpty} mevki boş kaldı.` : 'Kadro otomatik dolduruldu ✓')
   }
 
   const emptyCount = 15 - filledCount
@@ -214,7 +223,7 @@ export default function Transfer() {
           <span>Kulüp Limiti</span>
           <strong>
             {clubViolations.length
-              ? `⚠ ${clubViolations.map(([c]) => CLUBS[c].short).join(', ')}`
+              ? `⚠ ${clubViolations.map(([c]) => clubShort(c)).join(', ')}`
               : `Max ${MAX_PER_CLUB}/kulüp`}
           </strong>
         </div>
@@ -244,19 +253,19 @@ export default function Transfer() {
                     </button>
                   )
                 }
-                const club = CLUBS[slot.player.club]
+                const p = slot.player
                 return (
                   <div key={`${pos}-${index}`} className="tr-slot-wrap">
                     <button
                       type="button"
                       className={`tr-slot filled${sel ? ' selected' : ''}`}
-                      style={{ '--pos': meta.color, '--bg': club.bg, '--fg': club.fg }}
+                      style={{ '--pos': meta.color, '--bg': p.clubBg, '--fg': p.clubFg }}
                       onClick={() => onSlotClick(pos, index)}
                     >
                       <span className="tr-postag" style={{ '--pos': meta.color }}>{pos}</span>
-                      <span className="tr-disc jersey">{initials(slot.player.name)}</span>
-                      <span className="tr-slot-tag">{slot.player.name.split(' ').slice(-1)[0]}</span>
-                      <span className="tr-slot-price">₺{slot.player.price}M</span>
+                      <span className="tr-disc jersey">{initials(p.name)}</span>
+                      <span className="tr-slot-tag">{p.name.split(' ').slice(-1)[0]}</span>
+                      <span className="tr-slot-price">₺{p.price}M</span>
                     </button>
                     {sel && (
                       <button type="button" className="tr-remove" title="Mevkiden çıkar" onClick={(e) => removeFromSlot(pos, index, e)}>
@@ -282,16 +291,16 @@ export default function Transfer() {
 
           <div className="tr-list-controls">
             <div className="dropdown" ref={clubRef}>
-              <button type="button" className="dropdown-toggle" onClick={() => setClubOpen((o) => !o)}>
+              <button type="button" className="dropdown-toggle" onClick={() => setClubOpen((o) => !o)} disabled={api.loading}>
                 {clubLabel}
               </button>
               {clubOpen && (
                 <div className="dropdown-panel">
-                  {Object.entries(CLUBS).map(([code, club]) => (
-                    <label key={code} className="check-row">
-                      <input type="checkbox" checked={selectedClubs.includes(code)} onChange={() => toggleClub(code)} />
-                      <span className="club-dot" style={{ background: club.bg }} />
-                      {club.name}
+                  {teamsInfo.map((t) => (
+                    <label key={t.name} className="check-row">
+                      <input type="checkbox" checked={selectedClubs.includes(t.name)} onChange={() => toggleClub(t.name)} />
+                      <span className="club-dot" style={{ background: t.bg }} />
+                      {t.name}
                     </label>
                   ))}
                   <div className="dropdown-foot">
@@ -310,27 +319,32 @@ export default function Transfer() {
           </div>
 
           <ul className="tr-player-list">
-            {list.map((p) => {
-              const club = CLUBS[p.club]
-              const inRoster = rosterIds.has(p.id)
-              const clubMaxed = (clubCounts[p.club] || 0) >= MAX_PER_CLUB && !inRoster
-              const disabled = inRoster || clubMaxed
-              return (
-                <li key={p.id} className={`tr-player${disabled ? ' disabled' : ''}`}>
-                  <span className="tr-p-jersey" style={{ background: club.bg, color: club.fg }}>{initials(p.name)}</span>
-                  <span className="tr-p-meta">
-                    <span className="tr-p-name">{p.name}</span>
-                    <span className="tr-p-sub">
-                      {club.short} · {POSITIONS[p.pos].label}
-                      {inRoster && ' · kadroda'}
-                      {clubMaxed && ' · kulüp dolu'}
+            {api.loading && <li className="tr-loading">Yükleniyor… oyuncular API'den çekiliyor</li>}
+            {!api.loading && api.error && <li className="tr-loading err">⚠ {api.error}</li>}
+            {!api.loading && !api.error && list.length === 0 && (
+              <li className="tr-loading">Filtreye uygun oyuncu yok.</li>
+            )}
+            {!api.loading && !api.error &&
+              list.map((p) => {
+                const inRoster = rosterIds.has(p.id)
+                const clubMaxed = (clubCounts[p.club] || 0) >= MAX_PER_CLUB && !inRoster
+                const disabled = inRoster || clubMaxed
+                return (
+                  <li key={p.id} className={`tr-player${disabled ? ' disabled' : ''}`}>
+                    <span className="tr-p-jersey" style={{ background: p.clubBg, color: p.clubFg }}>{initials(p.name)}</span>
+                    <span className="tr-p-meta">
+                      <span className="tr-p-name">{p.name}</span>
+                      <span className="tr-p-sub">
+                        {p.club} · {POSITIONS[p.pos].label}
+                        {inRoster && ' · kadroda'}
+                        {clubMaxed && ' · kulüp dolu'}
+                      </span>
                     </span>
-                  </span>
-                  <span className="tr-p-price">{p.price.toFixed(1)}M</span>
-                  <button type="button" className="tr-add" disabled={disabled} onClick={() => addPlayer(p)} aria-label={`${p.name} ekle`}>+</button>
-                </li>
-              )
-            })}
+                    <span className="tr-p-price">{p.price.toFixed(1)}M</span>
+                    <button type="button" className="tr-add" disabled={disabled} onClick={() => addPlayer(p)} aria-label={`${p.name} ekle`}>+</button>
+                  </li>
+                )
+              })}
           </ul>
         </div>
       </div>
@@ -343,7 +357,12 @@ export default function Transfer() {
           <span className="tr-count-note">{filledCount}/15 oyuncu seçildi</span>
         )}
         <div className="tr-actionbar-right">
-          <button type="button" className="tr-autofill" onClick={autoFill} disabled={emptyCount === 0}>
+          <button
+            type="button"
+            className="tr-autofill"
+            onClick={autoFill}
+            disabled={emptyCount === 0 || api.loading || !api.players.length}
+          >
             ⚡ Otomatik Doldur
           </button>
           <button type="button" className="tr-save" onClick={onSave} disabled={!canSave}>

@@ -47,13 +47,15 @@ function SquadSlot({ entry, view, isCaptain, isSelected, isTarget, onClick, capt
     )
   }
 
-  const club = CLUBS[player.club]
+  // Kulüp rengi oyuncu nesnesinden gelir (API); mock için CLUBS'a düşer
+  const bg = player.clubBg || CLUBS[player.club]?.bg || '#334155'
+  const fg = player.clubFg || CLUBS[player.club]?.fg || '#ffffff'
   return (
     <div className="tm-slot-wrap">
       <button
         type="button"
         className={`tm-slot filled${isSelected ? ' selected' : ''}${isTarget ? ' target' : ''}`}
-        style={{ '--pos': meta.color, '--bg': club.bg, '--fg': club.fg }}
+        style={{ '--pos': meta.color, '--bg': bg, '--fg': fg }}
         onClick={onClick}
       >
         {isCaptain && <span className="tm-cap">C</span>}
