@@ -1,26 +1,22 @@
-// API-Football (api-sports.io) entegrasyonu — Süper Lig fikstürü
-// Docs: https://www.api-football.com/documentation-v3
-// Key: .env dosyasındaki VITE_API_FOOTBALL_KEY
+// API-Football entegrasyonu — Vercel serverless proxy üzerinden.
+// İstemci doğrudan API'ye gitmez; /api/football proxy'sine gider ve key
+// sunucuda kalır (API_FOOTBALL_KEY). Docs: https://www.api-football.com
 
-const API_BASE = 'https://v3.football.api-sports.io'
 const SUPER_LIG_ID = 203 // Süper Lig (Türkiye)
 const SEASON = 2026 // 2026-27 sezonu
 
-// Süper Lig 2026-27 fikstürünü çeker.
+// Süper Lig 2026-27 fikstürünü proxy üzerinden çeker.
 // Dönüş: { count, rounds, fixtures } | null
 export async function fetchSuperLigFixtures() {
-  const key = import.meta.env.VITE_API_FOOTBALL_KEY
-  if (!key) {
-    console.warn(
-      '[FFS] VITE_API_FOOTBALL_KEY tanımlı değil — fikstür çekilemedi. .env dosyasına ekle.'
-    )
-    return null
-  }
-
   try {
-    const url = `${API_BASE}/fixtures?league=${SUPER_LIG_ID}&season=${SEASON}`
-    const res = await fetch(url, { headers: { 'x-apisports-key': key } })
+    const url = `/api/football?path=fixtures&league=${SUPER_LIG_ID}&season=${SEASON}`
+    const res = await fetch(url)
     const data = await res.json()
+
+    if (!res.ok) {
+      console.error('[FFS] Proxy/API hatası:', data?.error || res.status, data)
+      return null
+    }
 
     // API-Football hataları response gövdesinde döner (HTTP 200 olsa bile)
     const errs = data?.errors
@@ -31,14 +27,11 @@ export async function fetchSuperLigFixtures() {
     }
 
     const fixtures = data?.response ?? []
-    // Haftaları (round) benzersizleştir ve sırala
-    const rounds = [...new Set(fixtures.map((f) => f.league?.round).filter(Boolean))].sort(
-      (a, b) => {
-        const na = Number(a.match(/\d+/)?.[0] ?? 0)
-        const nb = Number(b.match(/\d+/)?.[0] ?? 0)
-        return na - nb
-      }
-    )
+    const rounds = [...new Set(fixtures.map((f) => f.league?.round).filter(Boolean))].sort((a, b) => {
+      const na = Number(a.match(/\d+/)?.[0] ?? 0)
+      const nb = Number(b.match(/\d+/)?.[0] ?? 0)
+      return na - nb
+    })
 
     console.log(
       `[FFS] Süper Lig 2026-27 fikstürü — Toplam maç: ${fixtures.length}, Hafta sayısı: ${rounds.length}`
@@ -53,7 +46,6 @@ export async function fetchSuperLigFixtures() {
         `| ${f.fixture?.date}`
       )
     }
-    // Ham veriyi de incelemek için:
     console.log('[FFS] Ham fikstür verisi:', fixtures)
 
     return { count: fixtures.length, rounds, fixtures }
