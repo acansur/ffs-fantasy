@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth.jsx'
 
 const features = [
@@ -31,9 +31,11 @@ const teams = [
 
 export default function Home() {
   const { user } = useAuth()
-  // Giriş yapmışsa kadroya, değilse giriş ekranına yönlendir
-  const startTo = user ? '/takimim' : '/giris'
-  const joinTo = user ? '/takimim' : '/kayit'
+  // Giriş yapmış kullanıcı ana sayfayı görmeden doğrudan kadrosuna gider
+  if (user) return <Navigate to="/takimim" replace />
+
+  const startTo = '/giris'
+  const joinTo = '/kayit'
 
   return (
     <>
