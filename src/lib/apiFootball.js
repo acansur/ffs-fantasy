@@ -97,6 +97,19 @@ export function toAppPlayers(apiPlayers) {
   return out
 }
 
+// Oyuncu listesi için modül düzeyinde önbellek (promise). Böylece Takımım
+// sayfasında arka planda başlatılıp Transfer'de anında kullanılabilir.
+let _playersPromise = null
+export function loadSuperLigPlayers() {
+  if (!_playersPromise) {
+    _playersPromise = fetchSuperLigPlayers().catch((e) => {
+      _playersPromise = null // hata olursa yeniden denenebilsin
+      throw e
+    })
+  }
+  return _playersPromise
+}
+
 // Süper Lig 2026-27 tüm oyuncuları (kadrolar) proxy üzerinden çeker.
 // Önce takımları, sonra her takımın kadrosunu çeker.
 // Dönüş: { teams, players } | atar (throw) hata olursa

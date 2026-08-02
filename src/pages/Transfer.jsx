@@ -1,7 +1,7 @@
 import { useMemo, useState, useRef, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useSquad, cloneRoster, rosterPlayers } from '../lib/squadStore.jsx'
-import { fetchSuperLigPlayers, toAppPlayers, clubColors, clubShort } from '../lib/apiFootball.js'
+import { loadSuperLigPlayers, toAppPlayers, clubColors, clubShort } from '../lib/apiFootball.js'
 import { getVisibleWeeks, formatDeadline } from '../lib/weeks.js'
 import WeekBar from '../components/WeekBar.jsx'
 import { POSITIONS, TOTAL_BUDGET, MAX_PER_CLUB, sortByValue, initials } from '../lib/squadData.js'
@@ -34,7 +34,7 @@ export default function Transfer() {
 
   useEffect(() => {
     let alive = true
-    fetchSuperLigPlayers()
+    loadSuperLigPlayers()
       .then((res) => alive && setApi({ loading: false, error: null, players: toAppPlayers(res.players), teams: res.teams }))
       .catch((err) => alive && setApi({ loading: false, error: err.message || String(err), players: [], teams: [] }))
     return () => {
@@ -337,7 +337,7 @@ export default function Transfer() {
           </div>
 
           <ul className="tr-player-list">
-            {api.loading && <li className="tr-loading">Yükleniyor… oyuncular API'den çekiliyor</li>}
+            {api.loading && <li className="tr-loading">Yükleniyor…</li>}
             {!api.loading && api.error && <li className="tr-loading err">⚠ {api.error}</li>}
             {!api.loading && !api.error && list.length === 0 && (
               <li className="tr-loading">Filtreye uygun oyuncu yok.</li>

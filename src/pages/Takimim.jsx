@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../lib/auth.jsx'
 import { useSquad } from '../lib/squadStore.jsx'
+import { loadSuperLigPlayers } from '../lib/apiFootball.js'
 import { getVisibleWeeks, isLocked, formatDeadline } from '../lib/weeks.js'
 import WeekBar from '../components/WeekBar.jsx'
 import {
@@ -106,6 +107,11 @@ export default function Takimim() {
     setWeek(r)
     setSelected(null)
   }
+
+  // Transfer ekranı hızlı açılsın diye oyuncu listesini arka planda önyükle
+  useEffect(() => {
+    loadSuperLigPlayers().catch(() => {})
+  }, [])
 
   useEffect(() => {
     if (!moveMsg) return
