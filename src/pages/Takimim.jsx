@@ -14,13 +14,19 @@ import {
   VIEWS,
   formationLabel,
   surname,
-  slotInfo,
 } from '../lib/squadData.js'
 import './Takimim.css'
 
 const POS_ORDER = ['KL', 'DF', 'OS', 'FW']
 
-function SquadSlot({ entry, view, isCaptain, isSelected, isTarget, onClick, captainPopup, posTag, skeleton }) {
+// Maçı tamamlanmış sayılan durumlar (puan gösterimi bunlarda başlar)
+const FINISHED = new Set(['FT', 'AET', 'PEN', 'WO'])
+
+// "14 Ağu" biçiminde maç günü (Türkiye saati)
+const matchDay = (iso) =>
+  new Date(iso).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', timeZone: 'Europe/Istanbul' })
+
+function SquadSlot({ entry, info, isCaptain, isSelected, isTarget, onClick, captainPopup, posTag, skeleton }) {
   const { slot, pos } = entry
   const meta = POSITIONS[pos]
   const player = slot.player
@@ -76,7 +82,7 @@ function SquadSlot({ entry, view, isCaptain, isSelected, isTarget, onClick, capt
         </span>
         <span className="tm-tag">
           <span className="tm-tag-name">{player.name}</span>
-          <span className="tm-tag-info">{slotInfo(player, view)}</span>
+          <span className="tm-tag-info">{info}</span>
         </span>
       </button>
       {captainPopup}
@@ -137,6 +143,29 @@ export default function Takimim() {
   const captainPlayer = rosterList.find((p) => p.id === captainId) || null
   const formation = formationLabel(counts)
   const filledCount = rosterList.length
+
+  // Yuva altı bilgi satırı:
+  // - Deadline gelmediyse görünüme göre (sonraki maç: tarih + rakip / oyuncu değeri)
+  // - Deadline geldiyse maç durumuna göre puan (bitmediyse "-", bittiyse puan)
+  const slotInfoFor = (player) => {
+    const fx = getTeamFixture(fixtures, player.club, week)
+    if (locked) {
+      // Puanlama sistemi netleşene kadar biten maçlar için 0 gösterilir
+      return FINISHED.has(fx?.fixture?.status?.short) ? '0 P' : '-'
+    }
+    if (view === 'value') return `₺${player.price}M`
+    if (!fx) return '—'
+    const isHome = fx.teams?.home?.name === player.club
+    const opp = isHome ? fx.teams?.away?.name : fx.teams?.home?.name
+    const day = fx.fixture?.date ? matchDay(fx.fixture.date) : '—'
+    return `${day} · ${isHome ? 'vs' : '@'} ${opp || '—'}`
+  }
+
+  // Toplam puan: tüm oyuncuların maçı bitince hesaplanır; o zamana kadar "-"
+  const allMatchesFinished =
+    rosterList.length > 0 &&
+    rosterList.every((p) => FINISHED.has(getTeamFixture(fixtures, p.club, week)?.fixture?.status?.short))
+  const totalPoints = allMatchesFinished ? 0 : '-'
 
   const fieldByPos = useMemo(() => {
     const map = {}
@@ -206,7 +235,7 @@ export default function Takimim() {
       <SquadSlot
         key={`${pos}-${index}`}
         entry={entry}
-        view={view}
+        info={slot.player ? slotInfoFor(slot.player) : null}
         isCaptain={slot.player ? slot.player.id === captainId : false}
         isSelected={Boolean(detail) && detail.pos === pos && detail.index === index}
         isTarget={isTarget}
@@ -257,10 +286,17 @@ export default function Takimim() {
           <span>Kaptan</span>
           <strong>{captainId ? surname(captainPlayer.name) : '⚠ Seçilmedi'}</strong>
         </div>
-        <div className="tm-stat">
-          <span>Deadline</span>
-          <strong className="tm-deadline">{deadlineText}</strong>
-        </div>
+        {locked ? (
+          <div className="tm-stat">
+            <span>Toplam Puan</span>
+            <strong>{totalPoints}</strong>
+          </div>
+        ) : (
+          <div className="tm-stat">
+            <span>Deadline</span>
+            <strong className="tm-deadline">{deadlineText}</strong>
+          </div>
+        )}
       </div>
 
       {/* Hafta bar'ı — stat kutucuklarının hemen altında */}
@@ -273,24 +309,20 @@ export default function Takimim() {
         loading={weeksLoading}
       />
 
-      {/* Üst aksiyon: Transfer Yap (yukarıda) + görünüm */}
-      <div className="tm-toprow">
-        {locked ? (
-          <button type="button" className="tm-transfer-btn locked" disabled title="Bu hafta kilitli">
-            🔒 Transfer Kilitli
-          </button>
-        ) : (
+      {/* Üst aksiyon: deadline gelmediyse Transfer Yap + görünüm; geldiyse gizli */}
+      {!locked && (
+        <div className="tm-toprow">
           <Link to="/transfer" className="tm-transfer-btn">⇄ Transfer Yap</Link>
-        )}
-        <label className="tm-select">
-          <span>Görünüm</span>
-          <select value={view} onChange={(e) => setView(e.target.value)}>
-            {VIEWS.map((v) => (
-              <option key={v.key} value={v.key}>{v.label}</option>
-            ))}
-          </select>
-        </label>
-      </div>
+          <label className="tm-select">
+            <span>Görünüm</span>
+            <select value={view} onChange={(e) => setView(e.target.value)}>
+              {VIEWS.map((v) => (
+                <option key={v.key} value={v.key}>{v.label}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+      )}
 
       <div className="tm-layout">
         <div className="tm-left">

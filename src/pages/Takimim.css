@@ -496,6 +496,9 @@
   font-size: 0.72rem;
   font-weight: 600;
   color: var(--gold);
+  max-width: 96px;
+  text-align: center;
+  line-height: 1.15;
 }
 
 /* Yedek mevki etiketi (yuvanın üstünde) */

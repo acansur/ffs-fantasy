@@ -21,8 +21,7 @@ export const DEADLINE = '14 Ağu 20:30'
 // transfer ekranındadır)
 export const VIEWS = [
   { key: 'next', label: 'Sonraki maç' },
-  { key: 'weekly', label: 'Haftalık puan' },
-  { key: 'date', label: 'Tarih' },
+  { key: 'value', label: 'Oyuncu değeri' },
 ]
 
 // Diziliş şemaları: sahadaki DF / OS / FW oyuncu sayıları (kaleci her zaman 1).
