@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { useAuth } from '../lib/auth.jsx'
 
 const features = [
   {
@@ -29,6 +30,11 @@ const teams = [
 ]
 
 export default function Home() {
+  const { user } = useAuth()
+  // Giriş yapmışsa kadroya, değilse giriş ekranına yönlendir
+  const startTo = user ? '/takimim' : '/giris'
+  const joinTo = user ? '/takimim' : '/kayit'
+
   return (
     <>
       <section className="hero">
@@ -42,11 +48,11 @@ export default function Home() {
             puan topla ve arkadaşlarınla ligin zirvesi için yarış.
           </p>
           <div className="hero-actions">
-            <Link to="/takimim" className="btn btn-primary">
+            <Link to={startTo} className="btn btn-primary">
               Hemen Başla
             </Link>
-            <Link to="/lig" className="btn btn-ghost">
-              Ligi Keşfet
+            <Link to="/kurallar" className="btn btn-ghost">
+              Kurallar
             </Link>
           </div>
           <div className="hero-stats">
@@ -117,7 +123,7 @@ export default function Home() {
       <section className="cta">
         <h2>Kadronu kurmaya hazır mısın?</h2>
         <p>Ücretsiz katıl, ilk haftadan itibaren puan toplamaya başla.</p>
-        <Link to="/takimim" className="btn btn-primary btn-lg">
+        <Link to={joinTo} className="btn btn-primary btn-lg">
           Ücretsiz Katıl
         </Link>
       </section>
