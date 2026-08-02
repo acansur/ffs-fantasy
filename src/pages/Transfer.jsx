@@ -206,7 +206,7 @@ export default function Transfer() {
     <div className="tr-page">
       {/* Üst bar */}
       <div className="tr-topbar">
-        <Link to="/takimim" className="tr-back">‹ Geri</Link>
+        <Link to="/takimim" className="tr-back">‹ Takımım</Link>
         <div className="tr-topbar-mid">
           <span className="tr-free">Free transfer: <strong>Sınırsız</strong></span>
         </div>
@@ -387,7 +387,7 @@ export default function Transfer() {
             ⚡ Otomatik Doldur
           </button>
           <button type="button" className="tr-save" onClick={onSave} disabled={!canSave}>
-            Kaydet ve Kadroya Dön
+            Kaydet ve Takıma Dön
           </button>
         </div>
       </div>

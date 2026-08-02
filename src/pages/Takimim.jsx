@@ -364,7 +364,7 @@ export default function Takimim() {
           {overBudget && <span className="tm-budget-warn">Bütçen aşıldı — kaydedemezsin.</span>}
           {saveMsg && !overBudget && <span className="tm-save-msg">{saveMsg}</span>}
           <button type="button" className="tm-save" onClick={saveSquad} disabled={overBudget}>
-            Kadroyu Kaydet
+            Takımı Kaydet
           </button>
         </div>
       </div>
