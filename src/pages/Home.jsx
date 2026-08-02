@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { useAuth } from '../lib/auth.jsx'
 
 const features = [
   {
@@ -28,11 +29,11 @@ const teams = [
   'Başakşehir', 'Adana Demirspor', 'Kasımpaşa', 'Konyaspor',
 ]
 
-// Ana sayfa yalnızca giriş yapmamış kullanıcıya gösterilir; giriş yapmış
-// kullanıcı App'teki rota yönlendirmesiyle /takimim'e gider.
 export default function Home() {
-  const startTo = '/giris'
-  const joinTo = '/kayit'
+  const { user } = useAuth()
+  // "Hemen Başla" / "Ücretsiz Katıl": giriş yapmışsa kadroya, değilse kayıt ekranına
+  const startTo = user ? '/takimim' : '/kayit'
+  const joinTo = user ? '/takimim' : '/kayit'
 
   return (
     <>
