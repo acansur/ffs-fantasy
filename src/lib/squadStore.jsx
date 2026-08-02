@@ -1,9 +1,13 @@
 import { createContext, useContext, useState, useMemo, useCallback, useEffect, useRef } from 'react'
-import { SQUAD_TOTALS, START_LIMITS, TOTAL_BUDGET } from './squadData.js'
-import { fetchSuperLigFixtures } from './apiFootball.js'
+import { SQUAD_TOTALS, START_LIMITS, TOTAL_BUDGET, slotCounts, formationLabel } from './squadData.js'
+import { fetchSuperLigFixtures, loadSuperLigPlayers, toAppPlayers } from './apiFootball.js'
 import { buildWeeks, getActiveRound } from './weeks.js'
+import { isSupabaseConfigured } from './supabase.js'
+import { useAuth } from './auth.jsx'
+import { saveSquadToDb, loadSquadFromDb } from './squadDb.js'
 
 const POS_ORDER = ['KL', 'DF', 'OS', 'FW']
+const DB_TO_POS = { GK: 'KL', DF: 'DF', MF: 'OS', FW: 'FW' }
 
 const SquadContext = createContext(null)
 
@@ -50,10 +54,69 @@ function within(pos, n) {
   return n >= min && n <= max
 }
 
+// DB satırlarından (squad_players) kadro yapısını yeniden kur.
+export function rebuildRoster(rows, playersById, formation) {
+  const { field, bench } = slotCounts(formation || '4-4-2')
+  const byPos = { KL: [], DF: [], OS: [], FW: [] }
+  for (const r of rows) {
+    const pos = DB_TO_POS[r.position_type]
+    if (!pos) continue
+    byPos[pos].push({
+      player: playersById[String(r.player_id)] || null,
+      starter: r.is_starter,
+      benchOrder: r.bench_order,
+    })
+  }
+  const roster = {}
+  let benchCounter = 1
+  for (const pos of POS_ORDER) {
+    const starters = byPos[pos].filter((e) => e.starter)
+    const benchEntries = byPos[pos]
+      .filter((e) => !e.starter)
+      .sort((a, b) => (a.benchOrder ?? 99) - (b.benchOrder ?? 99))
+    const slots = []
+    for (let i = 0; i < field[pos]; i++) {
+      slots.push({ player: starters[i]?.player ?? null, starter: true, benchOrder: null })
+    }
+    for (let i = 0; i < bench[pos]; i++) {
+      const e = benchEntries[i]
+      let bo = e?.benchOrder
+      if (bo == null) bo = pos === 'KL' ? 0 : benchCounter++
+      else if (pos !== 'KL') benchCounter = Math.max(benchCounter, bo + 1)
+      slots.push({ player: e?.player ?? null, starter: false, benchOrder: bo })
+    }
+    roster[pos] = slots
+  }
+  return roster
+}
+
+// Kadro düzeni + kaptan imzası (değişiklik takibi için)
+function signature(roster, captainId) {
+  const parts = []
+  for (const pos of POS_ORDER) {
+    for (const s of roster[pos]) {
+      parts.push(`${s.player?.id ?? '_'}:${s.starter ? 1 : 0}:${s.benchOrder ?? ''}`)
+    }
+  }
+  parts.push(`C${captainId ?? ''}`)
+  return parts.join('|')
+}
+
 export function SquadProvider({ children }) {
+  const { user } = useAuth()
   const [roster, setRoster] = useState(buildEmptyRoster) // kaydedilmiş (committed) kadro
   const [captainId, setCaptainId] = useState(null)
   const [week, setWeek] = useState(1)
+
+  // Kaydedilmiş kadronun imzası — değişiklik (dirty) takibi için
+  const [savedSig, setSavedSig] = useState(() => signature(buildEmptyRoster(), null))
+  const rosterRef = useRef(roster)
+  const captainRef = useRef(captainId)
+  const weekRef = useRef(week)
+  rosterRef.current = roster
+  captainRef.current = captainId
+  weekRef.current = week
+  const dirty = signature(roster, captainId) !== savedSig
 
   // Fikstürden hesaplanan haftalar (bir kez çekilir, iki ekran paylaşır)
   const [weeks, setWeeks] = useState([])
@@ -79,7 +142,48 @@ export function SquadProvider({ children }) {
     }
   }, [])
 
-  // Transfer ekranı kaydedince tüm kadroyu buraya işler
+  // Giriş yapmış kullanıcının kaydedilmiş kadrosunu Supabase'den yükle (kullanıcı başına bir kez)
+  const loadedForRef = useRef(null)
+  useEffect(() => {
+    if (!user || !isSupabaseConfigured || !weeks.length) return
+    if (loadedForRef.current === user.id) return
+    loadedForRef.current = user.id
+    const wk = getActiveRound(weeks)
+    let alive = true
+    ;(async () => {
+      const loaded = await loadSquadFromDb({ userId: user.id, week: wk })
+      if (!alive || !loaded) return
+      const raw = await loadSuperLigPlayers().catch(() => null)
+      if (!alive || !raw) return
+      const players = toAppPlayers(raw.players)
+      const byId = Object.fromEntries(players.map((p) => [String(p.id), p]))
+      const r = rebuildRoster(loaded.rows, byId, loaded.formation)
+      setRoster(r)
+      setCaptainId(loaded.captainId ?? null)
+      setWeek(wk)
+      setSavedSig(signature(r, loaded.captainId ?? null))
+    })()
+    return () => {
+      alive = false
+    }
+  }, [user, weeks])
+
+  // Mevcut kadroyu Supabase'e kaydet (kullanıcı + supabase varsa; yoksa no-op)
+  const persist = useCallback(
+    async (rosterArg, captainArg) => {
+      if (!user || !isSupabaseConfigured) return
+      await saveSquadToDb({
+        userId: user.id,
+        week: weekRef.current,
+        formation: formationLabel(starterCounts(rosterArg)),
+        captainId: captainArg ?? null,
+        roster: rosterArg,
+      })
+    },
+    [user]
+  )
+
+  // Transfer ekranı kaydedince tüm kadroyu buraya işler (yalnızca in-memory)
   const commitRoster = useCallback((newRoster) => {
     const committed = cloneRoster(newRoster)
     setRoster(committed)
@@ -90,6 +194,28 @@ export function SquadProvider({ children }) {
       return stillHere ? cid : null
     })
   }, [])
+
+  // Transfer: kadroyu işle + Supabase'e kaydet + imzayı güncelle
+  const commitAndSave = useCallback(
+    async (newRoster) => {
+      const committed = cloneRoster(newRoster)
+      let newCaptain = captainRef.current
+      if (newCaptain && !rosterPlayers(committed).some((p) => p.id === newCaptain)) newCaptain = null
+      setRoster(committed)
+      setCaptainId(newCaptain)
+      setSavedSig(signature(committed, newCaptain))
+      await persist(committed, newCaptain)
+    },
+    [persist]
+  )
+
+  // Kadro ekranı: mevcut düzeni (diziliş/kaptan/yedek sırası) Supabase'e kaydet
+  const saveArrangement = useCallback(async () => {
+    const r = rosterRef.current
+    const c = captainRef.current
+    setSavedSig(signature(r, c))
+    await persist(r, c)
+  }, [persist])
 
   // Kadro ekranı: iki yuva arası yer değiştir. Dönüş: hata mesajı | null
   const swapSlots = useCallback((a, b) => {
@@ -159,6 +285,9 @@ export function SquadProvider({ children }) {
   const value = {
     roster,
     commitRoster,
+    commitAndSave,
+    saveArrangement,
+    dirty,
     swapSlots,
     captainId,
     makeCaptain,

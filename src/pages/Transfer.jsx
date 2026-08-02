@@ -13,7 +13,7 @@ const POS_TABS = [{ key: null, label: 'Tümü' }, ...POS_ORDER.map((p) => ({ key
 
 export default function Transfer() {
   const navigate = useNavigate()
-  const { roster: committed, commitRoster, week, setWeek, weeks, weeksLoading } = useSquad()
+  const { roster: committed, commitAndSave, week, setWeek, weeks, weeksLoading } = useSquad()
 
   const now = Date.now()
   const visibleWeeks = getVisibleWeeks(weeks, now)
@@ -194,9 +194,9 @@ export default function Transfer() {
   const emptyCount = 15 - filledCount
   const canSave = filledCount === 15 && !overBudget
 
-  const onSave = () => {
+  const onSave = async () => {
     if (!canSave) return
-    commitRoster(draft)
+    await commitAndSave(draft)
     navigate('/takimim')
   }
 

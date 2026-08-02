@@ -89,6 +89,8 @@ export default function Takimim() {
     rosterList,
     remaining,
     counts,
+    dirty,
+    saveArrangement,
   } = useSquad()
 
   const [view, setView] = useState('next')
@@ -171,11 +173,10 @@ export default function Takimim() {
     setSelected(null)
   }
 
-  const saveSquad = () => {
+  const saveSquad = async () => {
     if (overBudget) return
-    if (filledCount < 15) setSaveMsg(`Kadro eksik (${filledCount}/15) — transfer yap`)
-    else if (!captainId) setSaveMsg('Önce kaptan seç!')
-    else setSaveMsg('Kadro kaydedildi ✓')
+    await saveArrangement()
+    setSaveMsg('Takım kaydedildi ✓')
   }
 
   const renderSlot = (entry, opts = {}) => {
@@ -362,10 +363,12 @@ export default function Takimim() {
         <span className="tm-squad-count">{filledCount}/15 oyuncu</span>
         <div className="tm-actionbar-right">
           {overBudget && <span className="tm-budget-warn">Bütçen aşıldı — kaydedemezsin.</span>}
-          {saveMsg && !overBudget && <span className="tm-save-msg">{saveMsg}</span>}
-          <button type="button" className="tm-save" onClick={saveSquad} disabled={overBudget}>
-            Takımı Kaydet
-          </button>
+          {saveMsg && <span className="tm-save-msg">{saveMsg}</span>}
+          {dirty && (
+            <button type="button" className="tm-save" onClick={saveSquad} disabled={overBudget}>
+              Takımı Kaydet
+            </button>
+          )}
         </div>
       </div>
     </div>
