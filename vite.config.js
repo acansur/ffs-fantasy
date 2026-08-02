@@ -2,7 +2,7 @@ import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 
 const API_BASE = 'https://v3.football.api-sports.io'
-const ALLOWED_PATHS = ['fixtures', 'leagues', 'teams', 'players', 'standings']
+const ALLOWED_PATHS = ['fixtures', 'leagues', 'teams', 'players', 'players/squads', 'standings']
 
 // Geliştirmede /api/football'ı yerelde çalıştırır (Vercel serverless yerine).
 // Key non-VITE env'den (API_FOOTBALL_KEY) okunur — tarayıcıya gömülmez.

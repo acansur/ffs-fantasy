@@ -5,6 +5,78 @@
 const SUPER_LIG_ID = 203 // Süper Lig (Türkiye)
 const SEASON = 2026 // 2026-27 sezonu
 
+// Sınırlı eşzamanlılıkla map (aynı anda en fazla `limit` iş çalışır)
+async function mapWithConcurrency(items, limit, fn) {
+  const results = new Array(items.length)
+  let next = 0
+  const worker = async () => {
+    while (next < items.length) {
+      const idx = next++
+      results[idx] = await fn(items[idx], idx)
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker))
+  return results
+}
+
+// API-Football mevkileri → oyun mevki kodları
+const POSITION_MAP = {
+  Goalkeeper: 'GK',
+  Defender: 'DF',
+  Midfielder: 'OS', // MF → OS (Orta Saha)
+  Attacker: 'FW',
+}
+
+// Süper Lig 2026-27 tüm oyuncuları (kadrolar) proxy üzerinden çeker.
+// Önce takımları, sonra her takımın kadrosunu çeker.
+// Dönüş: { teams, players } | atar (throw) hata olursa
+export async function fetchSuperLigPlayers() {
+  // 1) Takımlar
+  const teamsRes = await fetch(`/api/football?path=teams&league=${SUPER_LIG_ID}&season=${SEASON}`)
+  const teamsData = await teamsRes.json()
+  if (!teamsRes.ok) throw new Error(teamsData?.error || `Takımlar alınamadı (${teamsRes.status})`)
+  const tErrs = teamsData?.errors
+  if (Array.isArray(tErrs) ? tErrs.length : tErrs && Object.keys(tErrs).length) {
+    throw new Error('API-Football hata: ' + JSON.stringify(tErrs))
+  }
+  const teams = (teamsData.response ?? [])
+    .map((t) => ({ id: t.team.id, name: t.team.name }))
+    .sort((a, b) => a.name.localeCompare(b.name, 'tr'))
+
+  if (!teams.length) throw new Error('Takım listesi boş döndü.')
+
+  // 2) Her takımın kadrosu. Rate limit'e takılmamak için eşzamanlılık sınırlı
+  // (aynı anda en fazla 4 istek) + boş dönerse 1 kez tekrar dener.
+  const fetchSquad = async (team) => {
+    for (let attempt = 0; attempt < 4; attempt++) {
+      try {
+        const r = await fetch(`/api/football?path=players/squads&team=${team.id}`)
+        const d = await r.json()
+        const players = d?.response?.[0]?.players ?? []
+        if (players.length) {
+          return players.map((p) => ({
+            id: p.id,
+            name: p.name,
+            number: p.number,
+            position: POSITION_MAP[p.position] || p.position || '—',
+            team: team.name,
+          }))
+        }
+      } catch {
+        // yut, tekrar dene
+      }
+      // rate limit olabilir → artan bekleme ile tekrar dene
+      await new Promise((res) => setTimeout(res, 500 * (attempt + 1)))
+    }
+    return []
+  }
+
+  const squads = await mapWithConcurrency(teams, 2, fetchSquad)
+  const players = squads.flat()
+  console.log(`[FFS] Süper Lig 2026-27 kadrolar — ${teams.length} takım, ${players.length} oyuncu`)
+  return { teams, players }
+}
+
 // Süper Lig 2026-27 fikstürünü proxy üzerinden çeker.
 // Dönüş: { count, rounds, fixtures } | null
 export async function fetchSuperLigFixtures() {

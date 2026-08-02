@@ -1,0 +1,130 @@
+.pl-note {
+  padding: 1rem;
+  color: var(--text-muted);
+}
+
+/* Filtreler — Transfer sağ paneli görünümü */
+.pl-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.pl-pos-tabs {
+  display: flex;
+  gap: 0.35rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.3rem;
+}
+
+.pl-pos-tab {
+  min-width: 46px;
+  padding: 0.4rem 0.7rem;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.pl-pos-tab.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.pl-count {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin-bottom: 0.7rem;
+}
+
+/* Tablo */
+.pl-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.pl-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 480px;
+}
+
+.pl-table th,
+.pl-table td {
+  padding: 0.7rem 1rem;
+  text-align: left;
+}
+
+.pl-table thead {
+  background: var(--surface);
+}
+
+.pl-table th {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.pl-table tbody tr {
+  border-top: 1px solid var(--border);
+}
+
+.pl-table tbody tr:hover {
+  background: var(--surface);
+}
+
+.pl-th-pos {
+  width: 150px;
+}
+
+.pl-pos {
+  display: inline-grid;
+  place-items: center;
+  min-width: 34px;
+  padding: 0.15rem 0.4rem;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--pos) 22%, transparent);
+  border: 1px solid var(--pos);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  margin-right: 0.5rem;
+}
+
+.pl-pos-long {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.pl-name {
+  font-weight: 600;
+}
+
+.pl-team {
+  color: var(--text-muted);
+}
+
+.pl-empty {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 1.5rem;
+}
+
+@media (max-width: 560px) {
+  .pl-pos-long {
+    display: none;
+  }
+  .pl-th-pos {
+    width: 60px;
+  }
+}

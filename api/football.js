@@ -4,7 +4,7 @@
 // gömülmez. İstemci /api/football?path=fixtures&league=203&season=2026 çağırır.
 
 const API_BASE = 'https://v3.football.api-sports.io'
-const ALLOWED_PATHS = ['fixtures', 'leagues', 'teams', 'players', 'standings']
+const ALLOWED_PATHS = ['fixtures', 'leagues', 'teams', 'players', 'players/squads', 'standings']
 
 export default async function handler(req, res) {
   const key = process.env.API_FOOTBALL_KEY
