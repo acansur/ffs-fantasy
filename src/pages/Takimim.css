@@ -122,11 +122,40 @@
 
 /* ---- Yerleşim ---- */
 .tm-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 330px;
-  gap: 1.25rem;
-  align-items: start;
   margin-top: 1.25rem;
+}
+.tm-left {
+  max-width: 820px;
+  margin: 0 auto;
+}
+
+/* ---- Skeleton (kadro yüklenirken) ---- */
+.tm-slot.skeleton {
+  cursor: default;
+}
+.tm-disc.skel {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: none;
+  animation: tm-skel-pulse 1.2s ease-in-out infinite;
+}
+.tm-skel-line {
+  display: block;
+  width: 52px;
+  height: 9px;
+  margin: 0.1rem auto 0;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.09);
+  animation: tm-skel-pulse 1.2s ease-in-out infinite;
+}
+@keyframes tm-skel-pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.85;
+  }
 }
 
 /* ---- Kontroller ---- */

@@ -5,6 +5,7 @@ import { loadSuperLigPlayers, toAppPlayers, clubColors, clubShort } from '../lib
 import { getVisibleWeeks, formatDeadline } from '../lib/weeks.js'
 import WeekBar from '../components/WeekBar.jsx'
 import PlayerPhoto from '../components/PlayerPhoto.jsx'
+import ScoringGuide from '../components/ScoringGuide.jsx'
 import { POSITIONS, TOTAL_BUDGET, MAX_PER_CLUB, sortByValue, initials } from '../lib/squadData.js'
 import './Transfer.css'
 
@@ -300,7 +301,8 @@ export default function Transfer() {
           ))}
         </div>
 
-        {/* Sağ: oyuncu listesi */}
+        {/* Sağ: oyuncu listesi + puanlama rehberi */}
+        <div className="tr-right">
         <div className="tr-list-panel">
           <div className="tr-pos-tabs">
             {POS_TABS.map((t) => (
@@ -367,6 +369,9 @@ export default function Transfer() {
                 )
               })}
           </ul>
+        </div>
+
+        <ScoringGuide />
         </div>
       </div>
 

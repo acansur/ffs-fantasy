@@ -282,6 +282,12 @@
 }
 
 /* Sağ: oyuncu listesi */
+.tr-right {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  min-width: 0;
+}
 .tr-list-panel {
   display: flex;
   flex-direction: column;

@@ -122,6 +122,8 @@ export function SquadProvider({ children }) {
   const [weeks, setWeeks] = useState([])
   const [fixtures, setFixtures] = useState([])
   const [weeksLoading, setWeeksLoading] = useState(true)
+  // Supabase'den kaydedilmiş kadro yüklenirken skeleton için
+  const [squadLoading, setSquadLoading] = useState(isSupabaseConfigured)
   const bootedRef = useRef(false)
   useEffect(() => {
     let alive = true
@@ -147,23 +149,32 @@ export function SquadProvider({ children }) {
   // Giriş yapmış kullanıcının kaydedilmiş kadrosunu Supabase'den yükle (kullanıcı başına bir kez)
   const loadedForRef = useRef(null)
   useEffect(() => {
-    if (!user || !isSupabaseConfigured || !weeks.length) return
+    if (!isSupabaseConfigured) {
+      setSquadLoading(false)
+      return
+    }
+    if (!user || !weeks.length) return
     if (loadedForRef.current === user.id) return
     loadedForRef.current = user.id
     const wk = getActiveRound(weeks)
     let alive = true
+    setSquadLoading(true)
     ;(async () => {
-      const loaded = await loadSquadFromDb({ userId: user.id, week: wk })
-      if (!alive || !loaded) return
-      const raw = await loadSuperLigPlayers().catch(() => null)
-      if (!alive || !raw) return
-      const players = toAppPlayers(raw.players)
-      const byId = Object.fromEntries(players.map((p) => [String(p.id), p]))
-      const r = rebuildRoster(loaded.rows, byId, loaded.formation)
-      setRoster(r)
-      setCaptainId(loaded.captainId ?? null)
-      setWeek(wk)
-      setSavedSig(signature(r, loaded.captainId ?? null))
+      try {
+        const loaded = await loadSquadFromDb({ userId: user.id, week: wk })
+        if (!alive || !loaded) return
+        const raw = await loadSuperLigPlayers().catch(() => null)
+        if (!alive || !raw) return
+        const players = toAppPlayers(raw.players)
+        const byId = Object.fromEntries(players.map((p) => [String(p.id), p]))
+        const r = rebuildRoster(loaded.rows, byId, loaded.formation)
+        setRoster(r)
+        setCaptainId(loaded.captainId ?? null)
+        setWeek(wk)
+        setSavedSig(signature(r, loaded.captainId ?? null))
+      } finally {
+        if (alive) setSquadLoading(false)
+      }
     })()
     return () => {
       alive = false
@@ -299,6 +310,7 @@ export function SquadProvider({ children }) {
     weeks,
     fixtures,
     weeksLoading,
+    squadLoading,
     rosterList,
     spent,
     remaining,

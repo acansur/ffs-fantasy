@@ -10,11 +10,8 @@ import PlayerDetailModal from '../components/PlayerDetailModal.jsx'
 import {
   POSITIONS,
   CLUBS,
-  SQUAD_TOTALS,
   TOTAL_BUDGET,
   VIEWS,
-  SCORING,
-  SCORING_TABS,
   formationLabel,
   surname,
   slotInfo,
@@ -23,13 +20,25 @@ import './Takimim.css'
 
 const POS_ORDER = ['KL', 'DF', 'OS', 'FW']
 
-function SquadSlot({ entry, view, isCaptain, isSelected, isTarget, onClick, captainPopup, posTag }) {
+function SquadSlot({ entry, view, isCaptain, isSelected, isTarget, onClick, captainPopup, posTag, skeleton }) {
   const { slot, pos } = entry
   const meta = POSITIONS[pos]
   const player = slot.player
   const tag = posTag ? (
     <span className="tm-postag" style={{ '--pos': meta.color }}>{posTag}</span>
   ) : null
+
+  // Kadro Supabase'den yüklenirken soluk animasyonlu placeholder
+  if (skeleton) {
+    return (
+      <div className="tm-slot skeleton" aria-hidden="true">
+        <span className="tm-disc skel" />
+        <span className="tm-tag">
+          <span className="tm-skel-line" />
+        </span>
+      </div>
+    )
+  }
 
   if (!player) {
     return (
@@ -87,6 +96,7 @@ export default function Takimim() {
     weeks,
     fixtures,
     weeksLoading,
+    squadLoading,
     rosterList,
     remaining,
     counts,
@@ -96,7 +106,6 @@ export default function Takimim() {
   } = useSquad()
 
   const [view, setView] = useState('next')
-  const [scoringTab, setScoringTab] = useState('Genel')
   const [detail, setDetail] = useState(null) // { pos, index } — açık oyuncu detay modalı
   const [swapMode, setSwapMode] = useState(null) // { source:{pos,index}, targetType:'bench'|'starter' }
   const [saveMsg, setSaveMsg] = useState('')
@@ -207,6 +216,7 @@ export default function Takimim() {
         }}
         captainPopup={null}
         posTag={opts.posTag}
+        skeleton={squadLoading}
       />
     )
   }
@@ -284,7 +294,9 @@ export default function Takimim() {
 
       <div className="tm-layout">
         <div className="tm-left">
-          {locked ? (
+          {squadLoading ? (
+            <p className="tm-hint">Kadron yükleniyor…</p>
+          ) : locked ? (
             <div className="tm-lock-note">🔒 Week {week} kilitli — deadline geçti, kadro değişikliği yapılamaz.</div>
           ) : swapMode ? (
             <div className="tm-swap-note">
@@ -334,47 +346,6 @@ export default function Takimim() {
             </div>
           </div>
         </div>
-
-        {/* Sağ panel */}
-        <aside className="tm-panel">
-          <div className="tm-card">
-            <h3>Mevki Dağılımı</h3>
-            <div className="tm-pos-grid">
-              {POS_ORDER.map((pos) => {
-                const sel = roster[pos].filter((s) => s.player).length
-                const tot = SQUAD_TOTALS[pos]
-                return (
-                  <div key={pos} className={`tm-pos${sel === tot ? ' full' : ''}`} style={{ '--pos': POSITIONS[pos].color }}>
-                    <span>{POSITIONS[pos].label}</span>
-                    <strong>{sel}/{tot}</strong>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-
-          <div className="tm-card">
-            <h3>Puanlama Rehberi</h3>
-            <div className="tm-tabs">
-              {SCORING_TABS.map((tab) => (
-                <button key={tab} type="button" className={`tm-tab${scoringTab === tab ? ' active' : ''}`} onClick={() => setScoringTab(tab)}>
-                  {tab}
-                </button>
-              ))}
-            </div>
-            <ul className="tm-scoring">
-              {SCORING[scoringTab].map((row) => {
-                const cls = row.pts.startsWith('+') ? 'pos' : row.pts.startsWith('-') ? 'neg' : 'mult'
-                return (
-                  <li key={row.label}>
-                    <span>{row.label}</span>
-                    <span className={`tm-pts ${cls}`}>{row.pts}</span>
-                  </li>
-                )
-              })}
-            </ul>
-          </div>
-        </aside>
       </div>
 
       {/* Sticky kaydet çubuğu */}
@@ -400,7 +371,10 @@ export default function Takimim() {
           locked={locked}
           week={week}
           fixture={detailFixture}
-          onMakeCaptain={() => makeCaptain(detailPlayer.id)}
+          onMakeCaptain={() => {
+            makeCaptain(detailPlayer.id)
+            setDetail(null)
+          }}
           onClearCaptain={() => clearCaptain()}
           onMoveToBench={() => startSwap('bench')}
           onMoveToStarter={() => startSwap('starter')}
