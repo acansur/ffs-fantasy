@@ -13,14 +13,6 @@ import './Transfer.css'
 const POS_ORDER = ['KL', 'DF', 'OS', 'FW']
 const POS_TABS = [{ key: null, label: 'Tümü' }, ...POS_ORDER.map((p) => ({ key: p, label: p }))]
 
-// Sıralama seçenekleri (değer + toplam puan)
-const SORT_OPTS = [
-  { key: 'value-desc', label: 'Değer (Azalan)' },
-  { key: 'value-asc', label: 'Değer (Artan)' },
-  { key: 'points-desc', label: 'Toplam Puan (Azalan)' },
-  { key: 'points-asc', label: 'Toplam Puan (Artan)' },
-]
-
 // Toplam puan henüz yok — şimdilik 0
 const ptsOf = (p) => p.points ?? 0
 
@@ -34,7 +26,7 @@ function sortPlayers(arr, key) {
 
 export default function Transfer() {
   const navigate = useNavigate()
-  const { roster: committed, commitAndSave, week, setWeek, weeks, fixtures, weeksLoading } = useSquad()
+  const { roster: committed, commitAndSave, week, setWeek, weeks, fixtures, weeksLoading, squadLoading } = useSquad()
 
   const now = Date.now()
   const visibleWeeks = getVisibleWeeks(weeks, now)
@@ -48,13 +40,13 @@ export default function Transfer() {
   const [posFilter, setPosFilter] = useState(null)
   const [selectedClubs, setSelectedClubs] = useState([])
   const [sortKey, setSortKey] = useState('value-desc')
-  const [clubOpen, setClubOpen] = useState(false)
-  const [sortOpen, setSortOpen] = useState(false)
+  const [openDrop, setOpenDrop] = useState(null) // 'club' | 'value' | 'points' | null
   const [msg, setMsg] = useState('')
   const [scoringOpen, setScoringOpen] = useState(false)
   const [infoPlayer, setInfoPlayer] = useState(null)
   const clubRef = useRef(null)
-  const sortRef = useRef(null)
+  const valueRef = useRef(null)
+  const pointsRef = useRef(null)
 
   // Gerçek API oyuncuları
   const [api, setApi] = useState({ loading: true, error: null, players: [], teams: [] })
@@ -70,14 +62,15 @@ export default function Transfer() {
   }, [])
 
   useEffect(() => {
-    if (!clubOpen && !sortOpen) return
+    if (!openDrop) return
+    const refs = { club: clubRef, value: valueRef, points: pointsRef }
     const onDown = (e) => {
-      if (clubOpen && clubRef.current && !clubRef.current.contains(e.target)) setClubOpen(false)
-      if (sortOpen && sortRef.current && !sortRef.current.contains(e.target)) setSortOpen(false)
+      const ref = refs[openDrop]
+      if (ref?.current && !ref.current.contains(e.target)) setOpenDrop(null)
     }
     document.addEventListener('mousedown', onDown)
     return () => document.removeEventListener('mousedown', onDown)
-  }, [clubOpen, sortOpen])
+  }, [openDrop])
   useEffect(() => {
     if (!msg) return
     const t = setTimeout(() => setMsg(''), 2800)
@@ -144,8 +137,7 @@ export default function Transfer() {
   }
   const closePicker = () => {
     setPicker(null)
-    setClubOpen(false)
-    setSortOpen(false)
+    setOpenDrop(null)
   }
   const clearPickerSlot = () => {
     if (!picker) return
@@ -254,6 +246,8 @@ export default function Transfer() {
   }
 
   const clubLabel = selectedClubs.length === 0 ? 'Tüm kulüpler' : `${selectedClubs.length} kulüp`
+  const valueLabel = sortKey === 'value-desc' ? 'Değer ↓' : sortKey === 'value-asc' ? 'Değer ↑' : 'Değer'
+  const pointsLabel = sortKey === 'points-desc' ? 'Toplam Puan ↓' : sortKey === 'points-asc' ? 'Toplam Puan ↑' : 'Toplam Puan'
   const pickerHasPlayer = Boolean(picker && draft[picker.pos][picker.index].player)
 
   return (
@@ -319,6 +313,15 @@ export default function Transfer() {
           <div key={pos} className="tr-field-row">
             {draft[pos].map((slot, index) => {
               const meta = POSITIONS[pos]
+              // Kadro Supabase'den yüklenirken soluk animasyonlu placeholder
+              if (squadLoading) {
+                return (
+                  <div key={`${pos}-${index}`} className="tr-slot skeleton" aria-hidden="true">
+                    <span className="tr-disc skel" />
+                    <span className="tr-skel-line" />
+                  </div>
+                )
+              }
               if (!slot.player) {
                 return (
                   <button
@@ -335,20 +338,22 @@ export default function Transfer() {
               }
               const p = slot.player
               return (
-                <button
+                <div
                   key={`${pos}-${index}`}
-                  type="button"
                   className="tr-slot filled"
                   style={{ '--pos': meta.color, '--bg': p.clubBg, '--fg': p.clubFg }}
-                  onClick={() => openPicker(pos, index)}
                 >
-                  <span className="tr-postag" style={{ '--pos': meta.color }}>{pos}</span>
-                  <span className="tr-disc jersey">
-                    <PlayerPhoto id={p.id} name={p.name} bg={p.clubBg} fg={p.clubFg} />
-                  </span>
-                  <span className="tr-slot-tag">{p.name}</span>
+                  {/* Fotoğraf / ikon → oyuncu seçme popup'ı */}
+                  <button type="button" className="tr-slot-photo" onClick={() => openPicker(pos, index)} aria-label={`${p.name} — değiştir`}>
+                    <span className="tr-postag" style={{ '--pos': meta.color }}>{pos}</span>
+                    <span className="tr-disc jersey">
+                      <PlayerPhoto id={p.id} name={p.name} bg={p.clubBg} fg={p.clubFg} />
+                    </span>
+                  </button>
+                  {/* İsim → oyuncu bilgi kartı */}
+                  <button type="button" className="tr-slot-tag tr-slot-name" onClick={() => setInfoPlayer(p)}>{p.name}</button>
                   <span className="tr-slot-price">₺{p.price}M</span>
-                </button>
+                </div>
               )
             })}
           </div>
@@ -405,11 +410,12 @@ export default function Transfer() {
             </div>
 
             <div className="tr-list-controls">
+              {/* Kulüp filtresi */}
               <div className="dropdown" ref={clubRef}>
-                <button type="button" className="dropdown-toggle" onClick={() => setClubOpen((o) => !o)} disabled={api.loading}>
+                <button type="button" className="dropdown-toggle" onClick={() => setOpenDrop((d) => (d === 'club' ? null : 'club'))} disabled={api.loading}>
                   {clubLabel}
                 </button>
-                {clubOpen && (
+                {openDrop === 'club' && (
                   <div className="dropdown-panel">
                     {teamsInfo.map((t) => (
                       <label key={t.name} className="check-row">
@@ -422,27 +428,34 @@ export default function Transfer() {
                       {selectedClubs.length > 0 && (
                         <button type="button" className="link-btn" onClick={() => setSelectedClubs([])}>Temizle</button>
                       )}
-                      <button type="button" className="link-btn dropdown-done" onClick={() => setClubOpen(false)}>Tamam</button>
+                      <button type="button" className="link-btn dropdown-done" onClick={() => setOpenDrop(null)}>Tamam</button>
                     </div>
                   </div>
                 )}
               </div>
-              <div className="dropdown tr-sort" ref={sortRef}>
-                <button type="button" className="dropdown-toggle" onClick={() => setSortOpen((o) => !o)} aria-expanded={sortOpen}>
-                  {SORT_OPTS.find((o) => o.key === sortKey)?.label}
+
+              {/* Değer sıralaması */}
+              <div className="dropdown tr-sort" ref={valueRef}>
+                <button type="button" className={`dropdown-toggle${sortKey.startsWith('value') ? ' active' : ''}`} onClick={() => setOpenDrop((d) => (d === 'value' ? null : 'value'))} aria-expanded={openDrop === 'value'}>
+                  {valueLabel}
                 </button>
-                {sortOpen && (
+                {openDrop === 'value' && (
                   <div className="dropdown-panel">
-                    {SORT_OPTS.map((o) => (
-                      <button
-                        key={o.key}
-                        type="button"
-                        className={`tr-sort-opt${sortKey === o.key ? ' active' : ''}`}
-                        onClick={() => { setSortKey(o.key); setSortOpen(false) }}
-                      >
-                        {o.label}
-                      </button>
-                    ))}
+                    <button type="button" className={`tr-sort-opt${sortKey === 'value-desc' ? ' active' : ''}`} onClick={() => { setSortKey('value-desc'); setOpenDrop(null) }}>Azalan</button>
+                    <button type="button" className={`tr-sort-opt${sortKey === 'value-asc' ? ' active' : ''}`} onClick={() => { setSortKey('value-asc'); setOpenDrop(null) }}>Artan</button>
+                  </div>
+                )}
+              </div>
+
+              {/* Toplam Puan sıralaması */}
+              <div className="dropdown tr-sort" ref={pointsRef}>
+                <button type="button" className={`dropdown-toggle${sortKey.startsWith('points') ? ' active' : ''}`} onClick={() => setOpenDrop((d) => (d === 'points' ? null : 'points'))} aria-expanded={openDrop === 'points'}>
+                  {pointsLabel}
+                </button>
+                {openDrop === 'points' && (
+                  <div className="dropdown-panel">
+                    <button type="button" className={`tr-sort-opt${sortKey === 'points-desc' ? ' active' : ''}`} onClick={() => { setSortKey('points-desc'); setOpenDrop(null) }}>Azalan</button>
+                    <button type="button" className={`tr-sort-opt${sortKey === 'points-asc' ? ' active' : ''}`} onClick={() => { setSortKey('points-asc'); setOpenDrop(null) }}>Artan</button>
                   </div>
                 )}
               </div>

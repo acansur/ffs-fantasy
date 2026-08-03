@@ -323,6 +323,64 @@
   color: rgba(255, 255, 255, 0.7);
 }
 
+/* Dolu yuva: fotoğraf (popup) + isim (bilgi kartı) ayrı tıklanabilir */
+.tr-slot.filled {
+  cursor: default;
+}
+.tr-slot-photo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: inherit;
+  font-family: inherit;
+}
+.tr-slot-photo:hover .tr-disc {
+  transform: translateY(-2px) scale(1.05);
+}
+.tr-slot-name {
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  color: inherit;
+}
+.tr-slot-name:hover {
+  color: var(--gold);
+  text-decoration: underline;
+}
+
+/* Skeleton (kadro yüklenirken) */
+.tr-slot.skeleton {
+  cursor: default;
+}
+.tr-disc.skel {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: none;
+  animation: tr-skel 1.2s ease-in-out infinite;
+}
+.tr-skel-line {
+  width: 58px;
+  height: 10px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.1);
+  animation: tr-skel 1.2s ease-in-out infinite;
+}
+@keyframes tr-skel {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
 .tr-slot-price {
   font-size: 0.66rem;
   font-weight: 600;
@@ -395,9 +453,27 @@
 
 .tr-list-controls {
   display: flex;
-  gap: 0.6rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
   padding: 0.5rem 0.8rem 0.8rem;
   border-bottom: 1px solid var(--card-line);
+}
+/* 3 dropdown yan yana — dar picker'da sığması için */
+.tr-list-controls .dropdown {
+  min-width: 0;
+  flex: 1 1 30%;
+}
+.tr-list-controls .dropdown-toggle {
+  padding: 0.5rem 0.55rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tr-list-controls .dropdown-toggle.active {
+  border-color: rgba(240, 165, 0, 0.6);
+  color: var(--gold);
 }
 
 .tr-player-list {
