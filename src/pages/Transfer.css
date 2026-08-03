@@ -577,6 +577,29 @@
   filter: grayscale(0.4);
 }
 
+/* Sıralama dropdown seçenekleri (özel dropdown — native select yerine) */
+.tr-sort-opt {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.5rem 0.6rem;
+  border: none;
+  background: none;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 8px;
+}
+.tr-sort-opt:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+.tr-sort-opt.active {
+  color: var(--gold);
+  background: rgba(240, 165, 0, 0.12);
+}
+
 /* İsim (tıklanınca info kartı) */
 .tr-p-namebtn {
   flex: 1;

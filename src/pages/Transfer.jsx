@@ -49,10 +49,12 @@ export default function Transfer() {
   const [selectedClubs, setSelectedClubs] = useState([])
   const [sortKey, setSortKey] = useState('value-desc')
   const [clubOpen, setClubOpen] = useState(false)
+  const [sortOpen, setSortOpen] = useState(false)
   const [msg, setMsg] = useState('')
   const [scoringOpen, setScoringOpen] = useState(false)
   const [infoPlayer, setInfoPlayer] = useState(null)
   const clubRef = useRef(null)
+  const sortRef = useRef(null)
 
   // Gerçek API oyuncuları
   const [api, setApi] = useState({ loading: true, error: null, players: [], teams: [] })
@@ -68,13 +70,14 @@ export default function Transfer() {
   }, [])
 
   useEffect(() => {
-    if (!clubOpen) return
+    if (!clubOpen && !sortOpen) return
     const onDown = (e) => {
-      if (clubRef.current && !clubRef.current.contains(e.target)) setClubOpen(false)
+      if (clubOpen && clubRef.current && !clubRef.current.contains(e.target)) setClubOpen(false)
+      if (sortOpen && sortRef.current && !sortRef.current.contains(e.target)) setSortOpen(false)
     }
     document.addEventListener('mousedown', onDown)
     return () => document.removeEventListener('mousedown', onDown)
-  }, [clubOpen])
+  }, [clubOpen, sortOpen])
   useEffect(() => {
     if (!msg) return
     const t = setTimeout(() => setMsg(''), 2800)
@@ -142,6 +145,7 @@ export default function Transfer() {
   const closePicker = () => {
     setPicker(null)
     setClubOpen(false)
+    setSortOpen(false)
   }
   const clearPickerSlot = () => {
     if (!picker) return
@@ -423,11 +427,25 @@ export default function Transfer() {
                   </div>
                 )}
               </div>
-              <select className="sort-select" value={sortKey} onChange={(e) => setSortKey(e.target.value)} aria-label="Sıralama">
-                {SORT_OPTS.map((o) => (
-                  <option key={o.key} value={o.key}>{o.label}</option>
-                ))}
-              </select>
+              <div className="dropdown tr-sort" ref={sortRef}>
+                <button type="button" className="dropdown-toggle" onClick={() => setSortOpen((o) => !o)} aria-expanded={sortOpen}>
+                  {SORT_OPTS.find((o) => o.key === sortKey)?.label}
+                </button>
+                {sortOpen && (
+                  <div className="dropdown-panel">
+                    {SORT_OPTS.map((o) => (
+                      <button
+                        key={o.key}
+                        type="button"
+                        className={`tr-sort-opt${sortKey === o.key ? ' active' : ''}`}
+                        onClick={() => { setSortKey(o.key); setSortOpen(false) }}
+                      >
+                        {o.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             {pickerHasPlayer && (
