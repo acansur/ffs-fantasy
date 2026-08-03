@@ -435,17 +435,26 @@ export default function Takimim() {
       {/* Saha */}
       <div className="pitch-wrap">
         <div className="tm-pitch">
-          <div className="pitch-lines" aria-hidden="true">
-            <span className="pl-circle" />
-            <span className="pl-box" />
-            <span className="pl-box2" />
-            <span className="pl-spot" />
-          </div>
-          <div className="rows">
-            <div className="row">{fieldByPos.FW.map((e) => renderSlot(e))}</div>
-            <div className="row">{fieldByPos.OS.map((e) => renderSlot(e))}</div>
-            <div className="row">{fieldByPos.DF.map((e) => renderSlot(e))}</div>
-            <div className="row">{fieldByPos.KL.map((e) => renderSlot(e))}</div>
+          <div className="field">
+            <div className="pitch-lines" aria-hidden="true">
+              <div className="halfway" />
+              <div className="circle" />
+              <div className="cspot" />
+              <div className="box-t" />
+              <div className="goal-t" />
+              <div className="spot-t" />
+              <div className="arc-t" />
+              <div className="box-b" />
+              <div className="goal-b" />
+              <div className="spot-b" />
+              <div className="arc-b" />
+            </div>
+            <div className="rows">
+              <div className="row">{fieldByPos.FW.map((e) => renderSlot(e))}</div>
+              <div className="row">{fieldByPos.OS.map((e) => renderSlot(e))}</div>
+              <div className="row">{fieldByPos.DF.map((e) => renderSlot(e))}</div>
+              <div className="row">{fieldByPos.KL.map((e) => renderSlot(e))}</div>
+            </div>
           </div>
 
           <div className="bench-div"><span className="bench-label">Yedekler</span></div>
