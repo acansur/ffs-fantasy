@@ -1,5 +1,6 @@
 import { useMemo, useState, useRef, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../lib/auth.jsx'
 import { useSquad, cloneRoster, rosterPlayers } from '../lib/squadStore.jsx'
 import { loadSuperLigPlayers, toAppPlayers, clubColors, clubShort } from '../lib/apiFootball.js'
 import { getVisibleWeeks, formatDeadline, getTeamFixture } from '../lib/weeks.js'
@@ -12,6 +13,9 @@ import './Transfer.css'
 
 const POS_ORDER = ['KL', 'DF', 'OS', 'FW']
 const POS_TABS = [{ key: null, label: 'Tümü' }, ...POS_ORDER.map((p) => ({ key: p, label: p }))]
+// Pozisyon → halka / rozet renk sınıfı (KL yeşil · DF kırmızı · OS mavi · FW turuncu)
+const RING = { KL: 'tr-ring-gk', DF: 'tr-ring-def', OS: 'tr-ring-mid', FW: 'tr-ring-fwd' }
+const TAGC = { KL: 'tr-tag-gk', DF: 'tr-tag-def', OS: 'tr-tag-mid', FW: 'tr-tag-fwd' }
 
 // Toplam puan henüz yok — şimdilik 0
 const ptsOf = (p) => p.points ?? 0
@@ -24,8 +28,38 @@ function sortPlayers(arr, key) {
   return l.sort((a, b) => b.price - a.price) // value-desc
 }
 
+/* ---- İkonlar ---- */
+const IconBack = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+)
+const IconGuide = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9" /><path d="M12 16v-4M12 8h.01" strokeLinecap="round" /></svg>
+)
+const IconWallet = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"><path d="M3 8.5A2.5 2.5 0 0 1 5.5 6H18v3" /><rect x="3" y="8.5" width="18" height="11" rx="2.5" /><circle cx="16.5" cy="14" r="1.3" fill="currentColor" stroke="none" /></svg>
+)
+const IconStar = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 17l-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z" /></svg>
+)
+const IconSwap = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 8.5h13l-3.2-3.3M20 15.5H7l3.2 3.3" /></svg>
+)
+const IconCheck = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.5l4.5 4.5L19 7" /></svg>
+)
+const IconBolt = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"><path d="M13 2L4 14h6l-1 8 9-12h-6z" /></svg>
+)
+const IconSave = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"><path d="M5 4h11l3 3v13H5z" /><path d="M8.5 4v5h6" /><rect x="8.5" y="13" width="7" height="5" /></svg>
+)
+const IconSearch = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
+)
+
 export default function Transfer() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const { roster: committed, commitAndSave, week, setWeek, weeks, fixtures, weeksLoading, squadLoading } = useSquad()
 
   const now = Date.now()
@@ -41,6 +75,7 @@ export default function Transfer() {
   const [selectedClubs, setSelectedClubs] = useState([])
   const [sortKey, setSortKey] = useState('value-desc')
   const [openDrop, setOpenDrop] = useState(null) // 'club' | 'value' | 'points' | null
+  const [search, setSearch] = useState('')
   const [msg, setMsg] = useState('')
   const [scoringOpen, setScoringOpen] = useState(false)
   const [infoPlayer, setInfoPlayer] = useState(null)
@@ -103,6 +138,8 @@ export default function Transfer() {
   const spent = draftList.reduce((s, p) => s + p.price, 0)
   const remaining = TOTAL_BUDGET - spent
   const overBudget = remaining < 0
+  const spentPct = Math.max(0, Math.min(100, (spent / TOTAL_BUDGET) * 100))
+  const countPct = (filledCount / 15) * 100
 
   // Kulüp filtresi için takım listesi (renk + kısa kod)
   const teamsInfo = useMemo(
@@ -114,8 +151,10 @@ export default function Transfer() {
     let l = api.players
     if (posFilter) l = l.filter((p) => p.pos === posFilter)
     if (selectedClubs.length) l = l.filter((p) => selectedClubs.includes(p.club))
+    const q = search.trim().toLocaleLowerCase('tr')
+    if (q) l = l.filter((p) => p.name.toLocaleLowerCase('tr').includes(q))
     return sortPlayers(l, sortKey)
-  }, [api.players, posFilter, selectedClubs, sortKey])
+  }, [api.players, posFilter, selectedClubs, sortKey, search])
 
   const setDraftSlot = (pos, index, player) => {
     editedRef.current = true
@@ -133,6 +172,8 @@ export default function Transfer() {
   const openPicker = (pos, index) => {
     setPicker({ pos, index })
     setPosFilter(pos)
+    setSearch('')
+    setOpenDrop(null)
     setMsg('')
   }
   const closePicker = () => {
@@ -159,15 +200,6 @@ export default function Transfer() {
     }
     setDraftSlot(pos, target.index, player)
     setPicker(null)
-  }
-
-  // Listede + butonuna tıklama: kulüp limiti dolu ise uyarı, değilse ekle
-  const onAddClick = (p, clubMaxed) => {
-    if (clubMaxed) {
-      setMsg('Bu kulüpten maksimum 3 oyuncu seçebilirsin')
-      return
-    }
-    addPlayer(p)
   }
 
   // Otomatik doldur: boş mevkileri, bütçe + kulüp limiti kurallarına göre,
@@ -248,53 +280,111 @@ export default function Transfer() {
   const clubLabel = selectedClubs.length === 0 ? 'Tüm kulüpler' : `${selectedClubs.length} kulüp`
   const valueLabel = sortKey === 'value-desc' ? 'Değer ↓' : sortKey === 'value-asc' ? 'Değer ↑' : 'Değer'
   const pointsLabel = sortKey === 'points-desc' ? 'Toplam Puan ↓' : sortKey === 'points-asc' ? 'Toplam Puan ↑' : 'Toplam Puan'
-  const pickerHasPlayer = Boolean(picker && draft[picker.pos][picker.index].player)
+  const pickerSlotPlayer = picker ? draft[picker.pos][picker.index].player : null
+  const slotVal = pickerSlotPlayer ? pickerSlotPlayer.price : 0
+  const pickerPosMeta = picker ? POSITIONS[picker.pos] : null
+
+  // Bir oyuncu yuvası (dolu / boş / skeleton)
+  const renderSlot = (pos, index, slot) => {
+    const key = `${pos}-${index}`
+    if (squadLoading) {
+      return (
+        <div key={key} className="tr-pl skeleton" aria-hidden="true">
+          <span className="tr-ava skel" />
+          <span className="tr-skline" />
+        </div>
+      )
+    }
+    if (!slot.player) {
+      return (
+        <div key={key} className="tr-pl">
+          <span className={`tr-postag ${TAGC[pos]}`}>{pos}</span>
+          <button type="button" className={`tr-ava tr-ava-empty ${RING[pos]}`} onClick={() => openPicker(pos, index)} aria-label={`Boş ${POSITIONS[pos].label} — oyuncu seç`}>
+            +
+          </button>
+          <div className="tr-nameplate tr-nameplate-empty"><span className="nm">Boş</span></div>
+          <span className="tr-pr hidden">—</span>
+        </div>
+      )
+    }
+    const p = slot.player
+    return (
+      <div key={key} className="tr-pl">
+        <span className={`tr-postag ${TAGC[pos]}`}>{pos}</span>
+        <button type="button" className={`tr-ava ${RING[pos]}`} onClick={() => openPicker(pos, index)} aria-label={`${p.name} — değiştir`}>
+          <PlayerPhoto id={p.id} name={p.name} bg={p.clubBg} fg={p.clubFg} />
+        </button>
+        <button type="button" className="tr-nameplate" onClick={() => setInfoPlayer(p)}>
+          <span className="nm">{p.name}</span>
+        </button>
+        <span className="tr-pr cond tnum">₺{p.price}M</span>
+      </div>
+    )
+  }
 
   return (
     <div className="tr-page">
-      {/* Üst bar */}
-      <div className="tr-topbar">
-        <Link to="/takimim" className="tr-back">‹ Takımım</Link>
-        <div className="tr-topbar-mid">
-          <span className="tr-title">Transfer</span>
+      {/* Takımıma Dön */}
+      <Link to="/takimim" className="tr-backbtn"><IconBack />Takımıma Dön</Link>
+
+      {/* Hero — market teması */}
+      <div className="tr-hero">
+        <div className="tr-hero-crest">FFS</div>
+        <div className="tr-hero-id">
+          <h1 className="semi">{user ? user.username : 'Takımım'}</h1>
+          <p>Fantasy Süper Lig · 2026–27 Sezonu</p>
         </div>
-        <div className="tr-deadline">Deadline: {deadlineText}</div>
-      </div>
-
-      {/* Puanlama başlığı + buton */}
-      <div className="tr-scoring-head">
-        <h2>Puanlama</h2>
-        <button type="button" className="tr-scoring-btn" onClick={() => setScoringOpen(true)}>
-          Puanlama Rehberi
-        </button>
-      </div>
-
-      {/* Stat kutucukları */}
-      <div className="tr-stripe">
-        <div className="tr-stat tr-stat-budget">
-          <span>Bütçe</span>
-          <div className="tr-budget-rows">
-            <div className="tr-budget-row">
-              <small>Toplam</small>
-              <strong>{TOTAL_BUDGET.toFixed(1)}M</strong>
-            </div>
-            <div className="tr-budget-row">
-              <small>Kalan</small>
-              <strong className={overBudget ? 'neg' : ''}>{remaining.toFixed(1)}M</strong>
-            </div>
+        <div className="tr-hero-word">Transfer</div>
+        <div className="tr-hero-right">
+          <button type="button" className="tr-btn-guide" onClick={() => setScoringOpen(true)}>
+            <IconGuide />Puanlama Rehberi
+          </button>
+          <div className="tr-chip-deadline">
+            <span className="k">Deadline</span>
+            <b className="tnum">{deadlineText}</b>
           </div>
         </div>
-        <div className="tr-stat">
-          <span>Ekstra Bütçe &amp; Aktif Joker</span>
-          <strong className="tr-muted">—</strong>
+      </div>
+
+      {/* Stat kartları */}
+      <div className="tr-stats">
+        <div className="tr-stat tr-stat-budget">
+          <div className="tr-stat-head">
+            <span className="eyebrow">Bütçe</span>
+            <span className="tr-stat-ico ico-green"><IconWallet /></span>
+          </div>
+          <div className="tr-budget-vals">
+            <div className="bv">
+              <div className="l">Toplam</div>
+              <div className="v cond tnum">{TOTAL_BUDGET.toFixed(1)}M</div>
+            </div>
+            <div className="bv">
+              <div className="l">Kalan</div>
+              <div className={`v rem cond tnum${overBudget ? ' neg' : ''}`}>{remaining.toFixed(1)}M</div>
+            </div>
+          </div>
+          <div className="tr-budget-bar"><div className="tr-budget-fill" style={{ width: `${spentPct}%` }} /></div>
+          <div className="tr-budget-meta"><span className="tnum">{spent.toFixed(1)}M harcandı</span><span>Kadro değeri</span></div>
         </div>
+
         <div className="tr-stat">
-          <span>Serbest Transfer Hakkı</span>
-          <strong>Sınırsız</strong>
+          <div className="tr-stat-head">
+            <span className="eyebrow">Ekstra Bütçe &amp; Joker</span>
+            <span className="tr-stat-ico ico-gold"><IconStar /></span>
+          </div>
+          <div className="tr-stat-dash cond">—</div>
+        </div>
+
+        <div className="tr-stat">
+          <div className="tr-stat-head">
+            <span className="eyebrow">Serbest Transfer Hakkı</span>
+            <span className="tr-stat-ico ico-gold"><IconSwap /></span>
+          </div>
+          <div className="tr-stat-big semi">Sınırsız</div>
         </div>
       </div>
 
-      {/* Hafta bar'ı */}
+      {/* Hafta seçici */}
       <WeekBar
         weeks={weeks}
         visible={visibleWeeks}
@@ -303,214 +393,197 @@ export default function Transfer() {
         now={now}
         loading={weeksLoading}
       />
-      <div className="tr-week-note">Hafta {week} için transfer yapıyorsunuz</div>
+      <div className="tr-hint">Hafta {week} için transfer yapıyorsunuz</div>
 
       {msg && !picker && <div className={`tr-msg${msg.startsWith('⚠') ? ' warn' : ' ok'}`}>{msg}</div>}
 
-      {/* Taktik sahası (tam genişlik) */}
-      <div className="tr-field">
-        {POS_ORDER.slice().reverse().map((pos) => (
-          <div key={pos} className="tr-field-row">
-            {draft[pos].map((slot, index) => {
-              const meta = POSITIONS[pos]
-              // Kadro Supabase'den yüklenirken soluk animasyonlu placeholder
-              if (squadLoading) {
-                return (
-                  <div key={`${pos}-${index}`} className="tr-slot skeleton" aria-hidden="true">
-                    <span className="tr-disc skel" />
-                    <span className="tr-skel-line" />
-                  </div>
-                )
-              }
-              if (!slot.player) {
-                return (
-                  <button
-                    key={`${pos}-${index}`}
-                    type="button"
-                    className="tr-slot empty"
-                    style={{ '--pos': meta.color }}
-                    onClick={() => openPicker(pos, index)}
-                  >
-                    <span className="tr-postag" style={{ '--pos': meta.color }}>{pos}</span>
-                    <span className="tr-disc"><span className="tr-plus">+</span></span>
-                  </button>
-                )
-              }
-              const p = slot.player
-              return (
-                <div
-                  key={`${pos}-${index}`}
-                  className="tr-slot filled"
-                  style={{ '--pos': meta.color, '--bg': p.clubBg, '--fg': p.clubFg }}
-                >
-                  {/* Fotoğraf / ikon → oyuncu seçme popup'ı */}
-                  <button type="button" className="tr-slot-photo" onClick={() => openPicker(pos, index)} aria-label={`${p.name} — değiştir`}>
-                    <span className="tr-postag" style={{ '--pos': meta.color }}>{pos}</span>
-                    <span className="tr-disc jersey">
-                      <PlayerPhoto id={p.id} name={p.name} bg={p.clubBg} fg={p.clubFg} />
-                    </span>
-                  </button>
-                  {/* İsim → oyuncu bilgi kartı */}
-                  <button type="button" className="tr-slot-tag tr-slot-name" onClick={() => setInfoPlayer(p)}>{p.name}</button>
-                  <span className="tr-slot-price">₺{p.price}M</span>
+      {/* Saha — 15 oyuncu (FW → OS → DF → KL) */}
+      <div className="tr-pitch-wrap">
+        <div className="tr-pitch">
+          <div className="tr-fieldbox">
+            <div className="tr-plines" aria-hidden="true">
+              <span className="tr-halfway" />
+              <span className="tr-circle" />
+              <span className="tr-cspot" />
+              <span className="tr-box-t" />
+              <span className="tr-goal-t" />
+              <span className="tr-arc-t" />
+              <span className="tr-box-b" />
+              <span className="tr-goal-b" />
+              <span className="tr-arc-b" />
+            </div>
+            <div className="tr-rows">
+              {POS_ORDER.slice().reverse().map((pos) => (
+                <div key={pos} className="tr-row">
+                  {draft[pos].map((slot, index) => renderSlot(pos, index, slot))}
                 </div>
-              )
-            })}
+              ))}
+            </div>
           </div>
-        ))}
-      </div>
-
-      {/* Sticky aksiyon çubuğu */}
-      <div className="tr-actionbar">
-        {overBudget ? (
-          <span className="tr-budget-warn">Bütçeni aştın — kadroyu kaydedemezsin.</span>
-        ) : (
-          <span className="tr-count-note">{filledCount}/15 oyuncu seçildi</span>
-        )}
-        <div className="tr-actionbar-right">
-          <button
-            type="button"
-            className="tr-autofill"
-            onClick={autoFill}
-            disabled={emptyCount === 0 || api.loading || !api.players.length}
-          >
-            ⚡ Boş Mevkileri Otomatik Doldur
-          </button>
-          <button type="button" className="tr-save" onClick={onSave} disabled={!canSave}>
-            Kaydet ve Takıma Dön
-          </button>
         </div>
       </div>
 
-      {/* Puanlama rehberi popup */}
+      {/* Sabit alt bar */}
+      <div className="tr-footer">
+        <div className="tr-footer-in">
+          <div className="tr-count">
+            <span className="tr-count-ring" style={{ '--pct': `${countPct}%` }}><IconCheck /></span>
+            <span className="tr-count-num cond tnum">
+              <b className={filledCount < 15 ? 'warn' : ''}>{filledCount}</b>/15
+            </span>
+            <span className="tr-count-lbl">{overBudget ? 'bütçe aşıldı' : 'oyuncu seçildi'}</span>
+          </div>
+          <div className="tr-footer-actions">
+            <button type="button" className="tr-btn-autofill" onClick={autoFill} disabled={emptyCount === 0 || api.loading || !api.players.length}>
+              <IconBolt />Boş Mevkileri Otomatik Doldur
+            </button>
+            <button type="button" className="tr-btn-save" onClick={onSave} disabled={!canSave}>
+              <IconSave />Kaydet ve Takıma Dön
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Puanlama Rehberi modalı */}
       {scoringOpen && (
-        <div className="tr-modal-overlay" onClick={() => setScoringOpen(false)}>
-          <div className="tr-modal-sm" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
-            <button className="tr-modal-close" onClick={() => setScoringOpen(false)} aria-label="Kapat">×</button>
+        <div className="tr-overlay show" onClick={() => setScoringOpen(false)}>
+          <div className="tr-guide" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+            <button className="tr-mclose" onClick={() => setScoringOpen(false)} aria-label="Kapat">×</button>
             <ScoringGuide />
           </div>
         </div>
       )}
 
-      {/* Oyuncu seçme popup */}
+      {/* Oyuncu Seç modalı */}
       {picker && (
-        <div className="tr-modal-overlay" onClick={closePicker}>
-          <div className="tr-picker" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
-            <div className="tr-picker-head">
-              <h2>{posFilter ? POSITIONS[posFilter].label : 'Oyuncu'} Seç</h2>
-              <button className="tr-modal-close" onClick={closePicker} aria-label="Kapat">×</button>
-            </div>
+        <div className="tr-overlay show" onClick={closePicker}>
+          <div className="tr-selmodal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+            <div className="tr-sm-head">
+              <div className="tr-sm-titlerow">
+                <h2 className="tr-sm-title">{pickerPosMeta ? pickerPosMeta.label : 'Oyuncu'} Seç</h2>
+                <button className="tr-mclose" onClick={closePicker} aria-label="Kapat">×</button>
+              </div>
 
-            <div className="tr-pos-tabs">
-              {POS_TABS.map((t) => (
-                <button key={t.label} type="button" className={`tr-pos-tab${posFilter === t.key ? ' active' : ''}`} onClick={() => setPosFilter(t.key)}>
-                  {t.label}
-                </button>
-              ))}
-            </div>
+              {/* Context — hangi yuva */}
+              <div className="tr-sm-ctx">
+                {pickerSlotPlayer ? (
+                  <>
+                    <span className="cav" style={{ background: pickerSlotPlayer.clubBg, color: pickerSlotPlayer.clubFg }}>{initials(pickerSlotPlayer.name)}</span>
+                    <span className="ct">Değiştiriliyor: <b>{pickerSlotPlayer.name}</b> · {pickerSlotPlayer.club}</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="cav dash" />
+                    <span className="ct">Boş <b>{pickerPosMeta?.label}</b> mevkisi dolduruluyor</span>
+                  </>
+                )}
+                <span className={`cpos ${TAGC[picker.pos]}`}>{picker.pos}</span>
+              </div>
 
-            <div className="tr-list-controls">
-              {/* Kulüp filtresi */}
-              <div className="dropdown" ref={clubRef}>
-                <button type="button" className="dropdown-toggle" onClick={() => setOpenDrop((d) => (d === 'club' ? null : 'club'))} disabled={api.loading}>
-                  {clubLabel}
-                </button>
-                {openDrop === 'club' && (
-                  <div className="dropdown-panel">
+              {/* Mevki sekmeleri */}
+              <div className="tr-sm-tabs">
+                {POS_TABS.map((t) => (
+                  <button key={t.label} type="button" className={`tr-sm-tab${posFilter === t.key ? ' on' : ''}`} onClick={() => setPosFilter(t.key)}>
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Filtreler: Kulüp · Değer · Toplam Puan */}
+              <div className="tr-sm-filters">
+                <div className={`tr-fdrop${openDrop === 'club' ? ' open' : ''}`} ref={clubRef}>
+                  <button type="button" className={`tr-fdrop-btn${selectedClubs.length ? ' gold' : ''}`} onClick={() => setOpenDrop((d) => (d === 'club' ? null : 'club'))} disabled={api.loading}>
+                    {clubLabel}
+                  </button>
+                  <div className="tr-fdrop-panel tr-team-panel">
                     {teamsInfo.map((t) => (
-                      <label key={t.name} className="check-row">
+                      <label key={t.name} className="tr-team-opt">
                         <input type="checkbox" checked={selectedClubs.includes(t.name)} onChange={() => toggleClub(t.name)} />
-                        <span className="club-dot" style={{ background: t.bg }} />
+                        <span className="tr-team-dot" style={{ background: t.bg }} />
                         {t.name}
                       </label>
                     ))}
-                    <div className="dropdown-foot">
-                      {selectedClubs.length > 0 && (
-                        <button type="button" className="link-btn" onClick={() => setSelectedClubs([])}>Temizle</button>
-                      )}
-                      <button type="button" className="link-btn dropdown-done" onClick={() => setOpenDrop(null)}>Tamam</button>
+                    <div className="tr-team-foot">
+                      <button type="button" className="tf-clear" onClick={() => setSelectedClubs([])}>Temizle</button>
+                      <button type="button" className="tf-ok" onClick={() => setOpenDrop(null)}>Tamam</button>
                     </div>
                   </div>
-                )}
+                </div>
+
+                <div className={`tr-fdrop${openDrop === 'value' ? ' open' : ''}`} ref={valueRef}>
+                  <button type="button" className={`tr-fdrop-btn${sortKey.startsWith('value') ? ' gold' : ''}`} onClick={() => setOpenDrop((d) => (d === 'value' ? null : 'value'))}>
+                    {valueLabel}
+                  </button>
+                  <div className="tr-fdrop-panel">
+                    <div className={`tr-fopt${sortKey === 'value-desc' ? ' on' : ''}`} onClick={() => { setSortKey('value-desc'); setOpenDrop(null) }}>Azalan</div>
+                    <div className={`tr-fopt${sortKey === 'value-asc' ? ' on' : ''}`} onClick={() => { setSortKey('value-asc'); setOpenDrop(null) }}>Artan</div>
+                  </div>
+                </div>
+
+                <div className={`tr-fdrop${openDrop === 'points' ? ' open' : ''}`} ref={pointsRef}>
+                  <button type="button" className={`tr-fdrop-btn${sortKey.startsWith('points') ? ' gold' : ''}`} onClick={() => setOpenDrop((d) => (d === 'points' ? null : 'points'))}>
+                    {pointsLabel}
+                  </button>
+                  <div className="tr-fdrop-panel">
+                    <div className={`tr-fopt${sortKey === 'points-desc' ? ' on' : ''}`} onClick={() => { setSortKey('points-desc'); setOpenDrop(null) }}>Azalan</div>
+                    <div className={`tr-fopt${sortKey === 'points-asc' ? ' on' : ''}`} onClick={() => { setSortKey('points-asc'); setOpenDrop(null) }}>Artan</div>
+                  </div>
+                </div>
               </div>
 
-              {/* Değer sıralaması */}
-              <div className="dropdown tr-sort" ref={valueRef}>
-                <button type="button" className={`dropdown-toggle${sortKey.startsWith('value') ? ' active' : ''}`} onClick={() => setOpenDrop((d) => (d === 'value' ? null : 'value'))} aria-expanded={openDrop === 'value'}>
-                  {valueLabel}
-                </button>
-                {openDrop === 'value' && (
-                  <div className="dropdown-panel">
-                    <button type="button" className={`tr-sort-opt${sortKey === 'value-desc' ? ' active' : ''}`} onClick={() => { setSortKey('value-desc'); setOpenDrop(null) }}>Azalan</button>
-                    <button type="button" className={`tr-sort-opt${sortKey === 'value-asc' ? ' active' : ''}`} onClick={() => { setSortKey('value-asc'); setOpenDrop(null) }}>Artan</button>
-                  </div>
-                )}
+              {/* Arama */}
+              <div className="tr-sm-search">
+                <IconSearch />
+                <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Oyuncu ara…" />
               </div>
 
-              {/* Toplam Puan sıralaması */}
-              <div className="dropdown tr-sort" ref={pointsRef}>
-                <button type="button" className={`dropdown-toggle${sortKey.startsWith('points') ? ' active' : ''}`} onClick={() => setOpenDrop((d) => (d === 'points' ? null : 'points'))} aria-expanded={openDrop === 'points'}>
-                  {pointsLabel}
-                </button>
-                {openDrop === 'points' && (
-                  <div className="dropdown-panel">
-                    <button type="button" className={`tr-sort-opt${sortKey === 'points-desc' ? ' active' : ''}`} onClick={() => { setSortKey('points-desc'); setOpenDrop(null) }}>Azalan</button>
-                    <button type="button" className={`tr-sort-opt${sortKey === 'points-asc' ? ' active' : ''}`} onClick={() => { setSortKey('points-asc'); setOpenDrop(null) }}>Artan</button>
-                  </div>
-                )}
+              {/* Kullanılabilir bütçe */}
+              <div className="tr-sm-budget">
+                <span className="l">Kullanılabilir bütçe</span>
+                <span className="v cond tnum">{(remaining + slotVal).toFixed(1)}M</span>
               </div>
+
+              {pickerSlotPlayer && (
+                <button type="button" className="tr-btn-empty" onClick={clearPickerSlot}>Bu mevkiyi boşalt</button>
+              )}
             </div>
 
-            {pickerHasPlayer && (
-              <button type="button" className="tr-clear-slot" onClick={clearPickerSlot}>
-                Bu mevkiyi boşalt
-              </button>
-            )}
-
-            {msg && <div className={`tr-picker-msg${msg.startsWith('⚠') ? ' warn' : ''}`}>{msg}</div>}
-
-            <ul className="tr-player-list">
-              {api.loading && <li className="tr-loading">Yükleniyor…</li>}
-              {!api.loading && api.error && <li className="tr-loading err">⚠ {api.error}</li>}
-              {!api.loading && !api.error && list.length === 0 && (
-                <li className="tr-loading">Filtreye uygun oyuncu yok.</li>
-              )}
+            {/* Liste */}
+            <div className="tr-sm-list">
+              {api.loading && <div className="tr-empty-list">Yükleniyor…</div>}
+              {!api.loading && api.error && <div className="tr-empty-list">⚠ {api.error}</div>}
+              {!api.loading && !api.error && list.length === 0 && <div className="tr-empty-list">Filtreye uygun oyuncu yok.</div>}
               {!api.loading && !api.error &&
                 list.map((p) => {
                   const inRoster = rosterIds.has(p.id)
                   const clubMaxed = (clubCounts[p.club] || 0) >= MAX_PER_CLUB && !inRoster
-                  const dimmed = inRoster || clubMaxed
+                  const freed = picker && p.pos === picker.pos ? slotVal : 0
+                  const unaffordable = !inRoster && !clubMaxed && remaining + freed < p.price
+                  const blocked = inRoster || clubMaxed || unaffordable
                   return (
-                    <li key={p.id} className={`tr-player${dimmed ? ' disabled' : ''}`}>
-                      <span className="tr-p-jersey" style={{ background: p.clubBg, color: p.clubFg }}>{initials(p.name)}</span>
-                      <button type="button" className="tr-p-namebtn" onClick={() => setInfoPlayer(p)}>
-                        <span className="tr-p-name">{p.name}</span>
-                        <span className="tr-p-sub">
+                    <div key={p.id} className={`tr-prow${blocked ? ' dim' : ''}`}>
+                      <span className="pav" style={{ background: p.clubBg, color: p.clubFg }}>{initials(p.name)}</span>
+                      <button type="button" className="pmeta" onClick={() => setInfoPlayer(p)}>
+                        <span className="pn">{p.name}</span>
+                        <span className="psub">
                           {p.club} · {POSITIONS[p.pos].label}
-                          {inRoster && ' · kadroda'}
-                          {clubMaxed && ' · kulüp dolu'}
+                          {inRoster && <span className="pstatus st-inrost">Kadroda</span>}
+                          {clubMaxed && <span className="pstatus st-full">Kulüp dolu</span>}
+                          {unaffordable && <span className="pstatus st-budget">Bütçe yetersiz</span>}
                         </span>
                       </button>
-                      <span className="tr-p-points tnum">{ptsOf(p)} P</span>
-                      <span className="tr-p-price">{p.price.toFixed(1)}M</span>
-                      <button
-                        type="button"
-                        className="tr-add"
-                        disabled={inRoster}
-                        onClick={() => onAddClick(p, clubMaxed)}
-                        aria-label={`${p.name} ekle`}
-                      >
-                        +
-                      </button>
-                    </li>
+                      <span className="ppts cond">{ptsOf(p)}<small> P</small></span>
+                      <span className="pval cond tnum">{p.price.toFixed(1)}M</span>
+                      <button type="button" className="padd" disabled={blocked} onClick={() => addPlayer(p)} aria-label={`${p.name} ekle`}>+</button>
+                    </div>
                   )
                 })}
-            </ul>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Oyuncu info kartı (Takımım detay modalı ile aynı tasarım; aksiyon butonları yok) */}
+      {/* Oyuncu bilgi kartı (Takımım detay modalı ile aynı tasarım; aksiyon butonları yok) */}
       {infoPlayer && (
         <PlayerDetailModal
           variant="info"
