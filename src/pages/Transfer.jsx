@@ -43,6 +43,7 @@ export default function Transfer() {
 
   // Taslak: kaydedilene kadar kadroya yansımaz
   const [draft, setDraft] = useState(() => cloneRoster(committed))
+  const editedRef = useRef(false) // kullanıcı taslakta değişiklik yaptı mı
   const [picker, setPicker] = useState(null) // { pos, index } — açık oyuncu seçme popup'ı
   const [posFilter, setPosFilter] = useState(null)
   const [selectedClubs, setSelectedClubs] = useState([])
@@ -80,6 +81,20 @@ export default function Transfer() {
     return () => clearTimeout(t)
   }, [msg])
 
+  // Kaydedilmiş kadronun imzası (yuva sırasına göre oyuncu id'leri)
+  const committedSig = useMemo(() => {
+    const parts = []
+    for (const pos of POS_ORDER) for (const s of committed[pos]) parts.push(s.player?.id ?? '_')
+    return parts.join(',')
+  }, [committed])
+
+  // Kaydedilmiş kadro (örn. Supabase'den) sonradan yüklenirse ve kullanıcı henüz
+  // taslakta değişiklik yapmadıysa, taslağı kaydedilmiş kadroyla senkronla.
+  useEffect(() => {
+    if (!editedRef.current) setDraft(cloneRoster(committed))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [committedSig])
+
   const draftList = useMemo(() => rosterPlayers(draft), [draft])
   const rosterIds = useMemo(() => new Set(draftList.map((p) => p.id)), [draftList])
   const clubCounts = useMemo(() => {
@@ -107,6 +122,7 @@ export default function Transfer() {
   }, [api.players, posFilter, selectedClubs, sortKey])
 
   const setDraftSlot = (pos, index, player) => {
+    editedRef.current = true
     setDraft((d) => {
       const next = cloneRoster(d)
       next[pos][index].player = player
@@ -218,6 +234,7 @@ export default function Transfer() {
     }
 
     const stillEmpty = POS_ORDER.reduce((n, pos) => n + next[pos].filter((s) => !s.player).length, 0)
+    editedRef.current = true
     setDraft(next)
     setPicker(null)
     setMsg(stillEmpty > 0 ? `⚠ Bütçe/oyuncu yetmedi, ${stillEmpty} mevki boş kaldı.` : 'Kadro otomatik dolduruldu ✓')
