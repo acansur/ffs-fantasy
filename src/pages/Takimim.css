@@ -477,15 +477,19 @@
 
 /* ---------- Aksiyon çubuğu ---------- */
 .tm-page .actionbar {
+  /* Sayfa kaydırılsa da "Takımı Kaydet" her zaman görünür kalsın */
+  position: sticky;
+  bottom: 16px;
+  z-index: 30;
   display: flex;
   align-items: center;
   gap: 16px;
   margin-top: 16px;
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: var(--r);
   padding: 16px 20px;
-  box-shadow: var(--shadow);
+  box-shadow: 0 -6px 22px rgba(0, 0, 0, 0.5), var(--shadow);
 }
 .tm-page .squad-count { display: flex; align-items: center; gap: 11px; }
 .tm-page .count-num { font-weight: 700; font-size: 22px; color: #fff; }
