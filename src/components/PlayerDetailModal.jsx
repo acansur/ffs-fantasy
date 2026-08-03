@@ -7,6 +7,9 @@ import './PlayerDetailModal.css'
 // Maçın başlamadığı sayılan durumlar
 const NOT_STARTED = new Set(['NS', 'TBD', 'PST', 'CANC', 'ABD', 'AWD'])
 
+// Pozisyon → hero bandı renk sınıfı
+const POS_HEAD = { KL: 'pos-gk', DF: 'pos-def', OS: 'pos-mid', FW: 'pos-fwd' }
+
 // Mock puan kırılımı (gerçek istatistik entegrasyonu sonraki adım)
 const MOCK_BREAKDOWN = [
   { stat: 'Oynadığı dakika', value: '90', pts: 2 },
@@ -72,7 +75,7 @@ export default function PlayerDetailModal({
         </button>
 
         {/* Hero */}
-        <div className="pdm-hero">
+        <div className={`pdm-hero ${POS_HEAD[player.pos] || 'pos-mid'}`}>
           <div className="pdm-hero-info">
             <div className="pdm-name">{displayName}</div>
             <div className="pdm-club">{player.club}</div>

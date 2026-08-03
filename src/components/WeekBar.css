@@ -1,0 +1,157 @@
+/* Hafta seçici — kendi token'larını taşır (Takımım + Transfer'de çalışır) */
+.gwbar {
+  --gw-surface: #132019;
+  --gw-border: rgba(255, 255, 255, 0.08);
+  --gw-border-strong: rgba(255, 255, 255, 0.15);
+  --gw-pitch: #1a5f3f;
+  --gw-pitch-lit: #22794f;
+  --gw-ink-2: #9cb0a4;
+  --gw-ink-3: #6d8175;
+  --gw-gold: #f0a500;
+  --gw-gold-soft: #ffcb52;
+  --gw-gk: #1bb87c;
+
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  width: 100%;
+  margin-top: 18px;
+  background: var(--gw-surface);
+  border: 1px solid var(--gw-border);
+  border-radius: 16px;
+  padding: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.gw-loading {
+  flex: 1;
+  text-align: center;
+  padding: 18px 0;
+  color: var(--gw-ink-3);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.gw-arrow {
+  width: 46px;
+  flex: none;
+  border: 1px solid var(--gw-border);
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  color: var(--gw-ink-2);
+  cursor: pointer;
+  transition: 0.15s;
+  font-family: inherit;
+}
+.gw-arrow:hover:not(:disabled) {
+  background: var(--gw-pitch);
+  border-color: var(--gw-pitch-lit);
+  color: #fff;
+}
+.gw-arrow:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+.gw-track {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  min-width: 0;
+}
+
+.gw-card {
+  border-radius: 12px;
+  padding: 12px 8px 11px;
+  text-align: center;
+  cursor: pointer;
+  border: 1px solid var(--gw-border);
+  background: rgba(255, 255, 255, 0.03);
+  transition: 0.18s;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  align-items: center;
+  justify-content: center;
+  min-height: 66px;
+  font-family: inherit;
+}
+.gw-card:hover:not(.sel):not(.empty) {
+  border-color: var(--gw-border-strong);
+  background: rgba(255, 255, 255, 0.06);
+}
+.gw-card .wk {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: 0.03em;
+  color: var(--gw-ink-2);
+}
+.gw-card .st {
+  font-size: 11.5px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.gw-card .st svg {
+  width: 12px;
+  height: 12px;
+}
+
+.st-active {
+  color: var(--gw-gk);
+}
+.st-locked,
+.st-future {
+  color: var(--gw-ink-3);
+}
+.st-points {
+  color: var(--gw-gold-soft);
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+.wkdot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--gw-gk);
+  box-shadow: 0 0 0 3px rgba(27, 184, 124, 0.2), 0 0 8px var(--gw-gk);
+}
+
+/* Seçili (ortadaki) hafta */
+.gw-card.sel {
+  background: linear-gradient(160deg, var(--gw-pitch-lit), var(--gw-pitch));
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 0 2px var(--gw-gold), 0 0 22px rgba(240, 165, 0, 0.28);
+}
+.gw-card.sel .wk {
+  color: #fff;
+}
+.gw-card.sel .st-active {
+  color: #84f0c2;
+}
+.gw-card.sel .st-locked,
+.gw-card.sel .st-future {
+  color: rgba(255, 255, 255, 0.75);
+}
+.gw-card.sel .st-points {
+  color: var(--gw-gold-soft);
+}
+.gw-card.sel .wkdot {
+  background: #84f0c2;
+  box-shadow: 0 0 0 3px rgba(132, 240, 194, 0.25);
+}
+
+.gw-card.empty {
+  background: transparent;
+  border-color: transparent;
+  cursor: default;
+}
