@@ -41,7 +41,10 @@ export default function PlayerDetailModal({
   onMoveToBench,
   onMoveToStarter,
   onClose,
+  variant = 'full', // 'full' (Takımım) | 'info' (Transfer — salt görüntüleme, aksiyon yok)
+  weeks = [],
 }) {
+  const isInfo = variant === 'info'
   const [open, setOpen] = useState(false)
 
   // Hero'da tam ad göster: players/squads kısaltılmış ad döndüğü için
@@ -111,15 +114,15 @@ export default function PlayerDetailModal({
           <span className="pdm-team">{away ? clubShort(away.name) : '—'}</span>
         </div>
 
-        {/* Puan toggle — yalnızca maç başladıysa */}
-        {started && (
+        {/* Puan toggle — yalnızca maç başladıysa (tam görünüm) */}
+        {!isInfo && started && (
           <button className="pdm-toggle" onClick={() => setOpen((o) => !o)}>
             {MOCK_TOTAL} puan <span className="pdm-arrow">{open ? '▲' : '▼'}</span>
           </button>
         )}
 
-        {/* Puan kırılım tablosu */}
-        {started && open && (
+        {/* Puan kırılım tablosu (tam görünüm) */}
+        {!isInfo && started && open && (
           <table className="pdm-breakdown">
             <thead>
               <tr>
@@ -145,27 +148,59 @@ export default function PlayerDetailModal({
           </table>
         )}
 
-        {/* Aksiyonlar: kaptan (yalnızca ilk 11) + yer değiştirme */}
-        <div className="pdm-actions">
-          {isStarter && (
-            <button
-              className={`pdm-captain${isCaptain ? ' active' : ''}`}
-              disabled={locked}
-              onClick={isCaptain ? onClearCaptain : onMakeCaptain}
-            >
-              {isCaptain ? 'Kaptanlığı Kaldır' : 'Kaptan Yap'}
-            </button>
-          )}
-          {isStarter ? (
-            <button className="pdm-move" disabled={locked} onClick={onMoveToBench}>
-              Yedeğe Al
-            </button>
-          ) : (
-            <button className="pdm-move" disabled={locked} onClick={onMoveToStarter}>
-              İlk 11'e Al
-            </button>
-          )}
-        </div>
+        {/* Info görünümü: haftalık puan tablosu (şimdilik her hafta "—") */}
+        {isInfo && (
+          <table className="pdm-breakdown pdm-weekly">
+            <thead>
+              <tr>
+                <th>Hafta</th>
+                <th>Puan</th>
+              </tr>
+            </thead>
+            <tbody>
+              {weeks.length === 0 ? (
+                <tr>
+                  <td>—</td>
+                  <td>—</td>
+                </tr>
+              ) : (
+                weeks.map((w) => (
+                  <tr key={w.round}>
+                    <td>{w.round}. Hafta</td>
+                    <td>—</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        )}
+
+        {/* Aksiyonlar: kaptan + yer değiştirme (info görünümünde gizli) */}
+        {!isInfo && (
+          <div className="pdm-actions">
+            {isStarter && (
+              <button
+                className={`pdm-captain${isCaptain ? ' active' : ''}`}
+                disabled={locked}
+                onClick={isCaptain ? onClearCaptain : onMakeCaptain}
+              >
+                {isCaptain ? 'Kaptanlığı Kaldır' : 'Kaptan Yap'}
+              </button>
+            )}
+            {isStarter ? (
+              <button className="pdm-move" disabled={locked} onClick={onMoveToBench}>
+                Yedeğe Al
+              </button>
+            ) : (
+              <button className="pdm-move" disabled={locked} onClick={onMoveToStarter}>
+                İlk 11'e Al
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Info görünümünde alt boşluk */}
+        {isInfo && <div className="pdm-info-foot" />}
       </div>
     </div>
   )

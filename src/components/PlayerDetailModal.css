@@ -163,6 +163,8 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 .pdm-breakdown tbody tr { border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+.pdm-weekly { margin-bottom: 0; }
+.pdm-info-foot { height: 16px; }
 .pdm-breakdown .pdm-total td { color: var(--gold-soft); font-weight: 800; border-top: 1px solid rgba(255, 255, 255, 0.1); }
 
 /* Aksiyonlar */
