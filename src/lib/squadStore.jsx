@@ -232,59 +232,62 @@ export function SquadProvider({ children }) {
 
   // Kadro ekranı: iki yuva arası yer değiştir. Dönüş: hata mesajı | null
   const swapSlots = useCallback((a, b) => {
-    let error = null
-    setRoster((r) => {
-      const A = r[a.pos][a.index]
-      const B = r[b.pos][b.index]
-      if (!A.player || !B.player) {
-        error = 'Boş yuva taşınamaz.'
-        return r
-      }
-      if (A.starter && B.starter) {
-        if (a.pos === b.pos) {
-          const next = cloneRoster(r)
-          const tmp = next[a.pos][a.index].player
-          next[a.pos][a.index].player = next[b.pos][b.index].player
-          next[b.pos][b.index].player = tmp
-          return next
-        }
-        error = 'İki ilk-11 oyuncusu yer değiştiremez.'
-        return r
-      }
-      if (!A.starter && !B.starter) {
-        if (a.pos === 'KL' || b.pos === 'KL') {
-          error = 'Kaleci yedeği ilk sırada sabittir.'
-          return r
-        }
+    const r = rosterRef.current
+    const A = r[a.pos][a.index]
+    const B = r[b.pos][b.index]
+    if (!A.player || !B.player) return 'Boş yuva taşınamaz.'
+
+    // İki ilk-11 oyuncusu
+    if (A.starter && B.starter) {
+      if (a.pos === b.pos) {
         const next = cloneRoster(r)
-        const tmp = next[a.pos][a.index].benchOrder
-        next[a.pos][a.index].benchOrder = next[b.pos][b.index].benchOrder
-        next[b.pos][b.index].benchOrder = tmp
-        return next
+        const tmp = next[a.pos][a.index].player
+        next[a.pos][a.index].player = next[b.pos][b.index].player
+        next[b.pos][b.index].player = tmp
+        setRoster(next)
+        return null
       }
-      const starterRef = A.starter ? a : b
-      const benchRef = A.starter ? b : a
-      if ((starterRef.pos === 'KL') !== (benchRef.pos === 'KL')) {
-        error = 'Kaleci yalnızca kaleci ile değişebilir.'
-        return r
-      }
-      const counts = starterCounts(r)
-      counts[starterRef.pos] -= 1
-      counts[benchRef.pos] += 1
-      if (!within('DF', counts.DF)) { error = 'Defans 3-5 arasında olmalı.'; return r }
-      if (!within('OS', counts.OS)) { error = 'Orta saha 3-5 arasında olmalı.'; return r }
-      if (!within('FW', counts.FW)) { error = 'Forvet 1-3 arasında olmalı.'; return r }
+      return 'İki ilk-11 oyuncusu yer değiştiremez.'
+    }
+
+    // İki yedek oyuncu
+    if (!A.starter && !B.starter) {
+      if (a.pos === 'KL' || b.pos === 'KL') return 'Kaleci yedeği ilk sırada sabittir.'
       const next = cloneRoster(r)
-      const sSlot = next[starterRef.pos][starterRef.index]
-      const bSlot = next[benchRef.pos][benchRef.index]
-      const handoff = bSlot.benchOrder
-      sSlot.starter = false
-      sSlot.benchOrder = handoff
-      bSlot.starter = true
-      bSlot.benchOrder = null
-      return next
-    })
-    return error
+      const tmp = next[a.pos][a.index].benchOrder
+      next[a.pos][a.index].benchOrder = next[b.pos][b.index].benchOrder
+      next[b.pos][b.index].benchOrder = tmp
+      setRoster(next)
+      return null
+    }
+
+    // İlk 11 ↔ yedek yer değiştirme
+    const starterRef = A.starter ? a : b
+    const benchRef = A.starter ? b : a
+    if ((starterRef.pos === 'KL') !== (benchRef.pos === 'KL')) return 'Kaleci yalnızca kaleci ile değişebilir.'
+    const counts = starterCounts(r)
+    counts[starterRef.pos] -= 1
+    counts[benchRef.pos] += 1
+    if (!within('DF', counts.DF)) return 'Defans 3-5 arasında olmalı.'
+    if (!within('OS', counts.OS)) return 'Orta saha 3-5 arasında olmalı.'
+    if (!within('FW', counts.FW)) return 'Forvet 1-3 arasında olmalı.'
+    const next = cloneRoster(r)
+    const sSlot = next[starterRef.pos][starterRef.index]
+    const bSlot = next[benchRef.pos][benchRef.index]
+    const benchedPlayer = sSlot.player // ilk 11'den yedeğe düşen
+    const incomingPlayer = bSlot.player // yedekten ilk 11'e çıkan
+    const handoff = bSlot.benchOrder
+    sSlot.starter = false
+    sSlot.benchOrder = handoff
+    bSlot.starter = true
+    bSlot.benchOrder = null
+    setRoster(next)
+    // Kaptan yedeğe düşerse kaptanlık ilk 11'e giren oyuncuya devredilir —
+    // kaptan hiçbir zaman yedekte olamaz.
+    if (benchedPlayer && benchedPlayer.id === captainRef.current) {
+      setCaptainId(incomingPlayer.id)
+    }
+    return null
   }, [])
 
   const makeCaptain = useCallback((id) => setCaptainId(id), [])
