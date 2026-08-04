@@ -100,6 +100,34 @@ export default function StatsTest() {
 
   const { loading, error, fixture, groups, columns } = state
 
+  // Tüm oyuncu + istatistik verisini CSV olarak indir
+  const downloadCsv = () => {
+    const esc = (val) => {
+      if (val === null || val === undefined) return ''
+      const s = String(val)
+      return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+    }
+    const header = ['Mevki', 'Oyuncu', 'Takım', ...columns]
+    const lines = [header.map(esc).join(',')]
+    for (const g of GROUP_ORDER) {
+      for (const pl of groups[g] || []) {
+        const row = [g, pl.name, pl.team, ...columns.map((c) => pl.stats[c])]
+        lines.push(row.map(esc).join(','))
+      }
+    }
+    // Excel'de Türkçe karakterler için UTF-8 BOM
+    const csv = '﻿' + lines.join('\r\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `fixture-${fixture?.id ?? 'stats'}-oyuncu-istatistikleri.csv`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <div className="stx">
       <h1 className="stx-title">Fixture Players — İstatistik Testi</h1>
@@ -114,14 +142,22 @@ export default function StatsTest() {
       {!loading && !error && fixture && (
         <>
           <div className="stx-fixture">
-            <div>
-              <b>{fixture.home}</b> <span className="stx-score">{fixture.score}</span> <b>{fixture.away}</b>
+            <div className="stx-fx-info">
+              <div>
+                <b>{fixture.home}</b> <span className="stx-score">{fixture.score}</span> <b>{fixture.away}</b>
+              </div>
+              <div className="stx-fx-meta">
+                Fixture ID: <code>{fixture.id}</code>
+                {fixture.date && <> · {new Date(fixture.date).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul' })}</>}
+                · {columns.length} istatistik alanı
+              </div>
             </div>
-            <div className="stx-fx-meta">
-              Fixture ID: <code>{fixture.id}</code>
-              {fixture.date && <> · {new Date(fixture.date).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul' })}</>}
-              · {columns.length} istatistik alanı
-            </div>
+            <button type="button" className="stx-csv-btn" onClick={downloadCsv}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 3v12M8 11l4 4 4-4M5 21h14" />
+              </svg>
+              CSV İndir
+            </button>
           </div>
 
           {GROUP_ORDER.map((g) => {
