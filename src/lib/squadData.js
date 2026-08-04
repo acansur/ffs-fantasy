@@ -159,6 +159,7 @@ export const SCORING = {
     { label: 'Penaltı kazandı', pts: 1 },
     { label: 'Penaltıya sebebiyet', pts: -2 },
     { label: 'Penaltı kaçırdı', pts: -2 },
+    { label: 'Kendi kalesine gol', pts: -2 },
     { label: 'Kaptan', pts: '×2' },
   ],
   Kaleci: [

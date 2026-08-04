@@ -45,6 +45,17 @@ function onPitch(playerId, teamId, games, events) {
   return { played: true, conceded, entry, exit }
 }
 
+// Oyuncunun kendi kalesine attığı gol sayısı (events → /fixtures/events).
+// Own goal /fixtures/players istatistiklerinde yer almaz; sadece olaylarda:
+//   type = "Goal", detail = "Own Goal", player = golü kendi kalesine atan.
+function countOwnGoals(playerId, events) {
+  let n = 0
+  for (const e of events) {
+    if (e?.type === 'Goal' && e?.detail === 'Own Goal' && e?.player?.id === playerId) n += 1
+  }
+  return n
+}
+
 // Tek bir oyuncunun puanını hesapla.
 // playerObj → /fixtures/players'taki { player, statistics } nesnesi
 // teamId    → oyuncunun takım id'si
@@ -122,6 +133,10 @@ export function scorePlayer(playerObj, teamId, events = [], isCaptain = false) {
   if (penMissed) add('penMissed', 'Penaltı kaçırdı', penMissed * -2, penMissed)
   const penWon = penalty.won ?? 0
   if (penWon) add('penWon', 'Penaltı kazandı', penWon * 1, penWon)
+
+  // --- Kendi kalesine gol (tüm mevkiler) — events'ten ---
+  const ownGoals = countOwnGoals(playerObj?.player?.id, events)
+  if (ownGoals) add('ownGoal', 'Kendi kalesine gol', ownGoals * -2, ownGoals)
 
   // --- Kilit pas (kaleci hariç) ---
   if (!isGK) {
