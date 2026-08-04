@@ -8,6 +8,8 @@ import './ScoringTest.css'
 
 const LEAGUE = 203
 const SEASON = 2025
+// 6. maç olarak her zaman eklenen sabit maç: 1 Mart 2026 Antalyaspor - Fenerbahçe
+const EXTRA_FIXTURE_ID = 1394640
 const ROLE_GROUP = { gk: 'Kaleci', def: 'Defans', mid: 'Orta Saha', fwd: 'Forvet' }
 const GROUP_ORDER = ['Kaleci', 'Defans', 'Orta Saha', 'Forvet', 'Diğer']
 
@@ -50,6 +52,9 @@ export default function ScoringTest() {
         // Sezona yayılmış 5 farklı maç seç
         const step = Math.floor(all.length / 5)
         const picks = [0, 1, 2, 3, 4].map((i) => all[i * step])
+        // 6. maç: 1 Mart 2026 Antalyaspor - Fenerbahçe (sabit)
+        const extra = all.find((f) => f.fixture?.id === EXTRA_FIXTURE_ID)
+        if (extra && !picks.some((p) => p.fixture?.id === EXTRA_FIXTURE_ID)) picks.push(extra)
 
         const matches = []
         for (let mi = 0; mi < picks.length; mi++) {
@@ -99,12 +104,12 @@ export default function ScoringTest() {
     <div className="sct">
       <h1 className="sct-title">Puanlama Motoru — Test</h1>
       <p className="sct-sub">
-        Geçen sezon (Süper Lig {SEASON}) 5 tamamlanmış maç. Her oyuncu <code>scoring.js</code> motorundan geçirildi;
+        Geçen sezon (Süper Lig {SEASON}) 6 tamamlanmış maç. Her oyuncu <code>scoring.js</code> motorundan geçirildi;
         her istatistik başına aldığı puan ayrı ayrı gösterilir. Toplam: <span className="sct-tp">yeşil pozitif</span>,{' '}
         <span className="sct-tn">kırmızı negatif</span>.
       </p>
 
-      {loading && <div className="sct-note">Yükleniyor… (5 maç · 10+ API isteği)</div>}
+      {loading && <div className="sct-note">Yükleniyor… (6 maç · 12+ API isteği)</div>}
       {error && <div className="sct-note err">⚠ {error}</div>}
 
       {!loading && !error &&
