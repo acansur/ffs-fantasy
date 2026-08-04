@@ -18,6 +18,7 @@ import Fikstur from './pages/Fikstur.jsx'
 import Players from './pages/Players.jsx'
 import StatsTest from './pages/StatsTest.jsx'
 import StatsTest2 from './pages/StatsTest2.jsx'
+import ScoringTest from './pages/ScoringTest.jsx'
 import Giris from './pages/Giris.jsx'
 import Kayit from './pages/Kayit.jsx'
 import NotFound from './pages/NotFound.jsx'
@@ -61,6 +62,7 @@ export default function App() {
           <Route path="/players" element={<Players />} />
           <Route path="/stats-test" element={<StatsTest />} />
           <Route path="/stats-test2" element={<StatsTest2 />} />
+          <Route path="/scoring-test" element={<ScoringTest />} />
           <Route path="/giris" element={<Giris />} />
           <Route path="/kayit" element={<Kayit />} />
           <Route path="*" element={<NotFound />} />

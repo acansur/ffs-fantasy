@@ -69,99 +69,107 @@ export function scorePlayer(playerObj, teamId, events = [], isCaptain = false) {
   const isFWD = role === 'fwd'
 
   const parts = []
-  const add = (key, label, pts) => {
-    if (pts !== 0) parts.push({ key, label, pts })
+  // n = puanı doğuran ham istatistik değeri (test/inceleme için)
+  const add = (key, label, pts, n) => {
+    if (pts !== 0) parts.push({ key, label, pts, n })
   }
 
   // --- Oynama süresi ---
   const minutes = games.minutes ?? 0
-  if (minutes >= 60) add('minutes', 'Oynama süresi (60+ dk)', 2)
-  else if (minutes >= 1) add('minutes', 'Oynama süresi (1-59 dk)', 1)
+  if (minutes >= 60) add('minutes', 'Oynama süresi (60+ dk)', 2, minutes)
+  else if (minutes >= 1) add('minutes', 'Oynama süresi (1-59 dk)', 1, minutes)
 
   // --- Kartlar (ikinci sarıdan kırmızıda ikisi de uygulanır → -4) ---
-  if ((cards.yellow ?? 0) > 0) add('yellow', 'Sarı kart', -1)
-  if ((cards.red ?? 0) > 0) add('red', 'Kırmızı kart', -3)
+  if ((cards.yellow ?? 0) > 0) add('yellow', 'Sarı kart', -1, cards.yellow ?? 0)
+  if ((cards.red ?? 0) > 0) add('red', 'Kırmızı kart', -3, cards.red ?? 0)
 
   // --- Gol ---
   const goals = goalsS.total ?? 0
   if (goals) {
     const per = isGK ? 10 : isDEF ? 6 : isMID ? 5 : isFWD ? 4 : 0
-    add('goals', 'Gol', goals * per)
+    add('goals', 'Gol', goals * per, goals)
   }
 
   // --- Asist ---
   const assists = goalsS.assists ?? 0
   if (assists) {
     const per = isGK ? 6 : isDEF ? 4 : isMID ? 3 : isFWD ? 3 : 0
-    add('assists', 'Asist', assists * per)
+    add('assists', 'Asist', assists * per, assists)
   }
 
   // --- Clean sheet + yenilen gol (events'ten sahada olunan süre) ---
   const { conceded } = onPitch(playerObj?.player?.id, teamId, games, events)
   if (minutes >= 60 && conceded === 0) {
     const per = isGK ? 4 : isDEF ? 4 : isMID ? 1 : 0
-    if (per) add('cleansheet', 'Clean sheet', per)
+    if (per) add('cleansheet', 'Clean sheet', per, 0)
   }
   if (conceded > 0 && (isGK || isDEF)) {
-    add('conceded', 'Yenilen gol', -bucket(conceded, 2)) // her 2 gol → -1
+    add('conceded', 'Yenilen gol', -bucket(conceded, 2), conceded) // her 2 gol → -1
   }
 
   // --- Kaleciye özel ---
   if (isGK) {
     const saves = goalsS.saves ?? 0
-    if (saves) add('saves', 'Kurtarış', bucket(saves, 3) * 2) // her 3 → +2
+    if (saves) add('saves', 'Kurtarış', bucket(saves, 3) * 2, saves) // her 3 → +2
     const penSaved = penalty.saved ?? 0
-    if (penSaved) add('penSaved', 'Penaltı kurtardı', penSaved * 5)
+    if (penSaved) add('penSaved', 'Penaltı kurtardı', penSaved * 5, penSaved)
   }
 
   // --- Penaltı (tüm mevkiler) ---
   const penCommitted = penalty.commited ?? 0 // API alanı "commited" yazımı
-  if (penCommitted) add('penCommitted', 'Penaltıya sebebiyet', penCommitted * -2)
+  if (penCommitted) add('penCommitted', 'Penaltıya sebebiyet', penCommitted * -2, penCommitted)
   const penMissed = penalty.missed ?? 0
-  if (penMissed) add('penMissed', 'Penaltı kaçırdı', penMissed * -2)
+  if (penMissed) add('penMissed', 'Penaltı kaçırdı', penMissed * -2, penMissed)
   const penWon = penalty.won ?? 0
-  if (penWon) add('penWon', 'Penaltı kazandı', penWon * 1)
+  if (penWon) add('penWon', 'Penaltı kazandı', penWon * 1, penWon)
 
   // --- Kilit pas (kaleci hariç) ---
   if (!isGK) {
-    const kp = bucket(passes.key ?? 0, 3)
-    if (kp) add('keyPass', 'Kilit pas', kp * 1)
+    const raw = passes.key ?? 0
+    const kp = bucket(raw, 3)
+    if (kp) add('keyPass', 'Kilit pas', kp * 1, raw)
   }
 
   // --- Top kapma (kaleci ve forvet hariç) ---
   if (isDEF || isMID) {
-    const tk = bucket(tackles.total ?? 0, 3)
-    if (tk) add('tackles', 'Top kapma', tk * 2)
+    const raw = tackles.total ?? 0
+    const tk = bucket(raw, 3)
+    if (tk) add('tackles', 'Top kapma', tk * 2, raw)
   }
 
   // --- Kazanılan ikili mücadele (kaleci hariç) ---
   if (!isGK) {
-    const dw = bucket(duels.won ?? 0, 4)
-    if (dw) add('duels', 'İkili mücadele', dw * 1)
+    const raw = duels.won ?? 0
+    const dw = bucket(raw, 4)
+    if (dw) add('duels', 'İkili mücadele', dw * 1, raw)
   }
 
   // --- Başarılı dribling (orta saha + forvet) ---
   if (isMID || isFWD) {
-    const dr = bucket(dribbles.success ?? 0, 2)
-    if (dr) add('dribbles', 'Başarılı dribling', dr * 1)
+    const raw = dribbles.success ?? 0
+    const dr = bucket(raw, 2)
+    if (dr) add('dribbles', 'Başarılı dribling', dr * 1, raw)
   }
 
   // --- İsabetli şut (orta saha + forvet) ---
   if (isMID || isFWD) {
-    const sh = bucket(shotsOn(st), 2)
-    if (sh) add('shots', 'İsabetli şut', sh * 1)
+    const raw = shotsOn(st)
+    const sh = bucket(raw, 2)
+    if (sh) add('shots', 'İsabetli şut', sh * 1, raw)
   }
 
   // --- Yapılan faul (kaleci hariç) ---
   if (!isGK) {
-    const fc = bucket(fouls.committed ?? 0, 3)
-    if (fc) add('fouls', 'Yapılan faul', fc * -1)
+    const raw = fouls.committed ?? 0
+    const fc = bucket(raw, 3)
+    if (fc) add('fouls', 'Yapılan faul', fc * -1, raw)
   }
 
   // --- Ofsayt (sadece forvet) ---
   if (isFWD) {
-    const off = bucket(st.offsides ?? 0, 3)
-    if (off) add('offsides', 'Ofsayt', off * -1)
+    const raw = st.offsides ?? 0
+    const off = bucket(raw, 3)
+    if (off) add('offsides', 'Ofsayt', off * -1, raw)
   }
 
   const base = parts.reduce((s, p) => s + p.pts, 0)
