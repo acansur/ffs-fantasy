@@ -126,6 +126,14 @@ export default function Transfer() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [committedSig])
 
+  // Taslağın imzası — kaydedilmiş kadrodan farklıysa "değişiklik var" (kaydet aktif)
+  const draftSig = useMemo(() => {
+    const parts = []
+    for (const pos of POS_ORDER) for (const s of draft[pos]) parts.push(s.player?.id ?? '_')
+    return parts.join(',')
+  }, [draft])
+  const isDirty = draftSig !== committedSig
+
   const draftList = useMemo(() => rosterPlayers(draft), [draft])
   const rosterIds = useMemo(() => new Set(draftList.map((p) => p.id)), [draftList])
   const clubCounts = useMemo(() => {
@@ -269,7 +277,8 @@ export default function Transfer() {
   }
 
   const emptyCount = 15 - filledCount
-  const canSave = filledCount === 15 && !overBudget
+  // Kaydet yalnızca 15/15, bütçe uygun VE bir değişiklik yapıldıysa aktif
+  const canSave = filledCount === 15 && !overBudget && isDirty
 
   const onSave = async () => {
     if (!canSave) return
@@ -316,6 +325,7 @@ export default function Transfer() {
         </button>
         <button type="button" className="tr-nameplate" onClick={() => setInfoPlayer(p)}>
           <span className="nm">{p.name}</span>
+          <span className="clb">{p.club}</span>
         </button>
         <span className="tr-pr cond tnum">₺{p.price}M</span>
       </div>

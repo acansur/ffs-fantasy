@@ -209,6 +209,7 @@
 }
 .tr-nameplate:hover { border-color: var(--gold-soft); }
 .tr-nameplate .nm { display: block; color: #fff; font-size: 12px; font-weight: 600; line-height: 1.15; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tr-nameplate .clb { display: block; color: var(--gold-soft); font-size: 9.5px; font-weight: 600; line-height: 1.15; margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tr-nameplate-empty { cursor: default; opacity: 0.5; }
 .tr-nameplate-empty:hover { border-color: rgba(255, 255, 255, 0.1); }
 .tr-pr { color: var(--gold-soft); font-size: 11px; font-weight: 700; letter-spacing: 0.03em; text-align: center; }
