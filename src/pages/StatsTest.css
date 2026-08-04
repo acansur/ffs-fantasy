@@ -1,0 +1,135 @@
+.stx {
+  font-family: 'Inter Variable', 'Inter', system-ui, sans-serif;
+  color: #e8eefc;
+  max-width: 100%;
+}
+.stx-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin: 0 0 0.4rem;
+}
+.stx-sub {
+  font-size: 0.85rem;
+  color: #9aa9c6;
+  margin: 0 0 1rem;
+  max-width: 70ch;
+}
+.stx-sub code {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.05em 0.4em;
+  border-radius: 5px;
+  font-size: 0.9em;
+}
+.stx-emptylabel {
+  color: #5a6b52;
+  font-style: italic;
+}
+.stx-note {
+  padding: 1rem;
+  color: #9aa9c6;
+}
+.stx-note.err {
+  color: #fca5a5;
+}
+
+.stx-fixture {
+  background: #12241b;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 0.9rem 1.1rem;
+  margin-bottom: 1.2rem;
+}
+.stx-fixture b {
+  font-weight: 800;
+}
+.stx-score {
+  color: #ffcb52;
+  font-weight: 800;
+  margin: 0 0.5rem;
+}
+.stx-fx-meta {
+  font-size: 0.8rem;
+  color: #9aa9c6;
+  margin-top: 0.35rem;
+}
+.stx-fx-meta code {
+  color: #ffcb52;
+}
+
+.stx-group {
+  margin-bottom: 1.8rem;
+}
+.stx-group-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  margin: 0 0 0.6rem;
+  color: #ffcb52;
+}
+.stx-count {
+  color: #6d8175;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.stx-tablewrap {
+  overflow-x: auto;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  background: #0e1913;
+}
+.stx-table {
+  border-collapse: collapse;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+.stx-table th,
+.stx-table td {
+  padding: 6px 10px;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-right: 1px solid rgba(255, 255, 255, 0.04);
+}
+.stx-table thead th {
+  position: sticky;
+  top: 0;
+  background: #16241c;
+  color: #9cb0a4;
+  font-weight: 700;
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  z-index: 2;
+}
+.stx-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* Oyuncu adı sütunu sabit (yatay kaydırmada görünür kalsın) */
+.stx-sticky {
+  position: sticky;
+  left: 0;
+  background: #12211a;
+  z-index: 1;
+}
+.stx-table thead th.stx-sticky {
+  z-index: 3;
+  background: #16241c;
+}
+.stx-name {
+  font-weight: 700;
+  color: #fff;
+  min-width: 130px;
+}
+.stx-team {
+  color: #9cb0a4;
+}
+
+/* Dolu alan normal (açık); boş/null alan soluk */
+.stx-table td {
+  color: #dbe7dc;
+  font-variant-numeric: tabular-nums;
+}
+.stx-table td.stx-empty {
+  color: #3a4a3f;
+  font-style: italic;
+  background: rgba(0, 0, 0, 0.18);
+}
