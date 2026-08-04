@@ -12,7 +12,6 @@ import {
   CLUBS,
   TOTAL_BUDGET,
   VIEWS,
-  formationLabel,
   surname,
 } from '../lib/squadData.js'
 import './Takimim.css'
@@ -31,12 +30,6 @@ const matchDay = (iso) =>
   new Date(iso).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', timeZone: 'Europe/Istanbul' })
 
 /* ---- İkonlar (ince stroke SVG) ---- */
-const IconMoney = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <rect x="2.5" y="6" width="19" height="12" rx="2.5" />
-    <circle cx="12" cy="12" r="2.6" />
-  </svg>
-)
 const IconWallet = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round">
     <path d="M3 8.5A2.5 2.5 0 0 1 5.5 6H18v3" />
@@ -47,12 +40,6 @@ const IconWallet = () => (
 const IconStar = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round">
     <path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 17l-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z" />
-  </svg>
-)
-const IconClock = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-    <circle cx="12" cy="12" r="8.5" />
-    <path d="M12 7.5V12l3 2" />
   </svg>
 )
 const IconSwap = () => (
@@ -70,6 +57,11 @@ const IconSave = () => (
     <path d="M5 4h11l3 3v13H5z" />
     <path d="M8.5 4v5h6" />
     <rect x="8.5" y="13" width="7" height="5" />
+  </svg>
+)
+const IconBolt = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round">
+    <path d="M13 2L4 14h6l-1 8 9-12h-6z" />
   </svg>
 )
 
@@ -147,7 +139,6 @@ export default function Takimim() {
     squadLoading,
     rosterList,
     remaining,
-    counts,
     dirty,
     saveArrangement,
     swapSlots,
@@ -183,7 +174,6 @@ export default function Takimim() {
 
   const overBudget = remaining < 0
   const captainPlayer = rosterList.find((p) => p.id === captainId) || null
-  const formation = formationLabel(counts)
   const filledCount = rosterList.length
   const spent = TOTAL_BUDGET - remaining
   const spentPct = Math.max(0, Math.min(100, (spent / TOTAL_BUDGET) * 100))
@@ -310,11 +300,8 @@ export default function Takimim() {
           <h1 className="semi">{user ? user.username : 'Takımım'}</h1>
           <p>Fantasy Süper Lig · 2026–27 Sezonu</p>
         </div>
+        <div className="hero-word">Takımım</div>
         <div className="hero-right">
-          <div className="chip">
-            <span className="k">Diziliş</span>
-            <span className="cond">{formation}</span>
-          </div>
           <div className="chip chip-deadline">
             <span className="k">Deadline</span>
             <b className="tnum">{deadlineText}</b>
@@ -324,20 +311,22 @@ export default function Takimim() {
 
       {/* Stat kutucukları */}
       <div className="stats">
+        {/* Bütçe (birleşik) */}
         <div className="tm-stat">
           <div className="stat-head">
-            <span className="eyebrow">Toplam Bütçe</span>
-            <span className="stat-ico ico-green"><IconMoney /></span>
+            <span className="eyebrow">Bütçe</span>
+            <span className="stat-ico ico-green"><IconWallet /></span>
           </div>
-          <div className="stat-val cond tnum">{TOTAL_BUDGET.toFixed(1)}<small>M</small></div>
-        </div>
-
-        <div className="tm-stat">
-          <div className="stat-head">
-            <span className="eyebrow">Kalan Bütçe</span>
-            <span className="stat-ico ico-gold"><IconWallet /></span>
+          <div className="budget-vals">
+            <div className="bv">
+              <div className="l">Toplam</div>
+              <div className="v cond tnum">{TOTAL_BUDGET.toFixed(1)}M</div>
+            </div>
+            <div className="bv">
+              <div className="l">Kalan</div>
+              <div className={`v rem cond tnum${overBudget ? ' neg' : ''}`}>{remaining.toFixed(1)}M</div>
+            </div>
           </div>
-          <div className={`stat-val cond tnum${overBudget ? ' neg' : ''}`}>{remaining.toFixed(1)}<small>M</small></div>
           <div className="budget-bar"><div className="budget-fill" style={{ width: `${spentPct}%` }} /></div>
           <div className="budget-meta tnum">
             <span>{spent.toFixed(1)}M harcandı</span>
@@ -345,6 +334,7 @@ export default function Takimim() {
           </div>
         </div>
 
+        {/* Kaptan */}
         <div className="tm-stat">
           <div className="stat-head">
             <span className="eyebrow">Kaptan</span>
@@ -360,6 +350,7 @@ export default function Takimim() {
           )}
         </div>
 
+        {/* Jokerlerim (deadline geçince Toplam Puan) */}
         {locked ? (
           <div className="tm-stat">
             <div className="stat-head">
@@ -371,10 +362,13 @@ export default function Takimim() {
         ) : (
           <div className="tm-stat">
             <div className="stat-head">
-              <span className="eyebrow">Deadline</span>
-              <span className="stat-ico ico-green"><IconClock /></span>
+              <span className="eyebrow">Jokerlerim</span>
+              <span className="stat-ico ico-gold"><IconBolt /></span>
             </div>
-            <div className="stat-val sm cond tnum deadline">{deadlineText}</div>
+            <div className="joker-empty">
+              <span className="ji"><IconBolt /></span>
+              <span className="jt">Bu hafta aktif joker yok</span>
+            </div>
           </div>
         )}
       </div>
@@ -394,8 +388,11 @@ export default function Takimim() {
           <div className="control-row">
             <Link to="/transfer" className="tm-btn-primary"><IconSwap />Transfer Yap</Link>
             <div className="view-sel">
-              <span className="eyebrow">Görünüm</span>
               <div className="select">
+                <svg className="vico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
                 <select value={view} onChange={(e) => setView(e.target.value)}>
                   {VIEWS.map((v) => (
                     <option key={v.key} value={v.key}>{v.label}</option>
