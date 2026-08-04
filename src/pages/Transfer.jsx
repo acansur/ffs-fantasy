@@ -568,7 +568,7 @@ export default function Transfer() {
                         <span className="psub">
                           {p.club} · {POSITIONS[p.pos].label}
                           {inRoster && <span className="pstatus st-inrost">Kadroda</span>}
-                          {clubMaxed && <span className="pstatus st-full">Kulüp dolu</span>}
+                          {clubMaxed && <span className="pstatus st-full">Aynı kulüpten max 3 oyuncu</span>}
                           {unaffordable && <span className="pstatus st-budget">Bütçe yetersiz</span>}
                         </span>
                       </button>
