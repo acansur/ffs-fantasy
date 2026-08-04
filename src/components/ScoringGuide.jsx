@@ -22,11 +22,13 @@ export default function ScoringGuide() {
       </div>
       <ul className="sg-list">
         {SCORING[tab].map((row) => {
-          const cls = row.pts.startsWith('+') ? 'pos' : row.pts.startsWith('-') ? 'neg' : 'mult'
+          // Pozitif → yeşil (işaretsiz), negatif → kırmızı (- ile), '×2' → sarı
+          const isMult = typeof row.pts === 'string'
+          const cls = isMult ? 'mult' : row.pts >= 0 ? 'pos' : 'neg'
           return (
             <li key={row.label}>
               <span>{row.label}</span>
-              <span className={`sg-pts ${cls}`}>{row.pts}</span>
+              <span className={`sg-pts ${cls}`}>{isMult ? row.pts : String(row.pts)}</span>
             </li>
           )
         })}
