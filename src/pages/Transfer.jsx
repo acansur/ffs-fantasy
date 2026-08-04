@@ -565,8 +565,9 @@ export default function Transfer() {
                       <span className="pav" style={{ background: p.clubBg, color: p.clubFg }}>{initials(p.name)}</span>
                       <button type="button" className="pmeta" onClick={() => setInfoPlayer(p)}>
                         <span className="pn">{p.name}</span>
+                        <span className="pteam">{p.club}</span>
                         <span className="psub">
-                          {p.club} · {POSITIONS[p.pos].label}
+                          {POSITIONS[p.pos].label}
                           {inRoster && <span className="pstatus st-inrost">Kadroda</span>}
                           {clubMaxed && <span className="pstatus st-full">Aynı kulüpten max 3 oyuncu</span>}
                           {unaffordable && <span className="pstatus st-budget">Bütçe yetersiz</span>}
@@ -591,6 +592,7 @@ export default function Transfer() {
           week={week}
           fixture={getTeamFixture(fixtures, infoPlayer.club, week)}
           weeks={weeks}
+          fixtures={fixtures}
           onClose={() => setInfoPlayer(null)}
         />
       )}

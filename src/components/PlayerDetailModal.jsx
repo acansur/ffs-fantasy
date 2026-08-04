@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import PlayerPhoto from './PlayerPhoto.jsx'
 import { clubShort, fetchPlayerFullName } from '../lib/apiFootball.js'
+import { getTeamFixture } from '../lib/weeks.js'
 import { POSITIONS } from '../lib/squadData.js'
 import './PlayerDetailModal.css'
 
@@ -43,6 +44,7 @@ export default function PlayerDetailModal({
   onClose,
   variant = 'full', // 'full' (Takımım) | 'info' (Transfer — salt görüntüleme, aksiyon yok)
   weeks = [],
+  fixtures = [], // info görünümünde haftalık rakip için
 }) {
   const isInfo = variant === 'info'
   const [open, setOpen] = useState(false)
@@ -106,13 +108,30 @@ export default function PlayerDetailModal({
           {date ? fmtTime(date) : '—'}
         </div>
 
-        {/* Skor satırı */}
-        <div className="pdm-score">
-          <span className="pdm-team">{home ? clubShort(home.name) : '—'}</span>
-          <span className="pdm-scorebox">{homeScore}</span>
-          <span className="pdm-scorebox">{awayScore}</span>
-          <span className="pdm-team">{away ? clubShort(away.name) : '—'}</span>
-        </div>
+        {/* Skor satırı — tam görünüm */}
+        {!isInfo && (
+          <div className="pdm-score">
+            <span className="pdm-team">{home ? clubShort(home.name) : '—'}</span>
+            <span className="pdm-scorebox">{homeScore}</span>
+            <span className="pdm-scorebox">{awayScore}</span>
+            <span className="pdm-team">{away ? clubShort(away.name) : '—'}</span>
+          </div>
+        )}
+
+        {/* Müsabaka satırı — info görünümü (skor kutusu yok) */}
+        {isInfo && (
+          <div className="pdm-fixture">
+            {home && away ? (
+              <>
+                <span>{home.name}</span>
+                <span className="pdm-vs">vs</span>
+                <span>{away.name}</span>
+              </>
+            ) : (
+              <span className="pdm-vs">Bu hafta maç yok</span>
+            )}
+          </div>
+        )}
 
         {/* Puan toggle — yalnızca maç başladıysa (tam görünüm) */}
         {!isInfo && started && (
@@ -148,12 +167,13 @@ export default function PlayerDetailModal({
           </table>
         )}
 
-        {/* Info görünümü: haftalık puan tablosu (şimdilik her hafta "—") */}
+        {/* Info görünümü: haftalık rakip + puan tablosu (puan şimdilik "—") */}
         {isInfo && (
           <table className="pdm-breakdown pdm-weekly">
             <thead>
               <tr>
                 <th>Hafta</th>
+                <th>Rakip</th>
                 <th>Puan</th>
               </tr>
             </thead>
@@ -162,14 +182,31 @@ export default function PlayerDetailModal({
                 <tr>
                   <td>—</td>
                   <td>—</td>
+                  <td>—</td>
                 </tr>
               ) : (
-                weeks.map((w) => (
-                  <tr key={w.round}>
-                    <td>{w.round}. Hafta</td>
-                    <td>—</td>
-                  </tr>
-                ))
+                weeks.map((w) => {
+                  const fx = getTeamFixture(fixtures, player.club, w.round)
+                  const h = fx?.teams?.home
+                  const a = fx?.teams?.away
+                  const isHome = h?.name === player.club
+                  const opp = fx ? (isHome ? a?.name : h?.name) : null
+                  return (
+                    <tr key={w.round}>
+                      <td>{w.round}. Hafta</td>
+                      <td className="pdm-opp">
+                        {opp ? (
+                          <>
+                            <span className="pdm-ha">{isHome ? 'E' : 'D'}</span> {opp}
+                          </>
+                        ) : (
+                          '—'
+                        )}
+                      </td>
+                      <td>—</td>
+                    </tr>
+                  )
+                })
               )}
             </tbody>
           </table>

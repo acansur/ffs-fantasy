@@ -165,6 +165,45 @@
 .pdm-breakdown tbody tr { border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
 .pdm-weekly { margin-bottom: 0; }
 .pdm-info-foot { height: 16px; }
+
+/* Müsabaka satırı (info görünümü — skor kutusu yerine) */
+.pdm-fixture {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 18px 24px;
+  background: #070d0a;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 20px;
+  color: #fff;
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+.pdm-fixture .pdm-vs {
+  color: var(--gold-soft);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+/* Haftalık tablo — 3 kolon (Hafta | Rakip | Puan) */
+.pdm-weekly th,
+.pdm-weekly td { padding: 9px 16px; }
+.pdm-weekly td.pdm-opp { color: var(--ink-2); font-size: 13px; }
+.pdm-weekly .pdm-ha {
+  display: inline-grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 800;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--ink-2);
+  vertical-align: middle;
+}
 .pdm-breakdown .pdm-total td { color: var(--gold-soft); font-weight: 800; border-top: 1px solid rgba(255, 255, 255, 0.1); }
 
 /* Aksiyonlar */
