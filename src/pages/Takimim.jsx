@@ -485,6 +485,20 @@ export default function Takimim() {
         <p className="hint">Detayları görmek ve kaptan seçmek için bir oyuncuya tıkla.</p>
       )}
 
+      {/* Belirgin uyarılar (deadline öncesi): kaptan eksik / kaydedilmemiş değişiklik */}
+      {!locked && !squadLoading && (
+        ((filledCount === 15 && !captainId) || (dirty && !overBudget)) && (
+          <div className="tm-alerts">
+            {filledCount === 15 && !captainId && (
+              <div className="tm-alert">⚠️ Kaptan seçilmedi</div>
+            )}
+            {dirty && !overBudget && (
+              <div className="tm-alert">⚠️ Kaydedilmemiş değişiklikler var</div>
+            )}
+          </div>
+        )
+      )}
+
       {/* Saha */}
       <div className="pitch-wrap">
         <div className="tm-pitch">
