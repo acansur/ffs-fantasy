@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { SQUAD_TOTALS, START_LIMITS, TOTAL_BUDGET, slotCounts, formationLabel } from './squadData.js'
 import { fetchSuperLigFixtures, loadSuperLigPlayers, toAppPlayers } from './apiFootball.js'
-import { buildWeeks, getActiveRound } from './weeks.js'
+import { buildWeeks, getActiveRound, isLocked } from './weeks.js'
 import { isSupabaseConfigured } from './supabase.js'
 import { useAuth } from './auth.jsx'
 import { saveSquadToDb, loadSquadFromDb } from './squadDb.js'
@@ -146,32 +146,50 @@ export function SquadProvider({ children }) {
     }
   }, [])
 
-  // Giriş yapmış kullanıcının kaydedilmiş kadrosunu Supabase'den yükle (kullanıcı başına bir kez)
-  const loadedForRef = useRef(null)
+  // Giriş yapmış kullanıcının kadrosunu Supabase'den yükle — SEÇİLİ HAFTAYA göre.
+  // Hafta değişince (onSelectWeek → setWeek) o haftanın snapshot'ı yüklenir:
+  //  - Kayıt varsa → o haftanın kadrosu (geçmiş/kilitli haftalar dahil).
+  //  - Kayıt yok + hafta kilitli/geçmiş → boş kadro (o hafta takım yoktu; puanlar
+  //    yanlışlıkla güncel kadrodan hesaplanmasın diye).
+  //  - Kayıt yok + hafta açık → mevcut kadro taşınır (carry-forward), o hafta için
+  //    "kaydedilmemiş" sayılır (kullanıcı transfer yapıp kaydedebilsin).
+  const loadKeyRef = useRef(null)
   useEffect(() => {
     if (!isSupabaseConfigured) {
       setSquadLoading(false)
       return
     }
     if (!user || !weeks.length) return
-    if (loadedForRef.current === user.id) return
-    loadedForRef.current = user.id
-    const wk = getActiveRound(weeks)
+    const key = `${user.id}:${week}`
+    if (loadKeyRef.current === key) return
+    loadKeyRef.current = key
+    const wkObj = weeks.find((w) => w.round === week) || null
+    const weekLocked = isLocked(wkObj, Date.now())
     let alive = true
     setSquadLoading(true)
     ;(async () => {
       try {
-        const loaded = await loadSquadFromDb({ userId: user.id, week: wk })
-        if (!alive || !loaded) return
-        const raw = await loadSuperLigPlayers().catch(() => null)
-        if (!alive || !raw) return
-        const players = toAppPlayers(raw.players)
-        const byId = Object.fromEntries(players.map((p) => [String(p.id), p]))
-        const r = rebuildRoster(loaded.rows, byId, loaded.formation)
-        setRoster(r)
-        setCaptainId(loaded.captainId ?? null)
-        setWeek(wk)
-        setSavedSig(signature(r, loaded.captainId ?? null))
+        const loaded = await loadSquadFromDb({ userId: user.id, week })
+        if (!alive) return
+        if (loaded) {
+          const raw = await loadSuperLigPlayers().catch(() => null)
+          if (!alive || !raw) return
+          const players = toAppPlayers(raw.players)
+          const byId = Object.fromEntries(players.map((p) => [String(p.id), p]))
+          const r = rebuildRoster(loaded.rows, byId, loaded.formation)
+          setRoster(r)
+          setCaptainId(loaded.captainId ?? null)
+          setSavedSig(signature(r, loaded.captainId ?? null))
+        } else if (weekLocked) {
+          // Kilitli/geçmiş hafta, kayıt yok → boş kadro
+          const empty = buildEmptyRoster()
+          setRoster(empty)
+          setCaptainId(null)
+          setSavedSig(signature(empty, null))
+        } else {
+          // Açık hafta, kayıt yok → mevcut kadro taşınır; bu hafta için kaydedilmemiş
+          setSavedSig(signature(buildEmptyRoster(), null))
+        }
       } finally {
         if (alive) setSquadLoading(false)
       }
@@ -179,7 +197,7 @@ export function SquadProvider({ children }) {
     return () => {
       alive = false
     }
-  }, [user, weeks])
+  }, [user, week, weeks])
 
   // Mevcut kadroyu Supabase'e kaydet (kullanıcı + supabase varsa; yoksa no-op)
   const persist = useCallback(
