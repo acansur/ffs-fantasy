@@ -1,0 +1,53 @@
+/* /admin — gizli admin paneli (koyu tema) */
+.adm { font-family: 'Inter', system-ui, sans-serif; color: #e8eefc; max-width: 1100px; margin: 0 auto; }
+.adm-head h1 { font-size: 1.4rem; font-weight: 800; margin: 0 0 0.2rem; }
+.adm-sub { font-size: 0.85rem; color: #9aa9c6; margin: 0 0 1rem; }
+
+.adm-tabs { display: flex; flex-wrap: wrap; gap: 6px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 10px; margin-bottom: 16px; }
+.adm-tab { font-family: inherit; font-weight: 700; font-size: 0.85rem; cursor: pointer; color: #9aa9c6; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1); padding: 8px 14px; border-radius: 9px; transition: 0.14s; }
+.adm-tab:hover { color: #e8eefc; }
+.adm-tab.on { background: #ffcb52; color: #3a2a00; border-color: #c98600; }
+
+.adm-btn { font-family: inherit; font-weight: 700; font-size: 0.82rem; cursor: pointer; color: #e8eefc; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.16); padding: 9px 15px; border-radius: 9px; transition: 0.14s; }
+.adm-btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.12); }
+.adm-btn:disabled { opacity: 0.45; cursor: default; }
+.adm-btn.gold { color: #3a2a00; background: linear-gradient(180deg, #ffcb52, #f0a500); border-color: #c98600; }
+.adm-btn.danger { color: #fca5a5; background: rgba(240, 96, 94, 0.12); border-color: rgba(240, 96, 94, 0.4); }
+.adm-btn.danger:hover { background: rgba(240, 96, 94, 0.2); }
+.adm-btn.sm { padding: 5px 10px; font-size: 0.75rem; }
+
+.adm-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+.adm-input, .adm-textarea, .adm-val { font-family: inherit; font-size: 0.85rem; color: #e8eefc; background: #0f1a24; border: 1px solid rgba(255, 255, 255, 0.16); border-radius: 8px; padding: 8px 10px; }
+.adm-input { min-width: 200px; }
+.adm-textarea { width: 100%; resize: vertical; margin-bottom: 10px; }
+.adm-val { width: 80px; text-align: right; }
+
+.adm-count { font-weight: 800; color: #ffcb52; font-size: 0.9rem; margin-bottom: 8px; }
+.adm-note { text-align: center; color: #9aa9c6; padding: 30px 0; }
+.adm-msg { padding: 9px 13px; border-radius: 9px; font-weight: 600; font-size: 0.82rem; margin-bottom: 12px; }
+.adm-msg.ok { background: rgba(27, 184, 124, 0.12); border: 1px solid rgba(27, 184, 124, 0.4); color: #86efac; }
+.adm-msg.err { background: rgba(240, 96, 94, 0.12); border: 1px solid rgba(240, 96, 94, 0.4); color: #fca5a5; }
+
+.adm-tablewrap { overflow: auto; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; }
+.adm-tablewrap.tall { max-height: 62vh; }
+.adm-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.adm-table thead th { position: sticky; top: 0; background: #13202c; text-align: left; padding: 9px 12px; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: #9aa9c6; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+.adm-table td { padding: 8px 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+.adm-table .strong { font-weight: 700; color: #fff; }
+.adm-table code { background: rgba(255, 255, 255, 0.08); padding: 1px 6px; border-radius: 4px; }
+
+.adm-badge { display: inline-block; font-size: 0.66rem; font-weight: 800; padding: 2px 8px; border-radius: 99px; text-transform: uppercase; }
+.adm-badge.gold { background: rgba(240, 165, 0, 0.16); color: #ffcb52; }
+.adm-badge.danger { background: rgba(240, 96, 94, 0.16); color: #fca5a5; }
+.adm-pos { display: inline-block; font-size: 0.66rem; font-weight: 800; padding: 2px 7px; border-radius: 99px; color: #fff; }
+.pos-KL { background: #1bb87c; } .pos-DF { background: #f05a58; } .pos-OS { background: #4a8bf0; } .pos-FW { background: #f4903a; }
+
+.adm-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 720px) { .adm-grid2 { grid-template-columns: 1fr; } }
+.adm-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 16px 18px; }
+.adm-card h3 { margin: 0 0 12px; font-size: 1rem; }
+.adm-kv { list-style: none; margin: 0; padding: 0; }
+.adm-kv li { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.05); font-size: 0.85rem; }
+.adm-kv li span { color: #9aa9c6; }
+.adm-kv li b { color: #e8eefc; font-variant-numeric: tabular-nums; }
+.adm-kv li b.gold { color: #ffcb52; }

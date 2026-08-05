@@ -139,6 +139,7 @@ export default function Takimim() {
     setWeek,
     weeks,
     fixtures,
+    weekOverrides,
     weeksLoading,
     squadLoading,
     rosterList,
@@ -159,7 +160,9 @@ export default function Takimim() {
   const now = Date.now()
   const visibleWeeks = getVisibleWeeks(weeks, now)
   const selectedWeek = weeks.find((w) => w.round === week) || null
-  const locked = isLocked(selectedWeek, now)
+  // Admin manuel override varsa deadline'dan bağımsız uygulanır
+  const override = weekOverrides?.[week]
+  const locked = override != null ? override : isLocked(selectedWeek, now)
   const deadlineText = selectedWeek ? formatDeadline(selectedWeek.deadline) : '—'
 
   const onSelectWeek = (r) => {

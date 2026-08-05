@@ -4,7 +4,7 @@ import { fetchSuperLigFixtures, loadSuperLigPlayers, toAppPlayers } from './apiF
 import { buildWeeks, getActiveRound, isLocked } from './weeks.js'
 import { isSupabaseConfigured } from './supabase.js'
 import { useAuth } from './auth.jsx'
-import { saveSquadToDb, loadSquadFromDb } from './squadDb.js'
+import { saveSquadToDb, loadSquadFromDb, loadWeekOverrides } from './squadDb.js'
 
 const POS_ORDER = ['KL', 'DF', 'OS', 'FW']
 const DB_TO_POS = { GK: 'KL', DF: 'DF', MF: 'OS', FW: 'FW' }
@@ -122,6 +122,11 @@ export function SquadProvider({ children }) {
   const [weeks, setWeeks] = useState([])
   const [fixtures, setFixtures] = useState([])
   const [weeksLoading, setWeeksLoading] = useState(true)
+  // Admin manuel hafta kilidi override'ları: { round: locked(bool) }
+  const [weekOverrides, setWeekOverrides] = useState({})
+  useEffect(() => {
+    loadWeekOverrides().then(setWeekOverrides).catch(() => {})
+  }, [])
   // Supabase'den kaydedilmiş kadro yüklenirken skeleton için
   const [squadLoading, setSquadLoading] = useState(isSupabaseConfigured)
   const bootedRef = useRef(false)
@@ -345,6 +350,7 @@ export function SquadProvider({ children }) {
     setWeek,
     weeks,
     fixtures,
+    weekOverrides,
     weeksLoading,
     squadLoading,
     rosterList,

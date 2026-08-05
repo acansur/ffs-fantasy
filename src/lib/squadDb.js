@@ -6,6 +6,20 @@ import { POS_DB } from './squadData.js'
 
 const POS_ORDER = ['KL', 'DF', 'OS', 'FW']
 
+// Admin panelinden konulmuş manuel hafta kilidi override'ları → { round: locked }
+export async function loadWeekOverrides() {
+  if (!isSupabaseConfigured || !supabase) return {}
+  try {
+    const { data, error } = await supabase.from('week_overrides').select('round, locked')
+    if (error) return {}
+    const map = {}
+    for (const r of data || []) map[r.round] = r.locked
+    return map
+  } catch {
+    return {}
+  }
+}
+
 // Kadroyu kaydet: squads'e upsert (user_id+week benzersiz) + squad_players yenile.
 export async function saveSquadToDb({ userId, week, formation, captainId, roster }) {
   if (!isSupabaseConfigured || !supabase || !userId) return { ok: false, skipped: true }

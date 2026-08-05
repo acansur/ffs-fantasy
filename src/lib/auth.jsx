@@ -36,6 +36,23 @@ export function AuthProvider({ children }) {
     else localStorage.removeItem(STORAGE_KEY)
   }, [user])
 
+  // Oturum açıksa kullanıcı bilgisini (özellikle is_admin) Supabase'den tazele —
+  // böylece önceden giriş yapmış kullanıcı yeniden giriş yapmadan admin olabilir.
+  useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) return
+    const uid = user?.id
+    if (!uid) return
+    let alive = true
+    ;(async () => {
+      const { data } = await supabase.from('users').select('*').eq('id', uid).maybeSingle()
+      if (alive && data) setUser(stripPassword(data))
+    })()
+    return () => {
+      alive = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id])
+
   const ensureReady = () => {
     if (!isSupabaseConfigured || !supabase) {
       throw new Error(
