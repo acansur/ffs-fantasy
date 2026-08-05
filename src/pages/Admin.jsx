@@ -121,6 +121,10 @@ function PlayersTab() {
     return s ? rows.filter((r) => (r.name || '').toLocaleLowerCase('tr').includes(s) || (r.team_name || '').toLocaleLowerCase('tr').includes(s)) : rows
   }, [rows, q])
 
+  // Satır düzenlendi mi (kaydet butonu aktifliği)
+  const isDirty = (p) =>
+    edit[p.id] != null && edit[p.id] !== '' && !Number.isNaN(Number(edit[p.id])) && Number(edit[p.id]) !== Number(p.value)
+
   return (
     <div>
       <div className="adm-row">
@@ -135,7 +139,7 @@ function PlayersTab() {
           <div className="adm-count">{filtered.length} oyuncu</div>
           <div className="adm-tablewrap tall">
             <table className="adm-table">
-              <thead><tr><th>İsim</th><th>Takım</th><th>Mevki</th><th>Değer (₺M)</th></tr></thead>
+              <thead><tr><th>İsim</th><th>Takım</th><th>Mevki</th><th>Değer (₺M)</th><th></th></tr></thead>
               <tbody>
                 {filtered.map((p) => (
                   <tr key={p.id}>
@@ -147,9 +151,11 @@ function PlayersTab() {
                         className="adm-val" type="number" step="0.1"
                         value={edit[p.id] ?? p.value ?? ''}
                         onChange={(e) => setEdit((s) => ({ ...s, [p.id]: e.target.value }))}
-                        onBlur={() => onSaveValue(p)}
-                        onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+                        onKeyDown={(e) => { if (e.key === 'Enter') onSaveValue(p) }}
                       />
+                    </td>
+                    <td>
+                      <button className="adm-btn gold sm" onClick={() => onSaveValue(p)} disabled={!isDirty(p)}>Kaydet</button>
                     </td>
                   </tr>
                 ))}
