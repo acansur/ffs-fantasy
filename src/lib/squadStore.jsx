@@ -154,6 +154,21 @@ export function SquadProvider({ children }) {
   //  - Kayıt yok + hafta açık → mevcut kadro taşınır (carry-forward), o hafta için
   //    "kaydedilmemiş" sayılır (kullanıcı transfer yapıp kaydedebilsin).
   const loadKeyRef = useRef(null)
+
+  // Kullanıcı değişince (giriş / çıkış / başka hesap) kadro state'ini SIFIRLA —
+  // önceki kullanıcının kadrosu cache'te kalıp yeni kullanıcıya sızmasın.
+  const prevUserRef = useRef(null)
+  useEffect(() => {
+    const uid = user?.id ?? null
+    if (prevUserRef.current === uid) return
+    prevUserRef.current = uid
+    const empty = buildEmptyRoster()
+    setRoster(empty)
+    setCaptainId(null)
+    setSavedSig(signature(empty, null))
+    loadKeyRef.current = null // yeni kullanıcı için yeniden yükleme tetiklensin
+  }, [user])
+
   useEffect(() => {
     if (!isSupabaseConfigured) {
       setSquadLoading(false)
