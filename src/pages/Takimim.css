@@ -431,6 +431,45 @@
 .tm-page .ava.av-empty::before { border-style: dashed; opacity: 0.7; box-shadow: none; }
 .tm-page .ava-plus { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 30px; color: var(--ring, #fff); line-height: 1; }
 
+/* Boş yuva = tıklanamaz "hayalet": +'sız soluk silüet, kesikli pozisyon renkli halka */
+.tm-page .tm-player.ghost { cursor: default; }
+.tm-page .tm-player.ghost:hover { transform: none; }
+.tm-page .ava.ghost { background: rgba(255, 255, 255, 0.035); box-shadow: none; display: grid; place-items: center; }
+.tm-page .ava.ghost::before { border-style: dashed; opacity: 0.6; box-shadow: none; }
+.tm-page .ava.ghost .silh { width: 34px; height: 34px; color: rgba(255, 255, 255, 0.26); }
+.tm-page .bench .ava.ghost .silh { width: 28px; height: 28px; }
+.tm-page .tm-player.ghost .name-plate .nm { color: var(--ink-2); }
+
+/* Kadro eksikken sahanın üstünde Transfer yönlendirme şeridi */
+.tm-page .pitch-guide {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin: 16px 0 12px;
+  padding: 15px 18px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(240, 165, 0, 0.13), rgba(240, 165, 0, 0.05));
+  border: 1px solid rgba(240, 165, 0, 0.4);
+  box-shadow: 0 0 26px rgba(240, 165, 0, 0.08);
+}
+.tm-page .pg-ico { width: 42px; height: 42px; border-radius: 12px; flex: none; display: grid; place-items: center; background: rgba(240, 165, 0, 0.18); color: var(--gold-soft); }
+.tm-page .pg-ico svg { width: 22px; height: 22px; }
+.tm-page .pg-txt { flex: 1; min-width: 0; }
+.tm-page .pg-txt b { display: block; font-size: 15.5px; font-weight: 700; color: #fff; }
+.tm-page .pg-txt span { font-size: 13px; color: var(--ink-2); font-weight: 500; }
+.tm-page .pg-btn {
+  font-family: inherit; font-weight: 700; font-size: 14px; cursor: pointer; text-decoration: none;
+  padding: 12px 20px; border-radius: 11px; flex: none; display: inline-flex; align-items: center; gap: 8px;
+  color: var(--gold-ink); background: linear-gradient(180deg, var(--gold-soft), var(--gold)); border: 1px solid var(--gold-deep);
+  box-shadow: var(--glow-gold), inset 0 1px 0 rgba(255, 255, 255, 0.4); transition: 0.16s;
+}
+.tm-page .pg-btn:hover { transform: translateY(-1px); filter: brightness(1.06); }
+.tm-page .pg-btn svg { width: 16px; height: 16px; }
+@media (max-width: 560px) {
+  .tm-page .pitch-guide { flex-wrap: wrap; }
+  .tm-page .pg-btn { width: 100%; justify-content: center; }
+}
+
 /* Seçili / hedef vurguları */
 .tm-page .tm-player.sel .ava::before { box-shadow: 0 0 0 3px rgba(240, 165, 0, 0.4), 0 0 14px var(--ring, #fff); }
 .tm-page .tm-player.target .ava::before {

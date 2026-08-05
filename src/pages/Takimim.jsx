@@ -86,19 +86,19 @@ function SquadSlot({ pos, player, info, isCaptain, isSelected, isTarget, onClick
   }
 
   if (!player) {
+    // Boş yuva → tıklanamaz "hayalet": +'ı yok, soluk silüet, kesikli pozisyon
+    // renkli halka. Ekleme yalnızca Transfer'den yapılır.
     return (
-      <button
-        type="button"
-        className={`tm-player empty${isTarget ? ' target' : ''}`}
-        onClick={onClick}
-        aria-label={`${meta.label} (boş)`}
-      >
+      <div className="tm-player ghost" aria-label={`${meta.label} (boş)`}>
         {tag}
-        <span className={`ava av-empty ${ring}`}>
-          <span className="ava-plus">+</span>
+        <span className={`ava ghost ${ring}`}>
+          <svg className="silh" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <circle cx="12" cy="8.2" r="4" />
+            <path d="M4 20.5c0-4.4 3.6-7.2 8-7.2s8 2.8 8 7.2z" />
+          </svg>
         </span>
-        {!posTag && <span className="name-plate np-muted"><span className="nm">{meta.label}</span></span>}
-      </button>
+        <span className="name-plate np-muted"><span className="nm">{posTag ? 'Yedek' : meta.label}</span></span>
+      </div>
     )
   }
 
@@ -492,6 +492,21 @@ export default function Takimim() {
           >
             İptal
           </button>
+        </div>
+      ) : filledCount < 15 ? (
+        /* Kadro eksikken: ipucu yerine Transfer'e yönlendiren şerit */
+        <div className="pitch-guide">
+          <span className="pg-ico">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"><path d="M12 3l4 2 4-1 1 5-3 2v8H6v-8L3 9l1-5 4 1z" /></svg>
+          </span>
+          <div className="pg-txt">
+            <b>{filledCount === 0 ? 'Kadron henüz boş' : 'Kadron henüz eksik'}</b>
+            <span>Süper Lig oyuncularını seçip kadronu kurmak için transfer yap. Kaydettikten sonra kaptanını buradan seçebilirsin.</span>
+          </div>
+          <Link to="/transfer" className="pg-btn">
+            Transfer Yap
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+          </Link>
         </div>
       ) : (
         <p className="hint">Detayları görmek ve kaptan seçmek için bir oyuncuya tıkla.</p>
