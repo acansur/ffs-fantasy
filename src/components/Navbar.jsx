@@ -4,6 +4,7 @@ import { useAuth } from '../lib/auth.jsx'
 const loggedInLinks = [
   { to: '/', label: 'Ana Sayfa', end: true },
   { to: '/takimim', label: 'Takımım' },
+  { to: '/kim-kazanir', label: 'Kim Kazanır?' },
   { to: '/liglerim', label: 'Liglerim' },
 ]
 

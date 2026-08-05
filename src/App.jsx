@@ -22,6 +22,7 @@ import ScoringTest from './pages/ScoringTest.jsx'
 import UelTest from './pages/UelTest.jsx'
 import Players2 from './pages/Players2.jsx'
 import Admin from './pages/Admin.jsx'
+import KimKazanir from './pages/KimKazanir.jsx'
 import AnnouncementBanner from './components/AnnouncementBanner.jsx'
 import Giris from './pages/Giris.jsx'
 import Kayit from './pages/Kayit.jsx'
@@ -60,6 +61,7 @@ export default function App() {
           <Route path="/" element={redirectToSquad ? <Navigate to="/takimim" replace /> : <Home />} />
           <Route path="/lig" element={<Lig />} />
           <Route path="/takimim" element={<Takimim />} />
+          <Route path="/kim-kazanir" element={<KimKazanir />} />
           <Route path="/transfer" element={<Transfer />} />
           <Route path="/liglerim" element={<Liglerim />} />
           <Route path="/kurallar" element={<Kurallar />} />

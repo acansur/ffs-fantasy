@@ -1,0 +1,42 @@
+/* /kim-kazanir — tahmin oyunu (koyu tema) */
+.kk { font-family: 'Inter', system-ui, sans-serif; color: #e8eefc; max-width: 860px; margin: 0 auto; }
+.kk-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+.kk-title { font-size: 1.5rem; font-weight: 800; margin: 0 0 0.25rem; }
+.kk-sub { font-size: 0.88rem; color: #9aa9c6; margin: 0; max-width: 60ch; }
+.kk-score { flex: none; text-align: right; background: rgba(240, 165, 0, 0.12); border: 1px solid rgba(240, 165, 0, 0.35); border-radius: 12px; padding: 8px 16px; }
+.kk-score .l { display: block; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: #9aa9c6; }
+.kk-score .v { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 1.6rem; color: #ffcb52; line-height: 1; }
+
+.kk-deadline { font-size: 0.85rem; color: #9aa9c6; margin: 12px 2px 14px; }
+.kk-deadline b { color: #ffcb52; }
+.kk-deadline .lock { color: #ffcb52; font-weight: 600; }
+
+.kk-note { text-align: center; color: #9aa9c6; padding: 40px 0; }
+.kk-msg { padding: 9px 13px; border-radius: 9px; font-weight: 600; font-size: 0.82rem; margin-bottom: 12px; }
+.kk-msg.err { background: rgba(240, 96, 94, 0.12); border: 1px solid rgba(240, 96, 94, 0.4); color: #fca5a5; }
+
+.kk-list { display: flex; flex-direction: column; gap: 10px; }
+.kk-match { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 12px 14px; }
+.kk-match.done { opacity: 0.92; }
+.kk-match-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.kk-teams { display: flex; align-items: center; gap: 10px; font-size: 0.95rem; }
+.kk-teams b { font-weight: 700; }
+.kk-vs { color: #ffcb52; font-weight: 800; font-family: 'Barlow Condensed', sans-serif; font-variant-numeric: tabular-nums; }
+.kk-date { font-size: 0.78rem; color: #9aa9c6; flex: none; }
+.kk-res { font-weight: 800; font-size: 0.82rem; }
+.kk-res.ok { color: #86efac; } .kk-res.no { color: #fca5a5; }
+
+.kk-picks { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.kk-pick { font-family: inherit; font-weight: 700; font-size: 0.85rem; cursor: pointer; color: #cdd8ea; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.14); padding: 10px 8px; border-radius: 9px; transition: 0.14s; }
+.kk-pick:hover:not(:disabled) { background: rgba(255, 255, 255, 0.1); }
+.kk-pick.sel { background: linear-gradient(180deg, #ffcb52, #f0a500); color: #3a2a00; border-color: #c98600; }
+.kk-pick:disabled { cursor: default; opacity: 0.55; }
+.kk-pick.sel:disabled { opacity: 1; }
+
+.kk-authbtns { display: flex; gap: 12px; margin-top: 16px; }
+.kk-btn { font-family: inherit; font-weight: 700; font-size: 0.9rem; text-decoration: none; color: #e8eefc; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.16); padding: 10px 20px; border-radius: 10px; }
+.kk-btn.gold { color: #3a2a00; background: linear-gradient(180deg, #ffcb52, #f0a500); border-color: #c98600; }
+
+@media (max-width: 560px) {
+  .kk-teams { font-size: 0.82rem; gap: 6px; flex-wrap: wrap; }
+}
