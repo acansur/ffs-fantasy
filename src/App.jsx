@@ -20,6 +20,7 @@ import StatsTest from './pages/StatsTest.jsx'
 import StatsTest2 from './pages/StatsTest2.jsx'
 import ScoringTest from './pages/ScoringTest.jsx'
 import UelTest from './pages/UelTest.jsx'
+import Players2 from './pages/Players2.jsx'
 import Giris from './pages/Giris.jsx'
 import Kayit from './pages/Kayit.jsx'
 import NotFound from './pages/NotFound.jsx'
@@ -66,6 +67,7 @@ export default function App() {
           <Route path="/scoring-test" element={<ScoringTest />} />
           <Route path="/uel-test" element={<UelTest slot="uel-test" />} />
           <Route path="/uel-test2" element={<UelTest slot="uel-test2" />} />
+          <Route path="/players2" element={<Players2 />} />
           <Route path="/giris" element={<Giris />} />
           <Route path="/kayit" element={<Kayit />} />
           <Route path="*" element={<NotFound />} />
