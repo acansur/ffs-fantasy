@@ -36,6 +36,7 @@ export default function Players2() {
   const [minPts, setMinPts] = useState('')
   const [minMatches, setMinMatches] = useState('')
   const [minPpm, setMinPpm] = useState('')
+  const [sort, setSort] = useState({ key: 'total_points', dir: 'desc' }) // { key, dir }
 
   const reload = async () => {
     setLoading(true)
@@ -57,6 +58,17 @@ export default function Players2() {
     const nPts = minPts === '' ? null : Number(minPts)
     const nMatch = minMatches === '' ? null : Number(minMatches)
     const nPpm = minPpm === '' ? null : Number(minPpm)
+    // Oynamayanlar (null değer) yön ne olursa olsun sona; diğerleri yön'e göre
+    const cmp = (a, b) => {
+      const av = a[sort.key]
+      const bv = b[sort.key]
+      const aNull = av == null
+      const bNull = bv == null
+      if (aNull && bNull) return 0
+      if (aNull) return 1
+      if (bNull) return -1
+      return sort.dir === 'desc' ? bv - av : av - bv
+    }
     return rows
       .filter((r) => {
         if (posF && r.position !== posF) return false
@@ -66,8 +78,12 @@ export default function Players2() {
         if (nPpm != null && !(Number(r.points_per_match ?? -Infinity) >= nPpm)) return false
         return true
       })
-      .sort((a, b) => (b.total_points ?? -Infinity) - (a.total_points ?? -Infinity))
-  }, [rows, posF, teamF, minPts, minMatches, minPpm])
+      .sort(cmp)
+  }, [rows, posF, teamF, minPts, minMatches, minPpm, sort])
+
+  // Sütun başlığına tıkla: yeni sütun → azalan; aynı sütun → azalan/artan değiştir
+  const onSort = (key) =>
+    setSort((s) => (s.key === key ? { key, dir: s.dir === 'desc' ? 'asc' : 'desc' } : { key, dir: 'desc' }))
 
   const onUpdate = async () => {
     if (updating) return
@@ -189,9 +205,15 @@ export default function Players2() {
                 <th>İsim</th>
                 <th>Takım</th>
                 <th>Mevki</th>
-                <th className="c-num">Maç</th>
-                <th className="c-num">Toplam Puan</th>
-                <th className="c-num">Maç Başına</th>
+                <th className={`c-num sortable${sort.key === 'matches_played' ? ' active' : ''}`} onClick={() => onSort('matches_played')}>
+                  Maç<span className="sort-arrow">{sort.key === 'matches_played' ? (sort.dir === 'desc' ? '▼' : '▲') : '↕'}</span>
+                </th>
+                <th className={`c-num sortable${sort.key === 'total_points' ? ' active' : ''}`} onClick={() => onSort('total_points')}>
+                  Toplam Puan<span className="sort-arrow">{sort.key === 'total_points' ? (sort.dir === 'desc' ? '▼' : '▲') : '↕'}</span>
+                </th>
+                <th className={`c-num sortable${sort.key === 'points_per_match' ? ' active' : ''}`} onClick={() => onSort('points_per_match')}>
+                  Maç Başına<span className="sort-arrow">{sort.key === 'points_per_match' ? (sort.dir === 'desc' ? '▼' : '▲') : '↕'}</span>
+                </th>
               </tr>
             </thead>
             <tbody>

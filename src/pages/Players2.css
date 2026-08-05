@@ -39,6 +39,12 @@
 .p2-tablewrap { overflow-x: auto; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; }
 .p2-table { width: 100%; border-collapse: collapse; font-size: 0.87rem; }
 .p2-table thead th { position: sticky; top: 0; background: #13202c; text-align: left; padding: 10px 12px; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: #9aa9c6; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+.p2-table thead th.c-num { text-align: right; }
+.p2-table thead th.sortable { cursor: pointer; user-select: none; white-space: nowrap; transition: color 0.12s; }
+.p2-table thead th.sortable:hover { color: #e8eefc; }
+.p2-table thead th.sortable.active { color: #ffcb52; }
+.sort-arrow { display: inline-block; margin-left: 5px; font-size: 0.75em; opacity: 0.55; }
+.p2-table thead th.sortable.active .sort-arrow { opacity: 1; }
 .p2-table td { padding: 9px 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
 .p2-row { cursor: pointer; transition: 0.12s; }
 .p2-row:hover { background: rgba(255, 255, 255, 0.04); }
