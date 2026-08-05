@@ -69,6 +69,13 @@ export async function computeWeekScores(players, week, fixtures) {
     if (fin && fx?.fixture?.id) fixtureIds.add(fx.fixture.id)
   }
 
+  const ptsById = await scoreFixtures(fixtureIds)
+  return { ptsById, finishedById }
+}
+
+// Verilen fixture id'leri için oyuncu puanlarını hesapla → Map<playerId, pts>.
+// (Takımım ve UEL test sayfası ortak kullanır.)
+export async function scoreFixtures(fixtureIds) {
   const ptsById = new Map()
   await Promise.all(
     [...fixtureIds].map(async (id) => {
@@ -77,8 +84,7 @@ export async function computeWeekScores(players, week, fixtures) {
       for (const s of scored) ptsById.set(s.id, s.total)
     })
   )
-
-  return { ptsById, finishedById }
+  return ptsById
 }
 
 // Maç sonu otomatik yedek: ilk 11'de 0 puan alanları, yedek sırasına göre
