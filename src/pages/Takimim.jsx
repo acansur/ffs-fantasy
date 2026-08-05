@@ -8,6 +8,7 @@ import { computeWeekScores, applyAutoSubs, computeTotalPoints } from '../lib/wee
 import WeekBar from '../components/WeekBar.jsx'
 import PlayerPhoto from '../components/PlayerPhoto.jsx'
 import PlayerDetailModal from '../components/PlayerDetailModal.jsx'
+import ScoringGuide from '../components/ScoringGuide.jsx'
 import {
   POSITIONS,
   CLUBS,
@@ -16,6 +17,7 @@ import {
   surname,
 } from '../lib/squadData.js'
 import './Takimim.css'
+import './Transfer.css' // .tr-btn-guide / .tr-overlay / .tr-guide / .tr-mclose (Transfer ile aynı tasarım)
 
 const POS_ORDER = ['KL', 'DF', 'OS', 'FW']
 
@@ -61,6 +63,9 @@ const IconBolt = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round">
     <path d="M13 2L4 14h6l-1 8 9-12h-6z" />
   </svg>
+)
+const IconGuide = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9" /><path d="M12 16v-4M12 8h.01" strokeLinecap="round" /></svg>
 )
 
 function SquadSlot({ pos, player, info, isCaptain, isSelected, isTarget, onClick, posTag, skeleton, subIn, subOut }) {
@@ -147,6 +152,7 @@ export default function Takimim() {
   const [detail, setDetail] = useState(null) // { pos, index, player, starter } — açık oyuncu detay modalı
   const [swapMode, setSwapMode] = useState(null) // { source:{pos,index}, targetType:'bench'|'starter' }
   const [saveMsg, setSaveMsg] = useState('')
+  const [scoringOpen, setScoringOpen] = useState(false)
   // Deadline sonrası haftalık puanlar: { loading, ptsById, finishedById, forKey }
   const [scores, setScores] = useState({ loading: false, ptsById: new Map(), finishedById: new Map(), forKey: null })
 
@@ -357,6 +363,9 @@ export default function Takimim() {
         </div>
         <div className="hero-word">Takımım</div>
         <div className="hero-right">
+          <button type="button" className="tr-btn-guide" onClick={() => setScoringOpen(true)}>
+            <IconGuide />Puanlama Rehberi
+          </button>
           <div className="chip chip-deadline">
             <span className="k">Deadline</span>
             <b className="tnum">{deadlineText}</b>
@@ -561,6 +570,16 @@ export default function Takimim() {
           </div>
         )}
       </div>
+
+      {/* Puanlama Rehberi modalı (Transfer ile aynı) */}
+      {scoringOpen && (
+        <div className="tr-overlay show" onClick={() => setScoringOpen(false)}>
+          <div className="tr-guide" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+            <button className="tr-mclose" onClick={() => setScoringOpen(false)} aria-label="Kapat">×</button>
+            <ScoringGuide />
+          </div>
+        </div>
+      )}
 
       {/* Oyuncu detay modalı — yalnızca kadro görünümünde (Takımım) */}
       {detailPlayer && (
