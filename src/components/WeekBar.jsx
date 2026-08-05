@@ -9,8 +9,11 @@ const LockIcon = () => (
   </svg>
 )
 
-// weekStatus (open/locked/finished) → görsel durum rozeti
-function WeekStatus({ status }) {
+// weekStatus (open/locked/finished) → görsel durum rozeti.
+// points: deadline sonrası (locked/finished) seçili hafta için kümülatif puan;
+// verildiğinde "Kilitli"/"0 P" yerine puan gösterilir.
+function WeekStatus({ status, points }) {
+  const hasPoints = points != null
   if (status === 'open')
     return (
       <span className="st st-active">
@@ -19,21 +22,22 @@ function WeekStatus({ status }) {
       </span>
     )
   if (status === 'locked')
-    return (
+    return hasPoints ? (
+      <span className="st st-points tnum">{points} P</span>
+    ) : (
       <span className="st st-locked">
         <LockIcon />
         Kilitli
       </span>
     )
   if (status === 'finished')
-    // Puanlama sistemi netleşene kadar biten haftalar 0 P gösterir
-    return <span className="st st-points">0 P</span>
+    return <span className="st st-points tnum">{hasPoints ? points : 0} P</span>
   return <span className="st st-future">Henüz açılmadı</span>
 }
 
 // Yatay hafta bar'ı: aynı anda 3 hafta (seçili ortada), sol/sağ ok ile kaydırılır.
 // Kenarda kalınca ortalama korunsun diye boş (görünmez) slotlar render edilir.
-export default function WeekBar({ weeks, visible, selected, onSelect, now, loading }) {
+export default function WeekBar({ weeks, visible, selected, onSelect, now, loading, selectedPoints = null }) {
   if (loading) {
     return (
       <div className="gwbar">
@@ -72,7 +76,7 @@ export default function WeekBar({ weeks, visible, selected, onSelect, now, loadi
               onClick={() => onSelect(r)}
             >
               <span className="wk">HAFTA {r}</span>
-              <WeekStatus status={st} />
+              <WeekStatus status={st} points={i === idx ? selectedPoints : null} />
             </button>
           )
         })}

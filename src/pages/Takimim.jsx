@@ -4,6 +4,7 @@ import { useAuth } from '../lib/auth.jsx'
 import { useSquad } from '../lib/squadStore.jsx'
 import { loadSuperLigPlayers } from '../lib/apiFootball.js'
 import { getVisibleWeeks, isLocked, formatDeadline, getTeamFixture } from '../lib/weeks.js'
+import { computeWeekScores, applyAutoSubs, computeTotalPoints } from '../lib/weekScores.js'
 import WeekBar from '../components/WeekBar.jsx'
 import PlayerPhoto from '../components/PlayerPhoto.jsx'
 import PlayerDetailModal from '../components/PlayerDetailModal.jsx'
@@ -17,9 +18,6 @@ import {
 import './Takimim.css'
 
 const POS_ORDER = ['KL', 'DF', 'OS', 'FW']
-
-// Maçı tamamlanmış sayılan durumlar (puan gösterimi bunlarda başlar)
-const FINISHED = new Set(['FT', 'AET', 'PEN', 'WO'])
 
 // Pozisyon → halka / rozet renk sınıfı (yeşil KL, kırmızı DF, mavi OS, turuncu FW)
 const RING = { KL: 'ring-gk', DF: 'ring-def', OS: 'ring-mid', FW: 'ring-fwd' }
@@ -65,10 +63,8 @@ const IconBolt = () => (
   </svg>
 )
 
-function SquadSlot({ entry, info, isCaptain, isSelected, isTarget, onClick, posTag, skeleton }) {
-  const { slot, pos } = entry
+function SquadSlot({ pos, player, info, isCaptain, isSelected, isTarget, onClick, posTag, skeleton, subIn, subOut }) {
   const meta = POSITIONS[pos]
-  const player = slot.player
   const ring = RING[pos] || 'ring-mid'
   const tag = posTag ? <span className={`pos-tag ${TAG[pos] || 'tag-mid'}`}>{posTag}</span> : null
 
@@ -111,6 +107,9 @@ function SquadSlot({ entry, info, isCaptain, isSelected, isTarget, onClick, posT
       onClick={onClick}
     >
       {isCaptain && <span className="capC">C</span>}
+      {/* Otomatik yedek: girdi (yeşil ↑) / çıktı (gri ↓) */}
+      {subIn && <span className="sub-badge in" title="Yedekten girdi">↑</span>}
+      {subOut && <span className="sub-badge out" title="Sahadan çıktı">↓</span>}
       {tag}
       {/* Gerçek fotoğraf korunur; halka .ava etrafında (inset:-3px) */}
       <span className={`ava ${ring}`}>
@@ -145,9 +144,11 @@ export default function Takimim() {
   } = useSquad()
 
   const [view, setView] = useState('next')
-  const [detail, setDetail] = useState(null) // { pos, index } — açık oyuncu detay modalı
+  const [detail, setDetail] = useState(null) // { pos, index, player, starter } — açık oyuncu detay modalı
   const [swapMode, setSwapMode] = useState(null) // { source:{pos,index}, targetType:'bench'|'starter' }
   const [saveMsg, setSaveMsg] = useState('')
+  // Deadline sonrası haftalık puanlar: { loading, ptsById, finishedById, forKey }
+  const [scores, setScores] = useState({ loading: false, ptsById: new Map(), finishedById: new Map(), forKey: null })
 
   const now = Date.now()
   const visibleWeeks = getVisibleWeeks(weeks, now)
@@ -172,6 +173,28 @@ export default function Takimim() {
     return () => clearTimeout(t)
   }, [saveMsg])
 
+  // Deadline geçtiğinde: kadrodaki her oyuncunun o haftaki puanını
+  // (tamamlanmış maçlardan) scoring.js ile hesapla.
+  const scoreKey = locked ? `${week}:${rosterList.map((p) => p.id).join(',')}` : null
+  useEffect(() => {
+    if (!locked || weeksLoading || squadLoading) return
+    if (!fixtures.length || rosterList.length === 0) return
+    if (scores.forKey === scoreKey) return
+    let alive = true
+    setScores((s) => ({ ...s, loading: true }))
+    computeWeekScores(rosterList, week, fixtures)
+      .then((res) => {
+        if (alive) setScores({ loading: false, ptsById: res.ptsById, finishedById: res.finishedById, forKey: scoreKey })
+      })
+      .catch(() => {
+        if (alive) setScores((s) => ({ ...s, loading: false, forKey: scoreKey }))
+      })
+    return () => {
+      alive = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [locked, scoreKey, fixtures, weeksLoading, squadLoading])
+
   const overBudget = remaining < 0
   const captainPlayer = rosterList.find((p) => p.id === captainId) || null
   const filledCount = rosterList.length
@@ -181,25 +204,16 @@ export default function Takimim() {
   // Yuva altı bilgi satırı:
   // - Deadline gelmediyse görünüme göre (sonraki maç: tarih + rakip / oyuncu değeri)
   // - Deadline geldiyse maç durumuna göre puan (bitmediyse "-", bittiyse puan)
+  // Deadline öncesi yuva altı bilgisi (deadline sonrası puan renderView'da).
   const slotInfoFor = (player) => {
-    const fx = getTeamFixture(fixtures, player.club, week)
-    if (locked) {
-      // Puanlama sistemi netleşene kadar biten maçlar için 0 gösterilir
-      return FINISHED.has(fx?.fixture?.status?.short) ? '0 P' : '-'
-    }
     if (view === 'value') return `₺${player.price}M`
+    const fx = getTeamFixture(fixtures, player.club, week)
     if (!fx) return '—'
     const isHome = fx.teams?.home?.name === player.club
     const opp = isHome ? fx.teams?.away?.name : fx.teams?.home?.name
     const day = fx.fixture?.date ? matchDay(fx.fixture.date) : '—'
     return `${day} · ${isHome ? 'vs' : '@'} ${opp || '—'}`
   }
-
-  // Toplam puan: tüm oyuncuların maçı bitince hesaplanır; o zamana kadar "-"
-  const allMatchesFinished =
-    rosterList.length > 0 &&
-    rosterList.every((p) => FINISHED.has(getTeamFixture(fixtures, p.club, week)?.fixture?.status?.short))
-  const totalPoints = allMatchesFinished ? 0 : '-'
 
   const fieldByPos = useMemo(() => {
     const map = {}
@@ -221,8 +235,34 @@ export default function Takimim() {
     return list.sort((a, b) => (a.slot.benchOrder ?? 99) - (b.slot.benchOrder ?? 99))
   }, [roster])
 
+  // Haftanın son maçı bitti mi (kadrodaki tüm oyuncuların maçları tamamlandı)
+  const weekAllFinished =
+    locked && rosterList.length > 0 && rosterList.every((p) => scores.finishedById.get(p.id))
+
+  // Görsel saha düzeni: son maç bitince otomatik yedek uygulanır (yalnızca görsel).
+  const applySubs = weekAllFinished && !scores.loading
+  const display = useMemo(
+    () =>
+      applyAutoSubs({
+        fieldByPos,
+        benchEntries,
+        ptsById: scores.ptsById,
+        finishedById: scores.finishedById,
+        apply: applySubs,
+      }),
+    [fieldByPos, benchEntries, scores.ptsById, scores.finishedById, applySubs]
+  )
+
+  // Toplam puan: deadline sonrası kümülatif (biten maçlar), son maç bitince
+  // otomatik yedek uygulanmış final. Deadline öncesi gösterilmez.
+  const totalPoints = !locked
+    ? null
+    : scores.loading
+      ? '…'
+      : computeTotalPoints({ field: display.field, finishedById: scores.finishedById, captainId })
+
   // Yuva tıklaması: yer değiştirme modundaysa hedef seç; değilse detay modalı aç
-  const onSlotClick = (pos, index) => {
+  const onSlotClick = (pos, index, viewPlayer, viewStarter) => {
     if (swapMode) {
       if (locked) {
         setSwapMode(null)
@@ -240,8 +280,11 @@ export default function Takimim() {
       setSaveMsg(err || 'Yer değiştirildi ✓')
       return
     }
-    if (!roster[pos][index].player) return
-    setDetail({ pos, index })
+    // Detay modalı gösterilen oyuncu için açılır (deadline sonrası otomatik
+    // yedekte sahaya çıkan/çıkarılan oyuncu gösterilir).
+    const dp = viewPlayer ?? roster[pos][index].player
+    if (!dp) return
+    setDetail({ pos, index, player: dp, starter: viewStarter ?? roster[pos][index].starter })
   }
 
   // Modaldan yer değiştirmeyi başlat: modal kapanır, hedef yuvalar vurgulanır
@@ -257,35 +300,47 @@ export default function Takimim() {
     setSaveMsg('Takım kaydedildi ✓')
   }
 
-  const renderSlot = (entry, opts = {}) => {
-    const { pos, index, slot } = entry
+  // view = { pos, index, player, starter, subIn, subOut, pts, finished } (gösterim nesnesi)
+  const renderView = (view, opts = {}) => {
+    const { pos, index, player, starter, subIn, subOut } = view
     const isSwapSource =
       Boolean(swapMode) && swapMode.source.pos === pos && swapMode.source.index === index
     const isTarget =
-      Boolean(swapMode) &&
-      !isSwapSource &&
-      (swapMode.targetType === 'bench' ? !slot.starter : slot.starter)
+      Boolean(swapMode) && !isSwapSource && (swapMode.targetType === 'bench' ? !starter : starter)
+    // Deadline sonrası puan bilgisi doğrudan gösterim nesnesinden gelir
+    // (maç bitmemişse "-", bittiyse "N P"); öncesinde görünüm dropdown'ına göre.
+    const info = !player
+      ? null
+      : locked
+        ? scores.loading
+          ? '…'
+          : view.finished
+            ? `${view.pts ?? 0} P`
+            : '-'
+        : slotInfoFor(player)
     return (
       <SquadSlot
-        key={`${pos}-${index}`}
-        entry={entry}
-        info={slot.player ? slotInfoFor(slot.player) : null}
-        isCaptain={slot.player ? slot.player.id === captainId : false}
+        key={`${pos}-${index}-${player?.id ?? 'e'}`}
+        pos={pos}
+        player={player}
+        info={info}
+        isCaptain={player ? player.id === captainId : false}
         isSelected={Boolean(detail) && detail.pos === pos && detail.index === index}
         isTarget={isTarget}
         onClick={(e) => {
           e.stopPropagation()
-          onSlotClick(pos, index)
+          onSlotClick(pos, index, player, starter)
         }}
         posTag={opts.posTag}
         skeleton={squadLoading}
+        subIn={subIn}
+        subOut={subOut}
       />
     )
   }
 
-  // Açık modal için oyuncu bilgileri
-  const detailSlot = detail ? roster[detail.pos][detail.index] : null
-  const detailPlayer = detailSlot?.player || null
+  // Açık modal için oyuncu bilgileri (gösterilen oyuncu)
+  const detailPlayer = detail?.player || null
   const detailFixture = detailPlayer ? getTeamFixture(fixtures, detailPlayer.club, week) : null
 
   const saveActive = dirty && !overBudget
@@ -382,6 +437,7 @@ export default function Takimim() {
           onSelect={onSelectWeek}
           now={now}
           loading={weeksLoading}
+          selectedPoints={locked ? totalPoints : null}
         />
 
         {!locked && (
@@ -447,16 +503,16 @@ export default function Takimim() {
               <div className="arc-b" />
             </div>
             <div className="rows">
-              <div className="row">{fieldByPos.FW.map((e) => renderSlot(e))}</div>
-              <div className="row">{fieldByPos.OS.map((e) => renderSlot(e))}</div>
-              <div className="row">{fieldByPos.DF.map((e) => renderSlot(e))}</div>
-              <div className="row">{fieldByPos.KL.map((e) => renderSlot(e))}</div>
+              <div className="row">{display.field.FW.map((d) => renderView({ ...d, starter: true }))}</div>
+              <div className="row">{display.field.OS.map((d) => renderView({ ...d, starter: true }))}</div>
+              <div className="row">{display.field.DF.map((d) => renderView({ ...d, starter: true }))}</div>
+              <div className="row">{display.field.KL.map((d) => renderView({ ...d, starter: true }))}</div>
             </div>
           </div>
 
           <div className="bench-div"><span className="bench-label">Yedekler</span></div>
           <div className="bench">
-            {benchEntries.map((e) => renderSlot(e, { posTag: e.pos }))}
+            {display.bench.map((d) => renderView({ ...d, starter: false }, { posTag: d.pos }))}
           </div>
         </div>
       </div>
@@ -468,32 +524,35 @@ export default function Takimim() {
           <span className="count-num cond tnum"><b>{filledCount}</b>/15</span>
           <span className="lbl">oyuncu · kadro {filledCount === 15 ? 'tam' : 'eksik'}</span>
         </div>
-        <div className="save-wrap">
-          {overBudget && <span className="budget-warn">Bütçen aşıldı — kaydedemezsin.</span>}
-          {!overBudget && saveMsg && (
-            <span className={`save-note show ${msgOk ? 'ok' : 'warn'}`}>
-              {msgOk ? <IconCheck /> : <span className="pulse" />}
-              {saveMsg}
-            </span>
-          )}
-          {!overBudget && !saveMsg && dirty && (
-            <span className="save-note show"><span className="pulse" />Kaydedilmemiş değişiklik var</span>
-          )}
-          <button
-            type="button"
-            className={`btn-save${saveActive ? ' active' : ''}`}
-            onClick={saveSquad}
-          >
-            <IconSave />Takımı Kaydet
-          </button>
-        </div>
+        {/* Deadline sonrası kaydetme gizlenir (kadro kilitli) */}
+        {!locked && (
+          <div className="save-wrap">
+            {overBudget && <span className="budget-warn">Bütçen aşıldı — kaydedemezsin.</span>}
+            {!overBudget && saveMsg && (
+              <span className={`save-note show ${msgOk ? 'ok' : 'warn'}`}>
+                {msgOk ? <IconCheck /> : <span className="pulse" />}
+                {saveMsg}
+              </span>
+            )}
+            {!overBudget && !saveMsg && dirty && (
+              <span className="save-note show"><span className="pulse" />Kaydedilmemiş değişiklik var</span>
+            )}
+            <button
+              type="button"
+              className={`btn-save${saveActive ? ' active' : ''}`}
+              onClick={saveSquad}
+            >
+              <IconSave />Takımı Kaydet
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Oyuncu detay modalı — yalnızca kadro görünümünde (Takımım) */}
       {detailPlayer && (
         <PlayerDetailModal
           player={detailPlayer}
-          isStarter={detailSlot.starter}
+          isStarter={detail.starter}
           isCaptain={detailPlayer.id === captainId}
           locked={locked}
           week={week}
