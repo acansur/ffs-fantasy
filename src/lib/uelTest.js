@@ -28,8 +28,22 @@ export const UEL_FIXTURES = [
   { id: 1607560, home: { id: 211, name: 'Benfica' }, away: { id: 254, name: 'Heart Of Midlothian' } },
 ]
 
-// 20 takım (id → ad)
+// Gösterilen maçların takımları (7 maç → 14 takım)
 export const UEL_TEAMS = UEL_FIXTURES.flatMap((f) => [f.home, f.away])
+
+// Oyuncu HAVUZU takımları: 14 güncel takım + çıkarılan 3 maçın 6 takımı.
+// Maçlar UEL_FIXTURES'tan çıkarıldı (deadline geçti) ama bu takımların
+// oyuncuları mevcut kadro kayıtlarında olabileceğinden havuzda tutulur; aksi
+// halde kayıtlı player_id'ler havuzda bulunamaz ve kadro boş görünür.
+const UEL_REMOVED_POOL_TEAMS = [
+  { id: 1165, name: 'KuPS' },
+  { id: 632, name: 'Universitatea Craiova' },
+  { id: 336, name: 'Jagiellonia' },
+  { id: 257, name: 'Rangers' },
+  { id: 604, name: 'Maccabi Tel Aviv' },
+  { id: 853, name: 'CSKA Sofia' },
+]
+export const UEL_POOL_TEAMS = [...UEL_TEAMS, ...UEL_REMOVED_POOL_TEAMS]
 
 // API tam-mevki adı → UI mevki kodu
 const POS_MAP = { Goalkeeper: 'KL', Defender: 'DF', Midfielder: 'OS', Attacker: 'FW' }
@@ -96,7 +110,7 @@ let _playersPromise = null
 export function loadUelPlayers() {
   if (!_playersPromise) {
     _playersPromise = (async () => {
-      const squads = await mapWithConcurrency(UEL_TEAMS, 3, fetchTeamSquad)
+      const squads = await mapWithConcurrency(UEL_POOL_TEAMS, 3, fetchTeamSquad)
       const seen = new Set()
       const players = []
       for (const list of squads) {

@@ -120,10 +120,21 @@ export default function UelTest({ slot }) {
         if (!alive) return
         if (!loaded) return // bu kullanıcı/slot için kayıt yok → boş kadro
         const byId = Object.fromEntries((players || []).map((p) => [String(p.id), p]))
+        // Tanı: kayıtlı player_id'ler havuzda var mı?
+        const savedIds = loaded.rows.map((r) => r.player_id)
+        const poolIds = new Set((players || []).map((p) => p.id))
+        const matched = savedIds.filter((id) => poolIds.has(id) || poolIds.has(Number(id))).length
+        console.log('[UEL] ID eşleşme: %d/%d', matched, savedIds.length)
+        console.log('[UEL] örnek kayıtlı id:', savedIds.slice(0, 6))
+        console.log('[UEL] örnek havuz id:', (players || []).slice(0, 6).map((p) => p.id))
+        console.log('[UEL] havuz takımları:', [...new Set((players || []).map((p) => p.club))])
         const r = rebuildUelRoster(loaded.rows, byId)
         const resolved = ['KL', 'DF', 'OS', 'FW'].reduce((n, p) => n + r[p].filter((s) => s.player).length, 0)
         console.log('[UEL] rebuild → çözülen oyuncu=%d / havuz=%d / kayıt satırı=%d', resolved, (players || []).length, loaded.rows.length)
         setRoster(r)
+        if (resolved < loaded.rows.length) {
+          setSaveMsg(`⚠ ${loaded.rows.length - resolved}/${loaded.rows.length} kayıtlı oyuncu güncel havuzda yok (çıkarılan maçların takımlarından olabilir) — kadroyu yeniden kurup kaydedin.`)
+        }
         setCaptainId(loaded.captainId ?? null)
         setSavedSig(signature(r, loaded.captainId ?? null))
       } catch (e) {
