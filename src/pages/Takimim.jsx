@@ -170,7 +170,7 @@ export default function Takimim() {
   const [saveMsg, setSaveMsg] = useState('')
   const [scoringOpen, setScoringOpen] = useState(false)
   // Deadline sonrası haftalık puanlar: { loading, ptsById, finishedById, forKey }
-  const [scores, setScores] = useState({ loading: false, ptsById: new Map(), finishedById: new Map(), forKey: null })
+  const [scores, setScores] = useState({ loading: false, ptsById: new Map(), finishedById: new Map(), partsById: new Map(), forKey: null })
 
   const now = useNow(30000) // gerçek zamanlı deadline kontrolü (30 sn)
   const visibleWeeks = getVisibleWeeks(weeks, now)
@@ -208,7 +208,7 @@ export default function Takimim() {
     setScores((s) => ({ ...s, loading: true }))
     computeWeekScores(rosterList, week, fixtures)
       .then((res) => {
-        if (alive) setScores({ loading: false, ptsById: res.ptsById, finishedById: res.finishedById, forKey: scoreKey })
+        if (alive) setScores({ loading: false, ptsById: res.ptsById, finishedById: res.finishedById, partsById: res.partsById, forKey: scoreKey })
       })
       .catch(() => {
         if (alive) setScores((s) => ({ ...s, loading: false, forKey: scoreKey }))
@@ -620,6 +620,11 @@ export default function Takimim() {
           locked={locked}
           week={week}
           fixture={detailFixture}
+          breakdown={(scores.partsById.get(detailPlayer.id) || []).map((p) => ({
+            stat: p.label,
+            value: p.n != null && p.n !== 0 ? String(p.n) : '',
+            pts: p.pts,
+          }))}
           onMakeCaptain={() => {
             makeCaptain(detailPlayer.id)
             setDetail(null)

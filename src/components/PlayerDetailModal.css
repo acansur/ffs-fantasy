@@ -150,6 +150,33 @@
 }
 .pdm-arrow { font-size: 0.7rem; }
 
+/* Maç devam ediyor bildirimi (puanlar henüz kesinleşmedi) */
+.pdm-live-note {
+  margin: 16px auto;
+  padding: 10px 20px;
+  text-align: center;
+  color: var(--ink-2, #9aa9c6);
+  font-size: 14px;
+  font-weight: 600;
+}
+.pdm-live-note::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 0 rgba(74, 222, 128, 0.6);
+  animation: pdm-live-pulse 1.4s ease-in-out infinite;
+  vertical-align: middle;
+}
+@keyframes pdm-live-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.5); }
+  70% { box-shadow: 0 0 0 7px rgba(74, 222, 128, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
+}
+
 .pdm-breakdown { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
 .pdm-breakdown th,
 .pdm-breakdown td { padding: 10px 24px; text-align: left; font-size: 14px; }

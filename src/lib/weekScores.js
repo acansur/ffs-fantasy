@@ -57,7 +57,8 @@ function fetchFixtureData(fixtureId) {
 
 // Bir haftadaki oyuncuların puanlarını hesapla.
 // players → uygulama oyuncu nesneleri ({ id, club, ... })
-// Dönüş: { ptsById: Map<id, number>, finishedById: Map<id, boolean> }
+// Dönüş: { ptsById: Map<id, number>, finishedById: Map<id, boolean>,
+//          partsById: Map<id, parts[]> } (puan kırılımı gösterimi için parts dahil)
 export async function computeWeekScores(players, week, fixtures) {
   const finishedById = new Map()
   const fixtureIds = new Set()
@@ -69,25 +70,18 @@ export async function computeWeekScores(players, week, fixtures) {
     if (fin && fx?.fixture?.id) fixtureIds.add(fx.fixture.id)
   }
 
-  const ptsById = await scoreFixtures(fixtureIds)
-  return { ptsById, finishedById }
-}
-
-// Verilen fixture id'leri için oyuncu puanlarını hesapla → Map<playerId, pts>.
-// (Takımım ve UEL test sayfası ortak kullanır.)
-export async function scoreFixtures(fixtureIds) {
+  const detailed = await scoreFixturesDetailed(fixtureIds)
   const ptsById = new Map()
-  await Promise.all(
-    [...fixtureIds].map(async (id) => {
-      const data = await fetchFixtureData(id)
-      const scored = scoreFixture(data.players, data.events)
-      for (const s of scored) ptsById.set(s.id, s.total)
-    })
-  )
-  return ptsById
+  const partsById = new Map()
+  for (const [id, s] of detailed) {
+    ptsById.set(id, s.total)
+    partsById.set(id, s.parts)
+  }
+  return { ptsById, finishedById, partsById }
 }
 
-// Detaylı: tam skorlanmış oyuncu nesnesini döner → Map<playerId, {total, parts, ...}>
+// Verilen fixture id'leri için tam skorlanmış oyuncu nesnesini döner →
+// Map<playerId, {total, parts, ...}> (Takımım ve UEL test sayfası ortak kullanır)
 // (puan kırılımı gösterimi için parts dahil.)
 export async function scoreFixturesDetailed(fixtureIds) {
   const byId = new Map()

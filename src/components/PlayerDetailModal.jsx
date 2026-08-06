@@ -7,17 +7,12 @@ import './PlayerDetailModal.css'
 
 // Maçın başlamadığı sayılan durumlar
 const NOT_STARTED = new Set(['NS', 'TBD', 'PST', 'CANC', 'ABD', 'AWD'])
+// Maçın bittiği (puanların kesinleştiği) durumlar
+const FINISHED = new Set(['FT', 'AET', 'PEN', 'WO'])
 
 // Pozisyon → hero bandı renk sınıfı
 const POS_HEAD = { KL: 'pos-gk', DF: 'pos-def', OS: 'pos-mid', FW: 'pos-fwd' }
 
-// Mock puan kırılımı (gerçek istatistik entegrasyonu sonraki adım)
-const MOCK_BREAKDOWN = [
-  { stat: 'Oynadığı dakika', value: '90', pts: 2 },
-  { stat: 'Gol', value: '1', pts: 4 },
-  { stat: 'Asist', value: '1', pts: 3 },
-  { stat: 'Sarı kart', value: '1', pts: -1 },
-]
 const fmtDate = (iso) =>
   new Date(iso).toLocaleDateString('tr-TR', {
     day: '2-digit',
@@ -44,10 +39,10 @@ export default function PlayerDetailModal({
   weeks = [],
   fixtures = [], // info görünümünde haftalık rakip için
   hideActions = false, // kaptan/yedek butonlarını gizle (örn. UEL kilitli görünüm)
-  breakdown = null, // gerçek puan kırılımı [{ stat, value, pts }] — verilmezse MOCK
+  breakdown = null, // gerçek puan kırılımı [{ stat, value, pts }] (yalnızca maç bittiyse)
 }) {
   const isInfo = variant === 'info'
-  const bd = breakdown && breakdown.length ? breakdown : MOCK_BREAKDOWN
+  const bd = breakdown || []
   const bdTotal = bd.reduce((s, r) => s + r.pts, 0)
   const [open, setOpen] = useState(false)
 
@@ -68,6 +63,8 @@ export default function PlayerDetailModal({
   const posLabel = POSITIONS[player.pos]?.label || player.pos
   const status = fixture?.fixture?.status?.short
   const started = Boolean(status) && !NOT_STARTED.has(status)
+  const isFinished = FINISHED.has(status) // FT/AET/PEN/WO → puanlar kesin
+  const inPlay = started && !isFinished // LIVE/1H/2H/HT/ET → maç sürüyor
   const home = fixture?.teams?.home
   const away = fixture?.teams?.away
   const homeScore = started ? fixture?.goals?.home ?? 0 : '-'
@@ -139,15 +136,20 @@ export default function PlayerDetailModal({
           </div>
         )}
 
-        {/* Puan toggle — yalnızca maç başladıysa (tam görünüm) */}
-        {!isInfo && started && (
+        {/* Maç devam ediyor (LIVE/1H/2H/HT/ET) — puanlar henüz kesin değil */}
+        {!isInfo && inPlay && (
+          <div className="pdm-live-note">Maç devam ediyor</div>
+        )}
+
+        {/* Puan toggle — yalnızca maç BİTTİYSE (FT), gerçek verilerden */}
+        {!isInfo && isFinished && (
           <button className="pdm-toggle" onClick={() => setOpen((o) => !o)}>
             {bdTotal} puan <span className="pdm-arrow">{open ? '▲' : '▼'}</span>
           </button>
         )}
 
-        {/* Puan kırılım tablosu (tam görünüm) */}
-        {!isInfo && started && open && (
+        {/* Puan kırılım tablosu — gerçek istatistiklerden (maç bittiyse) */}
+        {!isInfo && isFinished && open && (
           <table className="pdm-breakdown">
             <thead>
               <tr>
