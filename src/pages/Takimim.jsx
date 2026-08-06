@@ -22,6 +22,10 @@ import './Transfer.css' // .tr-btn-guide / .tr-overlay / .tr-guide / .tr-mclose 
 
 const POS_ORDER = ['KL', 'DF', 'OS', 'FW']
 
+// Maç durum kategorileri (kart durum noktası için)
+const MS_NOT_STARTED = new Set(['NS', 'TBD', 'PST', 'CANC', 'ABD', 'AWD'])
+const MS_FINISHED = new Set(['FT', 'AET', 'PEN', 'WO'])
+
 // Pozisyon → halka / rozet renk sınıfı (yeşil KL, kırmızı DF, mavi OS, turuncu FW)
 const RING = { KL: 'ring-gk', DF: 'ring-def', OS: 'ring-mid', FW: 'ring-fwd' }
 const TAG = { KL: 'tag-gk', DF: 'tag-def', OS: 'tag-mid', FW: 'tag-fwd' }
@@ -69,7 +73,7 @@ const IconGuide = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9" /><path d="M12 16v-4M12 8h.01" strokeLinecap="round" /></svg>
 )
 
-function SquadSlot({ pos, player, info, teamShort, isCaptain, isSelected, isTarget, onClick, posTag, skeleton, subIn, subOut }) {
+function SquadSlot({ pos, player, info, teamShort, matchState, isCaptain, isSelected, isTarget, onClick, posTag, skeleton, subIn, subOut }) {
   const meta = POSITIONS[pos]
   const ring = RING[pos] || 'ring-mid'
   const tag = posTag ? <span className={`pos-tag ${TAG[pos] || 'tag-mid'}`}>{posTag}</span> : null
@@ -120,6 +124,8 @@ function SquadSlot({ pos, player, info, teamShort, isCaptain, isSelected, isTarg
       {/* Gerçek fotoğraf korunur; halka .ava etrafında (inset:-3px) */}
       <span className={`ava ${ring}`}>
         <PlayerPhoto id={player.id} name={player.name} bg={bg} fg={fg} />
+        {/* Deadline sonrası maç durum noktası: live (yeşil yanıp söner) / finished (altın sabit) */}
+        {matchState && <span className={`mstate-dot ${matchState}`} aria-hidden="true" />}
       </span>
       <span className={`name-plate${teamShort ? ' np-locked' : ''}`}>
         {teamShort ? (
@@ -229,6 +235,16 @@ export default function Takimim() {
   // - Deadline gelmediyse görünüme göre (sonraki maç: tarih + rakip / oyuncu değeri)
   // - Deadline geldiyse maç durumuna göre puan (bitmediyse "-", bittiyse puan)
   // Deadline öncesi yuva altı bilgisi (deadline sonrası puan renderView'da).
+  // Deadline sonrası oyuncunun maçının durumu: 'live' | 'finished' | null
+  // (null → başlamadı ya da deadline öncesi; nokta gösterilmez)
+  const matchStateFor = (player) => {
+    if (!locked || !player) return null
+    const fx = getTeamFixture(fixtures, player.club, week)
+    const s = fx?.fixture?.status?.short
+    if (!s || MS_NOT_STARTED.has(s)) return null
+    return MS_FINISHED.has(s) ? 'finished' : 'live'
+  }
+
   const slotInfoFor = (player) => {
     if (view === 'value') return `₺${player.price}M`
     const fx = getTeamFixture(fixtures, player.club, week)
@@ -349,6 +365,7 @@ export default function Takimim() {
         player={player}
         info={info}
         teamShort={locked && player ? player.clubShort || null : null}
+        matchState={matchStateFor(player)}
         isCaptain={player ? player.id === captainId : false}
         isSelected={Boolean(detail) && detail.pos === pos && detail.index === index}
         isTarget={isTarget}

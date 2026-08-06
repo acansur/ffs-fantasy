@@ -28,6 +28,9 @@ const POS_ORDER = ['KL', 'DF', 'OS', 'FW']
 // Picker/autofill yalnızca GÜNCEL 7 maçın 14 takımından oyuncu gösterir.
 // (Havuz yükleme için 20 takım tutar; ama yeni seçimler yalnızca güncel takımlardan.)
 const CURRENT_TEAM_IDS = new Set(UEL_TEAMS.map((t) => t.id))
+// Maç durum kategorileri (kart durum noktası için)
+const MS_NOT_STARTED = new Set(['NS', 'TBD', 'PST', 'CANC', 'ABD', 'AWD'])
+const MS_FINISHED = new Set(['FT', 'AET', 'PEN', 'WO'])
 const POS_TABS = [{ key: null, label: 'Tümü' }, ...POS_ORDER.map((p) => ({ key: p, label: p }))]
 const RING = { KL: 'ring-gk', DF: 'ring-def', OS: 'ring-mid', FW: 'ring-fwd' }
 const TAG = { KL: 'tag-gk', DF: 'tag-def', OS: 'tag-mid', FW: 'tag-fwd' }
@@ -41,7 +44,7 @@ function signature(roster, captainId) {
 }
 
 /* ---- Yuva ---- */
-function UelSlot({ pos, player, info, teamShort, isCaptain, isTarget, onClick, posTag, subIn, subOut }) {
+function UelSlot({ pos, player, info, teamShort, matchState, isCaptain, isTarget, onClick, posTag, subIn, subOut }) {
   const meta = POSITIONS[pos]
   const ring = RING[pos] || 'ring-mid'
   const tag = posTag ? <span className={`pos-tag ${TAG[pos] || 'tag-mid'}`}>{posTag}</span> : null
@@ -60,7 +63,11 @@ function UelSlot({ pos, player, info, teamShort, isCaptain, isTarget, onClick, p
       {subIn && <span className="sub-badge in" title="Yedekten girdi">↑</span>}
       {subOut && <span className="sub-badge out" title="Sahadan çıktı">↓</span>}
       {tag}
-      <span className={`ava ${ring}`}><PlayerPhoto id={player.id} name={player.name} bg={player.clubBg} fg={player.clubFg} /></span>
+      <span className={`ava ${ring}`}>
+        <PlayerPhoto id={player.id} name={player.name} bg={player.clubBg} fg={player.clubFg} />
+        {/* Deadline sonrası maç durum noktası: live (yeşil pulse) / finished (altın) */}
+        {matchState && <span className={`mstate-dot ${matchState}`} aria-hidden="true" />}
+      </span>
       <span className={`name-plate${teamShort ? ' np-locked' : ''}`}>
         {teamShort ? (
           <>
@@ -364,6 +371,15 @@ export default function UelTest({ slot }) {
   const pickerSlotPlayer = picker ? roster[picker.pos][picker.index].player : null
   const slotVal = pickerSlotPlayer ? pickerSlotPlayer.price : 0
 
+  // Deadline sonrası oyuncunun maçının durumu: 'live' | 'finished' | null
+  const matchStateFor = (player) => {
+    if (!locked || !player) return null
+    const fx = uelFixtureForTeam(fixtures, player.teamId)
+    const s = fx?.fixture?.status?.short
+    if (!s || MS_NOT_STARTED.has(s)) return null
+    return MS_FINISHED.has(s) ? 'finished' : 'live'
+  }
+
   const renderView = (view, opts = {}) => {
     const { pos, index, player, subIn, subOut } = view
     const isSwapSource = Boolean(swapMode) && swapMode.source.pos === pos && swapMode.source.index === index
@@ -375,6 +391,7 @@ export default function UelTest({ slot }) {
         player={player}
         info={infoFor(view)}
         teamShort={locked && player ? player.clubShort || null : null}
+        matchState={matchStateFor(player)}
         isCaptain={player ? player.id === captainId : false}
         isTarget={isTarget}
         onClick={(e) => { e.stopPropagation(); onSlotClick(pos, index, view) }}

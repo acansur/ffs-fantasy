@@ -523,6 +523,28 @@
 .tm-page .sub-badge.in { background: var(--gk); color: #04140d; }
 .tm-page .sub-badge.out { background: var(--ink-3); color: #0e1913; }
 
+/* Deadline sonrası maç durum noktası (avatar sağ-alt köşesi).
+   live → yeşil yanıp söner (PlayerDetailModal .pdm-live-note ile aynı animasyon);
+   finished → altın/sarı sabit nokta. */
+.tm-page .mstate-dot {
+  position: absolute;
+  right: 1px;
+  bottom: 3px;
+  z-index: 4;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 2px solid #0a130f;
+}
+.tm-page .mstate-dot.finished {
+  background: var(--gold, #f0a500);
+  box-shadow: 0 0 7px rgba(240, 165, 0, 0.7);
+}
+.tm-page .mstate-dot.live {
+  background: #4ade80;
+  animation: pdm-live-pulse 1.4s ease-in-out infinite;
+}
+
 /* Yedeklerde pozisyon etiketi */
 .tm-page .pos-tag {
   position: absolute;
