@@ -1,5 +1,6 @@
 import { NavLink, Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth.jsx'
+import './Navbar.css'
 
 const loggedInLinks = [
   { to: '/', label: 'Ana Sayfa', end: true },
@@ -21,19 +22,19 @@ export default function Navbar() {
   }
 
   return (
-    <header className="navbar">
-      <div className="navbar-inner">
-        <Link to="/" className="brand">
-          <span className="brand-mark">FFS</span>
-          <span className="brand-text">Fantasy Süper Lig</span>
+    <header className="ffs-nav">
+      <div className="ffs-nav-in">
+        <Link to="/" className="ffs-nav-brand">
+          <span className="ffs-nav-crest">FFS</span>
+          <span className="ffs-nav-name">Fantasy <span>Süper Lig</span></span>
         </Link>
-        <nav className="nav-links">
+        <nav className="ffs-nav-links">
           {links.map((l) => (
             <NavLink
               key={l.to}
               to={l.to}
               end={l.end}
-              className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
+              className={({ isActive }) => (isActive ? 'active' : undefined)}
             >
               {l.label}
             </NavLink>
@@ -41,19 +42,17 @@ export default function Navbar() {
         </nav>
 
         {user ? (
-          <div className="nav-user">
-            <span className="nav-username">Merhaba, {user.username}</span>
-            <button type="button" className="btn btn-ghost btn-sm" onClick={onLogout}>
+          <>
+            <span className="ffs-nav-user">Merhaba, <b>{user.username}</b></span>
+            <button type="button" className="ffs-nav-logout" onClick={onLogout}>
               Çıkış
             </button>
-          </div>
+          </>
         ) : (
-          <div className="nav-user">
-            <Link to="/giris" className="nav-link">Giriş Yap</Link>
-            <Link to="/kayit" className="btn btn-primary btn-sm">
-              Kayıt Ol
-            </Link>
-          </div>
+          <>
+            <Link to="/giris" className="ffs-nav-logout">Giriş Yap</Link>
+            <Link to="/kayit" className="ffs-nav-cta">Kayıt Ol</Link>
+          </>
         )}
       </div>
     </header>

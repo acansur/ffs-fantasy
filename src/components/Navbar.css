@@ -1,0 +1,59 @@
+/* Üst navigasyon — "Yeşil Saha Aktif" tasarımı.
+   Renkler DOĞRUDAN (hard-coded): global lacivert token'lara güvenilmez.
+   Tüm sınıflar .ffs-nav- önekli — global .nav/.links/.active sızmasın. */
+.ffs-nav {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: rgba(10, 16, 13, 0.74);
+  backdrop-filter: saturate(160%) blur(18px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.ffs-nav-in { max-width: 1120px; margin: 0 auto; padding: 0 22px; height: 68px; display: flex; align-items: center; gap: 14px; }
+.ffs-nav-brand { display: flex; align-items: center; gap: 12px; margin-right: auto; text-decoration: none; }
+
+/* FFS logosu: kırmızı gradyan + altın çerçeve + parlama */
+.ffs-nav-crest {
+  width: 44px; height: 44px; border-radius: 13px; display: grid; place-items: center;
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 16px; color: #fff; flex: none;
+  background: linear-gradient(155deg, #ef5b54, #b3241d); border: 2px solid #f0a500;
+  box-shadow: 0 0 16px rgba(240, 165, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.32), 0 5px 16px rgba(200, 40, 40, 0.34);
+}
+.ffs-nav-name { font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 19.5px; color: #fff; white-space: nowrap; }
+.ffs-nav-name span { color: #ffcb52; }
+
+/* sekme grubu */
+.ffs-nav-links { display: flex; align-items: center; gap: 4px; }
+.ffs-nav-links a { position: relative; font-size: 14.5px; font-weight: 500; color: #9cb0a4; text-decoration: none; padding: 9px 16px; border-radius: 10px; transition: 0.16s; white-space: nowrap; }
+.ffs-nav-links a:hover { color: #eaf3ec; background: rgba(255, 255, 255, 0.05); }
+/* AKTİF sekme: yeşil saha + altın halka */
+.ffs-nav-links a.active {
+  color: #fff; font-weight: 700;
+  background: linear-gradient(160deg, #22794f, #1a5f3f); border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 0 0 1.5px #f0a500, 0 6px 16px rgba(26, 95, 63, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+.ffs-nav-links a.active:hover { color: #fff; background: linear-gradient(160deg, #22794f, #1a5f3f); }
+
+.ffs-nav-user { font-size: 14px; color: #6d8175; white-space: nowrap; }
+.ffs-nav-user b { color: #eaf3ec; }
+.ffs-nav-logout {
+  font-family: inherit; font-size: 14px; font-weight: 600; color: #9cb0a4; text-decoration: none;
+  background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 9px 16px; border-radius: 10px; cursor: pointer; transition: 0.16s; white-space: nowrap;
+}
+.ffs-nav-logout:hover { color: #eaf3ec; border-color: #6d8175; }
+
+/* Kayıt CTA (yalnızca çıkış yapmış durumda) — altın */
+.ffs-nav-cta {
+  font-family: inherit; font-size: 14px; font-weight: 700; color: #3a2a00; text-decoration: none;
+  background: linear-gradient(180deg, #ffcb52, #f0a500); border: 1px solid #c98600;
+  padding: 9px 16px; border-radius: 10px; cursor: pointer; transition: 0.16s; white-space: nowrap;
+}
+.ffs-nav-cta:hover { filter: brightness(1.06); }
+
+/* Mobil: alt satıra sar, sekmeler ortalanır */
+@media (max-width: 720px) {
+  .ffs-nav-in { flex-wrap: wrap; height: auto; padding: 10px 16px; }
+  .ffs-nav-links { order: 3; width: 100%; justify-content: center; margin-top: 6px; flex-wrap: wrap; }
+  .ffs-nav-user { order: 2; }
+}
