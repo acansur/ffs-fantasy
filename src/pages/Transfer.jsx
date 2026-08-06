@@ -374,7 +374,6 @@ export default function Transfer() {
             </div>
           </div>
           <div className="tr-budget-bar"><div className="tr-budget-fill" style={{ width: `${spentPct}%` }} /></div>
-          <div className="tr-budget-meta"><span className="tnum">{spent.toFixed(1)}M harcandı</span><span>Kadro değeri</span></div>
         </div>
 
         <div className="tr-stat">

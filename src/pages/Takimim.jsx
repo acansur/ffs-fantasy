@@ -395,10 +395,6 @@ export default function Takimim() {
             </div>
           </div>
           <div className="budget-bar"><div className="budget-fill" style={{ width: `${spentPct}%` }} /></div>
-          <div className="budget-meta tnum">
-            <span>{spent.toFixed(1)}M harcandı</span>
-            <span>{remaining.toFixed(1)}M kaldı</span>
-          </div>
         </div>
 
         {/* Kaptan */}

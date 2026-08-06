@@ -79,9 +79,9 @@
   gap: 18px;
   min-height: 104px;
   background:
-    radial-gradient(560px 240px at 88% -40%, rgba(240, 165, 0, 0.2), transparent 60%),
-    radial-gradient(420px 200px at 8% 120%, rgba(240, 165, 0, 0.08), transparent 60%),
-    linear-gradient(135deg, #2a3542 0%, #1d2833 48%, #161d27 100%);
+    radial-gradient(560px 240px at 88% -40%, rgba(240, 165, 0, 0.18), transparent 60%),
+    radial-gradient(600px 300px at 12% 130%, rgba(26, 95, 63, 0.22), transparent 62%),
+    linear-gradient(135deg, #26313e 0%, #1b2531 50%, #14201b 100%);
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
