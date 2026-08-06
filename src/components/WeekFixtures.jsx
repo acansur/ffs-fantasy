@@ -82,8 +82,8 @@ export default function WeekFixtures({ fixtures, round, preMatchOnly = false }) 
   if (!days.length) return null
 
   return (
-    <div className="fx-wrap">
-      <div className="fx-head">
+    <div className="wfx-wrap">
+      <div className="wfx-head">
         <span className="ttl">
           Bu Haftanın <b>Maçları</b>
         </span>
@@ -92,10 +92,10 @@ export default function WeekFixtures({ fixtures, round, preMatchOnly = false }) 
       {days.map(([key, list]) => {
         const hasLive = !preMatchOnly && list.some(isLive)
         return (
-          <div key={key} className={`fx-day${hasLive ? ' hasLive' : ''}`}>
-            <span className="fx-node" />
-            <div className="fx-date">{fmtDay(list[0].fixture.date)}</div>
-            <div className="fx-list">
+          <div key={key} className={`wfx-day${hasLive ? ' hasLive' : ''}`}>
+            <span className="wfx-node" />
+            <div className="wfx-date">{fmtDay(list[0].fixture.date)}</div>
+            <div className="wfx-list">
               {list.map((f) => (
                 <FxMatch key={f.fixture.id} f={f} preMatchOnly={preMatchOnly} />
               ))}
@@ -123,23 +123,23 @@ function FxMatch({ f, preMatchOnly }) {
   const prog = Math.max(0, Math.min(100, ((elapsed ?? 0) / 90) * 100))
 
   return (
-    <div className={`fx-match${live ? ' is-live' : ''}${done ? ' is-done' : ''}`} style={{ '--hc': hc, '--ac': ac }}>
+    <div className={`wfx-match${live ? ' is-live' : ''}${done ? ' is-done' : ''}`} style={{ '--hc': hc, '--ac': ac }}>
       <span className="strip" />
       {live && (
-        <span className="fx-live-badge">
+        <span className="wfx-live-badge">
           <span className="ld" />
           CANLI
         </span>
       )}
-      {live && <span className="fx-prog" style={{ width: `${prog}%` }} />}
+      {live && <span className="wfx-prog" style={{ width: `${prog}%` }} />}
 
-      <div className="fx-team home">
+      <div className="wfx-team home">
         <span className="tn">{home}</span>
         <span className="dot" style={{ '--c': hc }} />
       </div>
 
       {live ? (
-        <div className="fx-cap live">
+        <div className="wfx-cap live">
           <div className="sc">{hs} - {as}</div>
           <div className="lm">
             <span className="ld" />
@@ -147,12 +147,12 @@ function FxMatch({ f, preMatchOnly }) {
           </div>
         </div>
       ) : done ? (
-        <div className="fx-cap done">
+        <div className="wfx-cap done">
           <div className="sc">{hs} - {as}</div>
           <div className="ft">Maç Sonu</div>
         </div>
       ) : (
-        <div className="fx-cap time">
+        <div className="wfx-cap time">
           <span className="tm">
             <ClockIcon />
             {fmtTime(f.fixture.date)}
@@ -160,7 +160,7 @@ function FxMatch({ f, preMatchOnly }) {
         </div>
       )}
 
-      <div className="fx-team away">
+      <div className="wfx-team away">
         <span className="dot" style={{ '--c': ac }} />
         <span className="tn">{away}</span>
       </div>
