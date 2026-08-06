@@ -18,8 +18,6 @@ const MOCK_BREAKDOWN = [
   { stat: 'Asist', value: '1', pts: 3 },
   { stat: 'Sarı kart', value: '1', pts: -1 },
 ]
-const MOCK_TOTAL = MOCK_BREAKDOWN.reduce((s, r) => s + r.pts, 0)
-
 const fmtDate = (iso) =>
   new Date(iso).toLocaleDateString('tr-TR', {
     day: '2-digit',
@@ -45,8 +43,12 @@ export default function PlayerDetailModal({
   variant = 'full', // 'full' (Takımım) | 'info' (Transfer — salt görüntüleme, aksiyon yok)
   weeks = [],
   fixtures = [], // info görünümünde haftalık rakip için
+  hideActions = false, // kaptan/yedek butonlarını gizle (örn. UEL kilitli görünüm)
+  breakdown = null, // gerçek puan kırılımı [{ stat, value, pts }] — verilmezse MOCK
 }) {
   const isInfo = variant === 'info'
+  const bd = breakdown && breakdown.length ? breakdown : MOCK_BREAKDOWN
+  const bdTotal = bd.reduce((s, r) => s + r.pts, 0)
   const [open, setOpen] = useState(false)
 
   // Hero'da tam ad göster: players/squads kısaltılmış ad döndüğü için
@@ -101,8 +103,12 @@ export default function PlayerDetailModal({
 
         {/* Maç bilgi barı */}
         <div className="pdm-matchbar">
-          <strong>{week}. Hafta</strong>
-          <span className="pdm-bar">|</span>
+          {week != null && (
+            <>
+              <strong>{week}. Hafta</strong>
+              <span className="pdm-bar">|</span>
+            </>
+          )}
           {date ? fmtDate(date) : '—'}
           <span className="pdm-bar">|</span>
           {date ? fmtTime(date) : '—'}
@@ -136,7 +142,7 @@ export default function PlayerDetailModal({
         {/* Puan toggle — yalnızca maç başladıysa (tam görünüm) */}
         {!isInfo && started && (
           <button className="pdm-toggle" onClick={() => setOpen((o) => !o)}>
-            {MOCK_TOTAL} puan <span className="pdm-arrow">{open ? '▲' : '▼'}</span>
+            {bdTotal} puan <span className="pdm-arrow">{open ? '▲' : '▼'}</span>
           </button>
         )}
 
@@ -151,17 +157,23 @@ export default function PlayerDetailModal({
               </tr>
             </thead>
             <tbody>
-              {MOCK_BREAKDOWN.map((r) => (
-                <tr key={r.stat}>
-                  <td>{r.stat}</td>
-                  <td>{r.value}</td>
-                  <td>{r.pts > 0 ? `+${r.pts}` : r.pts}</td>
+              {bd.length === 0 ? (
+                <tr>
+                  <td colSpan={3} style={{ textAlign: 'center', color: '#9aa9c6' }}>Puan kaydı yok</td>
                 </tr>
-              ))}
+              ) : (
+                bd.map((r, i) => (
+                  <tr key={r.stat + i}>
+                    <td>{r.stat}</td>
+                    <td>{r.value}</td>
+                    <td>{r.pts > 0 ? `+${r.pts}` : r.pts}</td>
+                  </tr>
+                ))
+              )}
               <tr className="pdm-total">
                 <td>Toplam</td>
                 <td />
-                <td>{MOCK_TOTAL}</td>
+                <td>{bdTotal}</td>
               </tr>
             </tbody>
           </table>
@@ -212,8 +224,8 @@ export default function PlayerDetailModal({
           </table>
         )}
 
-        {/* Aksiyonlar: kaptan + yer değiştirme (info görünümünde gizli) */}
-        {!isInfo && (
+        {/* Aksiyonlar: kaptan + yer değiştirme (info görünümünde / hideActions ile gizli) */}
+        {!isInfo && !hideActions && (
           <div className="pdm-actions">
             {isStarter && (
               <button

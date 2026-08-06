@@ -6,7 +6,7 @@
 // (Süper Lig fikstürü/oyuncuları, SquadProvider) dokunmaz.
 
 import { clubColors, clubShort } from './apiFootball.js'
-import { scoreFixtures } from './weekScores.js'
+import { scoreFixturesDetailed } from './weekScores.js'
 
 const FINISHED = new Set(['FT', 'AET', 'PEN', 'WO'])
 
@@ -164,7 +164,7 @@ export function uelFixtureForTeam(fixtures, teamId) {
 }
 
 // Kadrodaki oyuncuların bu etkinlikteki puanları.
-// Dönüş: { ptsById: Map, finishedById: Map }
+// Dönüş: { ptsById: Map, finishedById: Map, partsById: Map<id, parts[]> }
 export async function computeUelScores(players, fixtures) {
   const finishedById = new Map()
   const fixtureIds = new Set()
@@ -174,6 +174,12 @@ export async function computeUelScores(players, fixtures) {
     finishedById.set(p.id, fin)
     if (fin && fx?.fixture?.id) fixtureIds.add(fx.fixture.id)
   }
-  const ptsById = await scoreFixtures(fixtureIds)
-  return { ptsById, finishedById }
+  const detailed = await scoreFixturesDetailed(fixtureIds)
+  const ptsById = new Map()
+  const partsById = new Map()
+  for (const [id, s] of detailed) {
+    ptsById.set(id, s.total)
+    partsById.set(id, s.parts)
+  }
+  return { ptsById, finishedById, partsById }
 }

@@ -20,6 +20,7 @@ import { formatDeadline } from '../lib/weeks.js'
 import { useNow } from '../lib/useNow.js'
 import { POSITIONS, SQUAD_TOTALS, TOTAL_BUDGET, MAX_PER_CLUB, initials, formationLabel, surname } from '../lib/squadData.js'
 import PlayerPhoto from '../components/PlayerPhoto.jsx'
+import PlayerDetailModal from '../components/PlayerDetailModal.jsx'
 import './Takimim.css'
 import './Transfer.css'
 
@@ -87,7 +88,8 @@ export default function UelTest({ slot }) {
   const [api, setApi] = useState({ loading: true, error: null, players: [] })
   const [fixtures, setFixtures] = useState([])
   const [squadLoading, setSquadLoading] = useState(Boolean(user))
-  const [scores, setScores] = useState({ loading: false, ptsById: new Map(), finishedById: new Map(), forKey: null })
+  const [scores, setScores] = useState({ loading: false, ptsById: new Map(), finishedById: new Map(), partsById: new Map(), forKey: null })
+  const [detailPlayer, setDetailPlayer] = useState(null) // deadline sonrası oyuncu detay modalı
 
   const now = useNow(30000) // gerçek zamanlı deadline kontrolü (30 sn)
   const locked = now >= UEL_DEADLINE_MS
@@ -185,7 +187,7 @@ export default function UelTest({ slot }) {
     let alive = true
     setScores((s) => ({ ...s, loading: true }))
     computeUelScores(rosterList, fixtures)
-      .then((res) => alive && setScores({ loading: false, ptsById: res.ptsById, finishedById: res.finishedById, forKey: scoreKey }))
+      .then((res) => alive && setScores({ loading: false, ptsById: res.ptsById, finishedById: res.finishedById, partsById: res.partsById, forKey: scoreKey }))
       .catch(() => alive && setScores((s) => ({ ...s, loading: false, forKey: scoreKey })))
     return () => {
       alive = false
@@ -261,7 +263,11 @@ export default function UelTest({ slot }) {
   }
 
   const onSlotClick = (pos, index, view) => {
-    if (locked) return
+    if (locked) {
+      // Deadline sonrası: oyuncu detay modalı (aksiyonsuz, puan kırılımıyla)
+      if (view.player) setDetailPlayer(view.player)
+      return
+    }
     if (swapMode) {
       const targetSlot = roster[pos][index]
       const validType = swapMode.targetType === 'bench' ? !targetSlot.starter : targetSlot.starter
@@ -470,6 +476,25 @@ export default function UelTest({ slot }) {
           </div>
         )}
       </div>
+
+      {/* Deadline sonrası oyuncu detay modalı (aksiyonsuz, gerçek puan kırılımı) */}
+      {detailPlayer && (
+        <PlayerDetailModal
+          player={detailPlayer}
+          isStarter
+          isCaptain={detailPlayer.id === captainId}
+          locked={locked}
+          week={null}
+          fixture={uelFixtureForTeam(fixtures, detailPlayer.teamId)}
+          hideActions
+          breakdown={(scores.partsById.get(detailPlayer.id) || []).map((p) => ({
+            stat: p.label,
+            value: p.n != null && p.n !== 0 ? String(p.n) : '',
+            pts: p.pts,
+          }))}
+          onClose={() => setDetailPlayer(null)}
+        />
+      )}
 
       {/* Aksiyon modalı (dolu yuva) */}
       {action && actionPlayer && !locked && (

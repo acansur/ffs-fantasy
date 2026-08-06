@@ -87,6 +87,20 @@ export async function scoreFixtures(fixtureIds) {
   return ptsById
 }
 
+// Detaylı: tam skorlanmış oyuncu nesnesini döner → Map<playerId, {total, parts, ...}>
+// (puan kırılımı gösterimi için parts dahil.)
+export async function scoreFixturesDetailed(fixtureIds) {
+  const byId = new Map()
+  await Promise.all(
+    [...fixtureIds].map(async (id) => {
+      const data = await fetchFixtureData(id)
+      const scored = scoreFixture(data.players, data.events)
+      for (const s of scored) byId.set(s.id, s)
+    })
+  )
+  return byId
+}
+
 // Maç sonu otomatik yedek: ilk 11'de 0 puan alanları, yedek sırasına göre
 // aynı mevkideki 0'dan yüksek puanlı yedeklerle değiştirir (görsel/puan).
 //
