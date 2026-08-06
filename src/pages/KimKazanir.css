@@ -205,3 +205,13 @@
   .seg .lbl { font-size: 10.5px; }
   .wk-save { margin-left: 0; width: 100%; }
 }
+
+/* ---------- Deadline çipi (aktif hafta başlığı) + "✓ Kaydedildi" (UX) ---------- */
+.kk .wk-dl { display: inline-flex; align-items: center; gap: 8px; padding: 6px 13px; border-radius: 99px; background: rgba(240, 165, 0, 0.14); border: 1px solid rgba(240, 165, 0, 0.42); box-shadow: 0 0 14px rgba(240, 165, 0, 0.1); }
+.kk .wk-dl svg { width: 14px; height: 14px; color: #ffcb52; flex: none; }
+.kk .wk-dl .k { font-size: 9.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #ffcb52; }
+.kk .wk-dl .v { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 14.5px; color: #fff; letter-spacing: 0.02em; }
+@media (max-width: 560px) { .kk .wk-dl .k { display: none; } }
+
+.kk .wk-saved { font-size: 13px; font-weight: 700; color: #43dca0; background: rgba(27, 184, 124, 0.14); border: 1px solid rgba(27, 184, 124, 0.35); padding: 7px 14px; border-radius: 99px; opacity: 0; transition: opacity 0.25s; }
+.kk .wk-saved.show { opacity: 1; }

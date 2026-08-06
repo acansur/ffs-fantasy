@@ -45,6 +45,7 @@ export default function KimKazanir({ predDb = SL_PRED_DB }) {
   const [state, setState] = useState({ loading: false, byFixture: {}, total: 0 })
   const [allPoints, setAllPoints] = useState({}) // { week: total } — başlık rozetleri
   const [msg, setMsg] = useState('')
+  const [savedAt, setSavedAt] = useState(0) // "✓ Kaydedildi" görsel tetiği (yalnızca UX)
 
   const lockedFor = (round) => {
     const ov = weekOverrides?.[round]
@@ -90,6 +91,7 @@ export default function KimKazanir({ predDb = SL_PRED_DB }) {
     setState((s) => ({ ...s, byFixture: { ...s.byFixture, [fixtureId]: { ...(s.byFixture[fixtureId] || {}), fixture_id: fixtureId, prediction } } }))
     try {
       await savePrediction(user.id, week, fixtureId, prediction)
+      setSavedAt(Date.now()) // görsel teyit tetiği (kayıt akışının sonunda)
     } catch (e) {
       setMsg('⚠ Kaydedilemedi: ' + (e.message || e))
     }
@@ -149,7 +151,11 @@ export default function KimKazanir({ predDb = SL_PRED_DB }) {
                     {locked ? (
                       <span className="wk-pts">{pts} puan</span>
                     ) : (
-                      <span className="wk-deadline">Son: <b>{formatDeadline(w.deadline)}</b></span>
+                      <span className="wk-dl">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+                        <span className="k">Deadline</span>
+                        <span className="v">{formatDeadline(w.deadline)}</span>
+                      </span>
                     )}
                   </span>
                 </button>
@@ -161,6 +167,7 @@ export default function KimKazanir({ predDb = SL_PRED_DB }) {
                     locked={locked}
                     total={state.total}
                     onPick={pick}
+                    savedAt={savedAt}
                   />}</div>
                 </div>
               </div>
@@ -190,7 +197,16 @@ function Hero({ total }) {
   )
 }
 
-function WeekBody({ fixtures, byFixture, loading, locked, total, onPick }) {
+function WeekBody({ fixtures, byFixture, loading, locked, total, onPick, savedAt }) {
+  // "✓ Kaydedildi" görsel teyidi: savedAt değişince ~1.5 sn görünür (yalnızca UX).
+  const [showSaved, setShowSaved] = useState(false)
+  useEffect(() => {
+    if (!savedAt) return
+    setShowSaved(true)
+    const t = setTimeout(() => setShowSaved(false), 1500)
+    return () => clearTimeout(t)
+  }, [savedAt])
+
   if (loading && !Object.keys(byFixture).length) return <div className="kk-note">Yükleniyor…</div>
   if (!fixtures.length) return <div className="kk-note">Bu hafta için maç yok.</div>
 
@@ -281,6 +297,7 @@ function WeekBody({ fixtures, byFixture, loading, locked, total, onPick }) {
         ) : (
           <>
             <span className="wk-count">{picked}/{fixtures.length} tahmin yapıldı</span>
+            <span className={`wk-saved${showSaved ? ' show' : ''}`}>✓ Kaydedildi</span>
             <span className="wk-note">Seçimlerin anında kaydedilir · deadline'a kadar değiştirebilirsin</span>
           </>
         )}
