@@ -16,7 +16,8 @@ export const PL_PLAYER_PRICE = 6
 // Gösterilen/puanlanan 7 maç (fixture id'leri). Round uygulamada 1'e remap edilir.
 export const PL_FIXTURE_IDS = [1553127, 1553124, 1553123, 1553121, 1553126, 1553122, 1553120]
 
-// Oyuncu havuzu: 18 takımın tümü (picker'da hepsi görünür).
+// Ligin 18 takımı (referans). Picker YALNIZCA 7 maçta oynayan 14 takımı gösterir
+// (PL_MATCH_TEAMS); ertelenen maçların takımları hariç tutulur.
 export const PL_POOL_TEAMS = [
   { id: 350, name: 'Cracovia Krakow' },
   { id: 3484, name: 'GKS Katowice' },
@@ -37,6 +38,13 @@ export const PL_POOL_TEAMS = [
   { id: 341, name: 'Wisla Plock' },
   { id: 345, name: 'Zaglebie Lubin' },
 ]
+
+// Ertelenen maçların takımları — picker'da GÖRÜNMEZ:
+// Raków (3491), Zaglebie Lubin (345), GKS Katowice (3484), Wieczysta Kraków (17115).
+const POSTPONED_TEAM_IDS = new Set([3491, 345, 3484, 17115])
+
+// 7 maçta oynayan 14 takım — picker + oyuncu havuzu bu takımlarla sınırlıdır.
+export const PL_MATCH_TEAMS = PL_POOL_TEAMS.filter((t) => !POSTPONED_TEAM_IDS.has(t.id))
 
 const POSITION_MAP = { Goalkeeper: 'KL', Defender: 'DF', Midfielder: 'OS', Attacker: 'FW' }
 
@@ -93,12 +101,12 @@ async function fetchTeamSquad(team) {
   return []
 }
 
-// 18 takımın tüm oyuncuları — { players, teams } (Takımım/Transfer app formatı).
+// 7 maçtaki 14 takımın tüm oyuncuları — { players, teams } (app formatı).
 let _playersPromise = null
 export function loadPlPlayers() {
   if (!_playersPromise) {
     _playersPromise = (async () => {
-      const squads = await mapWithConcurrency(PL_POOL_TEAMS, 3, fetchTeamSquad)
+      const squads = await mapWithConcurrency(PL_MATCH_TEAMS, 3, fetchTeamSquad)
       const seen = new Set()
       const players = []
       for (const list of squads) {
@@ -108,7 +116,7 @@ export function loadPlPlayers() {
           players.push(p)
         }
       }
-      const teams = PL_POOL_TEAMS.map((t) => ({ name: t.name })).sort((a, b) =>
+      const teams = PL_MATCH_TEAMS.map((t) => ({ name: t.name })).sort((a, b) =>
         a.name.localeCompare(b.name, 'tr')
       )
       return { players, teams }
