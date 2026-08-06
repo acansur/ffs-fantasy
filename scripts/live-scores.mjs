@@ -1,15 +1,17 @@
 // scripts/live-scores.mjs
 //
 // GitHub Actions (.github/workflows/live-scores.yml) tarafından her 5 dakikada
-// bir çalıştırılır. O an OYNANAN Süper Lig maçlarının oyuncu puanlarını
-// scoring.js motoruyla hesaplayıp Supabase live_scores tablosuna upsert eder.
+// bir çalıştırılır. O an OYNANAN Süper Lig (203) ve Polonya Ekstraklasa (106)
+// maçlarının oyuncu puanlarını scoring.js motoruyla hesaplayıp Supabase
+// live_scores tablosuna upsert eder.
 //
-// KOTA KORUMASI: Önce tek bir "canlı maçlar" isteği yapılır. Oynanan maç yoksa
-// hiçbir /fixtures/players | /fixtures/events çağrısı yapılmadan çıkılır.
+// KOTA KORUMASI: Her iki lig TEK "canlı maçlar" isteğiyle sorgulanır
+// (live=203-106). Oynanan maç yoksa hiçbir /fixtures/players | /fixtures/events
+// çağrısı yapılmadan çıkılır.
 //
 // Gerekli ortam değişkenleri (GitHub Secrets):
 //   API_FOOTBALL_KEY, SUPABASE_URL, SUPABASE_ANON_KEY
-// İsteğe bağlı: LEAGUE_ID (varsayılan 203 = Süper Lig)
+// İsteğe bağlı: LEAGUE_IDS (tire ile; varsayılan "203-106")
 
 import { scoreFixture } from '../src/lib/scoring.js'
 
@@ -17,7 +19,12 @@ const API_KEY = process.env.API_FOOTBALL_KEY
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY
 
-const LEAGUE_ID = Number(process.env.LEAGUE_ID || 203) // Süper Lig
+// İzlenen ligler: Süper Lig (203) + Polonya Ekstraklasa (106). API-Football
+// `live=` parametresi tire ile birden çok lig id'si kabul eder → tek istek.
+const LEAGUE_IDS = (process.env.LEAGUE_IDS || '203-106')
+  .split('-')
+  .map((s) => s.trim())
+  .filter(Boolean)
 const API_BASE = 'https://v3.football.api-sports.io'
 
 // Sahada oynanan (in-play) durum kodları. `live=` zaten yalnızca oynanan
@@ -85,8 +92,8 @@ function slim(s) {
 async function main() {
   requireEnv()
 
-  // 1) Canlı maçlar — TEK istek. Boşsa hiçbir şey yapma (kota korunur).
-  const live = await apiGet(`/fixtures?live=${LEAGUE_ID}`)
+  // 1) Canlı maçlar — TEK istek (iki lig birden). Boşsa hiçbir şey yapma.
+  const live = await apiGet(`/fixtures?live=${LEAGUE_IDS.join('-')}`)
   const fixtures = (live?.response || []).filter((f) => IN_PLAY.has(f?.fixture?.status?.short))
 
   if (!fixtures.length) {
@@ -108,7 +115,7 @@ async function main() {
     const scored = scoreFixture(pl?.response || [], ev?.response || [])
     rows.push({
       fixture_id: fid,
-      league_id: f?.league?.id ?? LEAGUE_ID,
+      league_id: f?.league?.id ?? null,
       season: f?.league?.season ?? null,
       status: f?.fixture?.status?.short ?? null,
       elapsed: f?.fixture?.status?.elapsed ?? null,

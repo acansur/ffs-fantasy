@@ -1,7 +1,8 @@
 name: live-scores
 
-# Her 5 dakikada bir oynanan Süper Lig maçlarının oyuncu puanlarını hesaplayıp
-# Supabase live_scores tablosuna yazar. Oynanan maç yoksa API kotası harcanmaz.
+# Her 5 dakikada bir oynanan Süper Lig (203) ve Polonya Ekstraklasa (106)
+# maçlarının oyuncu puanlarını hesaplayıp Supabase live_scores tablosuna yazar.
+# Oynanan maç yoksa API kotası harcanmaz.
 
 on:
   schedule:
@@ -19,12 +20,12 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Depoyu al
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
-      - name: Node 20 kur
-        uses: actions/setup-node@v4
+      - name: Node 24 kur
+        uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: Canlı puanları güncelle
         env:
