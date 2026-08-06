@@ -7,6 +7,33 @@ import { supabase, isSupabaseConfigured } from './supabase.js'
 import { POS_DB } from './squadData.js'
 
 const POS_ORDER = ['KL', 'DF', 'OS', 'FW']
+const DB_TO_POS = { GK: 'KL', DF: 'DF', MF: 'OS', FW: 'FW' }
+
+// Kaydedilmiş satırlardan UEL kadrosunu yeniden kur — formation'a BAĞLI DEĞİL.
+// (squadStore.rebuildRoster slotCounts(FORMATIONS[formation]) kullanır; "5-3-2"
+// gibi geçerli ama map'te olmayan bir diziliş undefined→çökme yaratıyordu.)
+// Burada yapı doğrudan kayıttaki is_starter/bench_order'dan kurulur.
+export function rebuildUelRoster(rows, playersById) {
+  const byPos = { KL: [], DF: [], OS: [], FW: [] }
+  for (const r of rows || []) {
+    const pos = DB_TO_POS[r.position_type]
+    if (!pos) continue
+    byPos[pos].push({
+      player: playersById[String(r.player_id)] || null,
+      starter: !!r.is_starter,
+      benchOrder: r.is_starter ? null : r.bench_order,
+    })
+  }
+  const roster = {}
+  for (const pos of POS_ORDER) {
+    const starters = byPos[pos].filter((e) => e.starter)
+    const bench = byPos[pos]
+      .filter((e) => !e.starter)
+      .sort((a, b) => (a.benchOrder ?? 99) - (b.benchOrder ?? 99))
+    roster[pos] = [...starters, ...bench]
+  }
+  return roster
+}
 
 export async function saveUelSquad({ userId, slot, formation, captainId, roster }) {
   if (!isSupabaseConfigured || !supabase || !userId) return { ok: false, skipped: true }

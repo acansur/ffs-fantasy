@@ -4,7 +4,6 @@ import {
   buildEmptyRoster,
   cloneRoster,
   rosterPlayers,
-  rebuildRoster,
 } from '../lib/squadStore.jsx'
 import { swapSlots as pureSwap, starterCounts } from '../lib/rosterOps.js'
 import { applyAutoSubs, computeTotalPoints } from '../lib/weekScores.js'
@@ -15,7 +14,7 @@ import {
   uelFixtureForTeam,
   UEL_DEADLINE_MS,
 } from '../lib/uelTest.js'
-import { saveUelSquad, loadUelSquad } from '../lib/uelTestDb.js'
+import { saveUelSquad, loadUelSquad, rebuildUelRoster } from '../lib/uelTestDb.js'
 import { formatDeadline } from '../lib/weeks.js'
 import { POSITIONS, SQUAD_TOTALS, TOTAL_BUDGET, MAX_PER_CLUB, initials, formationLabel } from '../lib/squadData.js'
 import PlayerPhoto from '../components/PlayerPhoto.jsx'
@@ -113,14 +112,21 @@ export default function UelTest({ slot }) {
     setSquadLoading(true)
     ;(async () => {
       try {
-        const loaded = await loadUelSquad({ userId: user.id, slot })
-        const players = await loadUelPlayers().catch(() => [])
-        if (!alive || !loaded) return
-        const byId = Object.fromEntries(players.map((p) => [String(p.id), p]))
-        const r = rebuildRoster(loaded.rows, byId, loaded.formation)
+        // Kayıt + oyuncu havuzu paralel; havuz kadro yeniden kurulmadan hazır olsun
+        const [loaded, players] = await Promise.all([
+          loadUelSquad({ userId: user.id, slot }),
+          loadUelPlayers().catch(() => []),
+        ])
+        if (!alive) return
+        if (!loaded) return // bu kullanıcı/slot için kayıt yok → boş kadro
+        const byId = Object.fromEntries((players || []).map((p) => [String(p.id), p]))
+        const r = rebuildUelRoster(loaded.rows, byId)
         setRoster(r)
         setCaptainId(loaded.captainId ?? null)
         setSavedSig(signature(r, loaded.captainId ?? null))
+      } catch (e) {
+        loadedRef.current = null // hata → sonraki mount'ta tekrar denensin
+        if (alive) setSaveMsg('⚠ Kadro yüklenemedi: ' + (e.message || String(e)))
       } finally {
         if (alive) setSquadLoading(false)
       }
