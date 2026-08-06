@@ -88,18 +88,6 @@ export default function KimKazanir() {
     }
   }
 
-  // Footer "Tahminleri Kaydet" — mevcut tahminleri (yeniden) kalıcılaştırır
-  const saveAll = async () => {
-    if (!user) return
-    try {
-      const entries = Object.values(state.byFixture).filter((r) => r.prediction)
-      for (const r of entries) await savePrediction(user.id, week, r.fixture_id, r.prediction)
-      setMsg('✓ Tahminler kaydedildi.')
-    } catch (e) {
-      setMsg('⚠ ' + (e.message || e))
-    }
-  }
-
   const heroTotal = useMemo(() => Object.values(allPoints).reduce((s, v) => s + (v || 0), 0), [allPoints])
 
   if (!user) {
@@ -166,7 +154,6 @@ export default function KimKazanir() {
                     locked={locked}
                     total={state.total}
                     onPick={pick}
-                    onSaveAll={saveAll}
                   />}</div>
                 </div>
               </div>
@@ -196,7 +183,7 @@ function Hero({ total }) {
   )
 }
 
-function WeekBody({ fixtures, byFixture, loading, locked, total, onPick, onSaveAll }) {
+function WeekBody({ fixtures, byFixture, loading, locked, total, onPick }) {
   if (loading && !Object.keys(byFixture).length) return <div className="kk-note">Yükleniyor…</div>
   if (!fixtures.length) return <div className="kk-note">Bu hafta için maç yok.</div>
 
@@ -257,8 +244,7 @@ function WeekBody({ fixtures, byFixture, loading, locked, total, onPick, onSaveA
         ) : (
           <>
             <span className="wk-count">{picked}/{fixtures.length} tahmin yapıldı</span>
-            <span className="wk-note">Deadline'a kadar değiştirebilirsin</span>
-            <button className={`wk-save${picked > 0 ? ' active' : ''}`} onClick={onSaveAll}>Tahminleri Kaydet</button>
+            <span className="wk-note">Seçimlerin anında kaydedilir · deadline'a kadar değiştirebilirsin</span>
           </>
         )}
       </div>
