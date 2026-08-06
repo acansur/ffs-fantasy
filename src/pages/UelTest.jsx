@@ -13,6 +13,7 @@ import {
   computeUelScores,
   uelFixtureForTeam,
   UEL_DEADLINE_MS,
+  UEL_TEAMS,
 } from '../lib/uelTest.js'
 import { saveUelSquad, loadUelSquad, rebuildUelRoster } from '../lib/uelTestDb.js'
 import { formatDeadline } from '../lib/weeks.js'
@@ -22,6 +23,9 @@ import './Takimim.css'
 import './Transfer.css'
 
 const POS_ORDER = ['KL', 'DF', 'OS', 'FW']
+// Picker/autofill yalnızca GÜNCEL 7 maçın 14 takımından oyuncu gösterir.
+// (Havuz yükleme için 20 takım tutar; ama yeni seçimler yalnızca güncel takımlardan.)
+const CURRENT_TEAM_IDS = new Set(UEL_TEAMS.map((t) => t.id))
 const POS_TABS = [{ key: null, label: 'Tümü' }, ...POS_ORDER.map((p) => ({ key: p, label: p }))]
 const RING = { KL: 'ring-gk', DF: 'ring-def', OS: 'ring-mid', FW: 'ring-fwd' }
 const TAG = { KL: 'tag-gk', DF: 'tag-def', OS: 'tag-mid', FW: 'tag-fwd' }
@@ -284,7 +288,7 @@ export default function UelTest({ slot }) {
       for (const s of next[pos]) {
         if (s.player) continue
         const pick = api.players.find(
-          (p) => p.pos === pos && !used.has(p.id) && (cc[p.club] || 0) < MAX_PER_CLUB
+          (p) => CURRENT_TEAM_IDS.has(p.teamId) && p.pos === pos && !used.has(p.id) && (cc[p.club] || 0) < MAX_PER_CLUB
         )
         if (!pick) continue
         s.player = pick
@@ -319,7 +323,7 @@ export default function UelTest({ slot }) {
 
   // Picker liste
   const list = useMemo(() => {
-    let l = api.players
+    let l = api.players.filter((p) => CURRENT_TEAM_IDS.has(p.teamId))
     if (posFilter) l = l.filter((p) => p.pos === posFilter)
     const q = search.trim().toLocaleLowerCase('tr')
     if (q) l = l.filter((p) => p.name.toLocaleLowerCase('tr').includes(q))
