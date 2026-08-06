@@ -585,6 +585,35 @@
 }
 .tm-page .name-plate.np-muted .nm { color: var(--ink-2); font-weight: 500; }
 
+/* Deadline sonrası kilitli plaka — 2 satır:
+   üstte soyadı (tam, kesilmez), altında takım kısaltması (altın) + puan. */
+.tm-page .name-plate.np-locked {
+  width: max-content;
+  max-width: 132px;
+}
+.tm-page .name-plate.np-locked .nm-surname {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+.tm-page .name-plate .pr.pr-locked {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 5px;
+  overflow: visible;
+}
+.tm-page .name-plate .pr.pr-locked .nm-team {
+  color: var(--gold-soft);
+  font-weight: 700;
+  font-family: 'Barlow Condensed', sans-serif;
+  letter-spacing: 0.03em;
+}
+.tm-page .name-plate .pr.pr-locked .pr-pts {
+  color: #fff;
+  font-family: 'Barlow Condensed', sans-serif;
+}
+
 /* Skeleton */
 .tm-page .tm-player.skeleton { cursor: default; }
 .tm-page .ava.skel { background: rgba(255, 255, 255, 0.09); animation: tm-skel 1.2s ease-in-out infinite; }

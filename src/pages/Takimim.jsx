@@ -121,12 +121,23 @@ function SquadSlot({ pos, player, info, teamShort, isCaptain, isSelected, isTarg
       <span className={`ava ${ring}`}>
         <PlayerPhoto id={player.id} name={player.name} bg={bg} fg={fg} />
       </span>
-      <span className="name-plate">
-        <span className="nm">
-          {teamShort ? surname(player.name) : player.name}
-          {teamShort && <span className="nm-team"> · {teamShort}</span>}
-        </span>
-        <span className="pr tnum">{info}</span>
+      <span className={`name-plate${teamShort ? ' np-locked' : ''}`}>
+        {teamShort ? (
+          <>
+            {/* Deadline sonrası: soyadı (tam, kesilmez) üstte;
+                altında takım kısaltması (altın) + puan */}
+            <span className="nm nm-surname">{surname(player.name)}</span>
+            <span className="pr pr-locked">
+              <span className="nm-team">{teamShort}</span>
+              <span className="pr-pts tnum">{info}</span>
+            </span>
+          </>
+        ) : (
+          <>
+            <span className="nm">{player.name}</span>
+            <span className="pr tnum">{info}</span>
+          </>
+        )}
       </span>
     </button>
   )
