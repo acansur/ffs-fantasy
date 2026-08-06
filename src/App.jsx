@@ -71,7 +71,6 @@ export default function App() {
           <Route path="/stats-test2" element={<StatsTest2 />} />
           <Route path="/scoring-test" element={<ScoringTest />} />
           <Route path="/uel-test" element={<UelTest slot="uel-test" />} />
-          <Route path="/uel-test2" element={<UelTest slot="uel-test2" />} />
           <Route path="/players2" element={<Players2 />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/giris" element={<Giris />} />

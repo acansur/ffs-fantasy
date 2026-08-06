@@ -121,6 +121,8 @@ export default function UelTest({ slot }) {
         if (!loaded) return // bu kullanıcı/slot için kayıt yok → boş kadro
         const byId = Object.fromEntries((players || []).map((p) => [String(p.id), p]))
         const r = rebuildUelRoster(loaded.rows, byId)
+        const resolved = ['KL', 'DF', 'OS', 'FW'].reduce((n, p) => n + r[p].filter((s) => s.player).length, 0)
+        console.log('[UEL] rebuild → çözülen oyuncu=%d / havuz=%d / kayıt satırı=%d', resolved, (players || []).length, loaded.rows.length)
         setRoster(r)
         setCaptainId(loaded.captainId ?? null)
         setSavedSig(signature(r, loaded.captainId ?? null))

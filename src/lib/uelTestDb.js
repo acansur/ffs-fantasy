@@ -73,6 +73,7 @@ export async function saveUelSquad({ userId, slot, formation, captainId, roster 
       const { error: pErr } = await supabase.from('uel_test_squad_players').insert(rows)
       if (pErr) throw pErr
     }
+    console.log('[UEL] SAVE user_id=%s slot=%s → squad_id=%s players=%d', userId, slot, squad.id, rows.length)
     return { ok: true, squadId: squad.id }
   } catch (err) {
     console.error('[FFS] UEL test kadro kaydı hatası:', err)
@@ -83,18 +84,31 @@ export async function saveUelSquad({ userId, slot, formation, captainId, roster 
 export async function loadUelSquad({ userId, slot }) {
   if (!isSupabaseConfigured || !supabase || !userId) return null
   try {
-    const { data: squad, error } = await supabase
+    // maybeSingle YERİNE order+limit: olası duplicate satırlarda hata vermez,
+    // en güncel kaydı alır.
+    const { data: squads, error } = await supabase
       .from('uel_test_squads')
-      .select('id, formation, captain_player_id')
+      .select('id, formation, captain_player_id, updated_at')
       .eq('user_id', userId)
       .eq('slot', slot)
-      .maybeSingle()
-    if (error || !squad) return null
+      .order('updated_at', { ascending: false })
+      .limit(1)
+    if (error) {
+      console.error('[UEL] load squad error', error)
+      return null
+    }
+    const squad = squads?.[0]
+    console.log('[UEL] LOAD user_id=%s slot=%s → squad_id=%s', userId, slot, squad?.id ?? 'YOK')
+    if (!squad) return null
     const { data: rows, error: pErr } = await supabase
       .from('uel_test_squad_players')
       .select('player_id, position_type, is_starter, bench_order')
       .eq('squad_id', squad.id)
-    if (pErr) return null
+    if (pErr) {
+      console.error('[UEL] load players error', pErr)
+      return null
+    }
+    console.log('[UEL] LOAD player rows=%d', (rows || []).length)
     return { formation: squad.formation, captainId: squad.captain_player_id, rows: rows || [] }
   } catch (err) {
     console.error('[FFS] UEL test kadro yükleme hatası:', err)
