@@ -4,7 +4,7 @@ import './Navbar.css'
 
 const loggedInLinks = [
   { to: '/', label: 'Ana Sayfa', end: true },
-  { to: '/takimim', label: 'Takımım' },
+  { to: '/takimim', label: 'FFS Fantasy' },
   { to: '/kim-kazanir', label: 'Kim Kazanır?' },
   { to: '/liglerim', label: 'Liglerim' },
 ]
