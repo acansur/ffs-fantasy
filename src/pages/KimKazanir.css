@@ -28,33 +28,18 @@
 .kk .cond { font-family: 'Barlow Condensed', sans-serif; }
 
 /* ---------- Hero ---------- */
-.kk-hero {
-  position: relative;
-  overflow: hidden;
-  border-radius: 20px;
-  padding: 24px 26px;
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  min-height: 108px;
-  background:
-    radial-gradient(560px 220px at 88% -30%, rgba(240, 165, 0, 0.18), transparent 60%),
-    linear-gradient(135deg, #2a3542 0%, #1d2833 48%, #161d27 100%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-}
+.kk-hero{position:relative;overflow:hidden;border-radius:22px;padding:30px 34px;min-height:150px;display:flex;align-items:center;gap:24px;
+  background:radial-gradient(700px 320px at 82% -40%, rgba(240,165,0,.14), transparent 60%),radial-gradient(560px 300px at 4% 130%, rgba(27,184,124,.12), transparent 60%),linear-gradient(135deg,#10281d 0%, #0b1912 55%, #0a130f 100%);
+  border:1px solid rgba(255,255,255,.1);box-shadow:0 24px 60px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.08)}
+.kk-hero>*{position:relative;z-index:1}
 .kk-hero-id { position: relative; z-index: 1; }
-.kk-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3, #6d8175); }
-.kk-word {
-  font-family: 'Anton', sans-serif; font-size: 44px; line-height: 1; letter-spacing: 0.03em; text-transform: uppercase; margin: 6px 0 8px;
-  background: linear-gradient(180deg, #ffd166, var(--gold, #f0a500));
-  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: var(--gold, #f0a500);
-  text-shadow: 0 2px 20px rgba(240, 165, 0, 0.25);
-}
-.kk-tag { font-size: 13.5px; color: rgba(255, 255, 255, 0.72); font-weight: 500; max-width: 46ch; }
-.kk-total { margin-left: auto; position: relative; z-index: 1; text-align: right; flex: none; background: rgba(240, 165, 0, 0.12); border: 1px solid rgba(240, 165, 0, 0.38); border-radius: 14px; padding: 12px 20px; }
+.kk-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#ffcb52;background:rgba(240,165,0,.1);border:1px solid rgba(240,165,0,.3);padding:6px 13px;border-radius:99px}
+.kk-word{font-family:'Anton',sans-serif;font-size:clamp(40px,6vw,64px);line-height:.95;letter-spacing:.02em;text-transform:uppercase;margin-top:14px;
+  background:linear-gradient(180deg,#ffe08a,#f0a500 65%,#b9760a);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.kk-tag{margin-top:12px;max-width:530px;font-size:15px;color:#9cb0a4}
+.kk-total{margin-left:auto;flex:none;text-align:center;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.15);border-radius:16px;padding:18px 26px;min-width:156px;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
 .kk-total .l { display: block; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.6); font-weight: 600; }
-.kk-total .v { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 2.2rem; color: var(--gold-soft, #ffcb52); line-height: 1; }
+.kk-total .v{font-family:'Barlow Condensed';font-weight:700;font-size:54px;line-height:1;color:#ffcb52}
 .kk-watermark { position: absolute; right: 20px; bottom: -14px; font-family: 'Anton', sans-serif; font-size: 84px; letter-spacing: 0.2em; color: rgba(255, 255, 255, 0.03); pointer-events: none; z-index: 0; }
 
 /* ---------- Joker şeridi ---------- */
@@ -102,23 +87,23 @@
 .kk-teams { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .kk-teams .tn { font-size: 15px; font-weight: 700; color: #fff; }
 .kk-teams .vs { font-family: 'Barlow Condensed', sans-serif; font-size: 12.5px; font-weight: 700; color: var(--gold-soft, #ffcb52); letter-spacing: 0.06em; flex: none; }
-.mtime { font-size: 13px; color: var(--ink-3, #6d8175); font-weight: 600; flex: none; }
+.mtime{font-size:13px;color:#6d8175;font-weight:600}
 .mres { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 15px; padding: 2px 11px; border-radius: 8px; flex: none; }
 .mres.ok { color: #43dca0; background: rgba(27, 184, 124, 0.16); }
 .mres.no { color: var(--ink-3, #6d8175); background: rgba(255, 255, 255, 0.05); }
 
 /* 1 / X / 2 — renkli ayrık segmentler */
 .tripick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
-.seg { position: relative; border: 1px solid var(--border-strong, rgba(255, 255, 255, 0.15)); border-radius: 12px; background: rgba(255, 255, 255, 0.02); padding: 12px 8px 10px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; transition: 0.15s; }
+.seg{position:relative;border:1px solid rgba(255,255,255,.15);border-radius:12px;background:rgba(255,255,255,.02);padding:12px 8px 10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;transition:.15s}
 .seg:hover { border-color: var(--ink-2, #9cb0a4); background: rgba(255, 255, 255, 0.055); }
-.seg .sym { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 26px; line-height: 1; color: var(--ink-3, #6d8175); }
-.seg .lbl { font-size: 12px; font-weight: 600; color: var(--ink-3, #6d8175); }
+.seg .sym{font-family:'Barlow Condensed';font-weight:700;font-size:26px;line-height:1}
+.seg .lbl{font-size:12px;font-weight:600}
 .seg[data-p='1'] .sym { color: #43dca0; }
 .seg[data-p='X'] .sym { color: var(--gold-soft, #ffcb52); }
 .seg[data-p='2'] .sym { color: #7aa8f5; }
-.seg.sel[data-p='1'] { background: linear-gradient(180deg, #22c98a, #159e69); border-color: #1bb87c; box-shadow: 0 6px 18px rgba(27, 184, 124, 0.3); }
-.seg.sel[data-p='X'] { background: linear-gradient(180deg, var(--gold-soft, #ffcb52), var(--gold, #f0a500)); border-color: var(--gold-deep, #c98600); box-shadow: var(--glow-gold); }
-.seg.sel[data-p='2'] { background: linear-gradient(180deg, #5c98f5, #3f7ae6); border-color: #4a8bf0; box-shadow: 0 6px 18px rgba(74, 139, 240, 0.3); }
+.seg.sel[data-p='1'] { background: linear-gradient(180deg, #22c98a, #159e69); border-color: #1bb87c; box-shadow: 0 4px 12px rgba(27, 184, 124, 0.22); }
+.seg.sel[data-p='X'] { background: linear-gradient(180deg, var(--gold-soft, #ffcb52), var(--gold, #f0a500)); border-color: var(--gold-deep, #c98600); box-shadow: 0 4px 12px rgba(240, 165, 0, 0.24); }
+.seg.sel[data-p='2'] { background: linear-gradient(180deg, #5c98f5, #3f7ae6); border-color: #4a8bf0; box-shadow: 0 4px 12px rgba(74, 139, 240, 0.22); }
 .seg.sel .sym, .seg.sel .lbl { color: #fff; }
 .seg.sel[data-p='X'] .sym, .seg.sel[data-p='X'] .lbl { color: var(--gold-ink, #3a2a00); }
 
