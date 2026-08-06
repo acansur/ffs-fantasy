@@ -1,0 +1,34 @@
+name: live-scores
+
+# Her 5 dakikada bir oynanan Süper Lig maçlarının oyuncu puanlarını hesaplayıp
+# Supabase live_scores tablosuna yazar. Oynanan maç yoksa API kotası harcanmaz.
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch: {} # elle tetikleme (test için)
+
+# Bir çalışma bitmeden diğeri başlamasın (üst üste binmeyi engelle)
+concurrency:
+  group: live-scores
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Depoyu al
+        uses: actions/checkout@v4
+
+      - name: Node 20 kur
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Canlı puanları güncelle
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: node scripts/live-scores.mjs
