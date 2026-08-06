@@ -38,6 +38,10 @@ function onPitch(playerId, teamId, games, events) {
   let conceded = 0
   for (const e of events) {
     if (e?.type !== 'Goal') continue
+    // "Missed Penalty" ve penaltı atışları da type:'Goal' gelir ama gerçek gol
+    // DEĞİLDİR → yenilen gol/clean sheet sayımına girmemeli.
+    if (e?.detail === 'Missed Penalty') continue
+    if ((e?.comments || '').includes('Shootout')) continue
     const t = e?.time?.elapsed ?? 0
     // Takımına karşı atılan gol (fayda gören = rakip) ve oyuncu sahadayken
     if (e?.team?.id !== teamId && t >= entry && t <= exit) conceded += 1

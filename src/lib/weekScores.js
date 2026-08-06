@@ -36,6 +36,72 @@ async function getJson(url, attempt = 0) {
   return data
 }
 
+// Detaylı oyuncu istatistiği (/fixtures/players) OLMAYAN maçlar için (örn.
+// UEL 2026 kalifikasyon, coverage statistics_players=false) lineups + events'ten
+// sentetik oyuncu nesneleri üretir. Bu nesneler /fixtures/players yapısını taklit
+// eder; yalnızca events/lineups'tan türetilebilen alanlar doldurulur:
+//   games.position (lineup pos), games.minutes (ilk11 + değişiklik dakikaları),
+//   goals.total, goals.assists, cards.yellow/red.
+// Kurtarış/pas/top kapma/şut/dribling/faul gibi alanlar YOKTUR → motor bunları
+// 0 sayar (kısmi puan). Kendi kalesine gol + clean sheet + yenilen gol motor
+// tarafından zaten events'ten hesaplanır.
+function synthesizePlayersFromLineups(lineups, events) {
+  const MATCH_END = 90
+  const subOut = new Map() // id → çıkış dakikası
+  const subIn = new Map() // id → giriş dakikası
+  for (const e of events) {
+    if (e?.type !== 'subst') continue
+    const t = e?.time?.elapsed ?? 0
+    if (e?.player?.id != null) subOut.set(e.player.id, t) // player = ÇIKAN
+    if (e?.assist?.id != null) subIn.set(e.assist.id, t) // assist = GİREN
+  }
+  const goals = new Map()
+  const assists = new Map()
+  const yellow = new Map()
+  const red = new Map()
+  const inc = (m, id) => { if (id != null) m.set(id, (m.get(id) || 0) + 1) }
+  for (const e of events) {
+    if (e?.type === 'Goal') {
+      const d = e?.detail || ''
+      if (d === 'Own Goal' || d === 'Missed Penalty') continue // gol değil / motorda ayrı
+      inc(goals, e?.player?.id)
+      inc(assists, e?.assist?.id)
+    } else if (e?.type === 'Card') {
+      const d = e?.detail || ''
+      if (d === 'Yellow Card') inc(yellow, e?.player?.id)
+      else if (d === 'Red Card') inc(red, e?.player?.id)
+    }
+  }
+  const out = []
+  for (const block of lineups) {
+    const players = []
+    const add = (lp, isStarter) => {
+      const id = lp?.player?.id
+      if (id == null) return
+      let minutes
+      if (isStarter) {
+        minutes = subOut.has(id) ? subOut.get(id) : MATCH_END
+      } else {
+        if (!subIn.has(id)) return // sahaya girmedi → atla
+        const outMin = subOut.has(id) ? subOut.get(id) : MATCH_END
+        minutes = Math.max(0, outMin - subIn.get(id))
+      }
+      players.push({
+        player: { id, name: lp?.player?.name },
+        statistics: [{
+          games: { position: lp?.player?.pos || null, minutes },
+          goals: { total: goals.get(id) || 0, assists: assists.get(id) || 0 },
+          cards: { yellow: yellow.get(id) || 0, red: red.get(id) || 0 },
+        }],
+      })
+    }
+    for (const lp of block?.startXI || []) add(lp, true)
+    for (const lp of block?.substitutes || []) add(lp, false)
+    out.push({ team: { id: block?.team?.id }, players })
+  }
+  return out
+}
+
 function fetchFixtureData(fixtureId) {
   if (!_cache.has(fixtureId)) {
     _cache.set(
@@ -45,9 +111,15 @@ function fetchFixtureData(fixtureId) {
           getJson(`/api/football?path=fixtures/players&fixture=${fixtureId}`),
           getJson(`/api/football?path=fixtures/events&fixture=${fixtureId}`),
         ])
-        const players = p.response || []
+        let players = p.response || []
         const events = e.response || []
-        // Boş istatistik (maç yeni bitti, API henüz doldurmadı) → önbelleğe ALMA;
+        // Detaylı istatistik yoksa lineups + events'ten kısmi puan üret (fallback).
+        if (!players.length) {
+          const l = await getJson(`/api/football?path=fixtures/lineups&fixture=${fixtureId}`)
+          const lineups = l.response || []
+          if (lineups.length) players = synthesizePlayersFromLineups(lineups, events)
+        }
+        // Hâlâ boş (maç yeni bitti, API henüz doldurmadı) → önbelleğe ALMA;
         // sonraki tazelemede tekrar denensin, aksi halde puan kalıcı 0 kalır.
         if (!players.length) _cache.delete(fixtureId)
         return { players, events }
