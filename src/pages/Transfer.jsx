@@ -5,6 +5,7 @@ import { useSquad, cloneRoster, rosterPlayers } from '../lib/squadStore.jsx'
 import { loadSuperLigPlayers, toAppPlayers, clubColors, clubShort } from '../lib/apiFootball.js'
 import { getVisibleWeeks, formatDeadline, getTeamFixture, isLocked } from '../lib/weeks.js'
 import { useNow } from '../lib/useNow.js'
+import { normalizeText } from '../lib/normalize.js'
 import WeekBar from '../components/WeekBar.jsx'
 import PlayerPhoto from '../components/PlayerPhoto.jsx'
 import ScoringGuide from '../components/ScoringGuide.jsx'
@@ -172,8 +173,10 @@ export default function Transfer() {
     let l = api.players
     if (posFilter) l = l.filter((p) => p.pos === posFilter)
     if (selectedClubs.length) l = l.filter((p) => selectedClubs.includes(p.club))
-    const q = search.trim().toLocaleLowerCase('tr')
-    if (q) l = l.filter((p) => p.name.toLocaleLowerCase('tr').includes(q))
+    // Özel karakter olmadan da bulunsun: aranan metin ve oyuncu adı ASCII'ye
+    // indirgenip (ç→c, ş→s, ı→i, ö→o, ð→d, ø→o, æ→ae ...) karşılaştırılır.
+    const q = normalizeText(search.trim())
+    if (q) l = l.filter((p) => normalizeText(p.name).includes(q))
     return sortPlayers(l, sortKey)
   }, [api.players, posFilter, selectedClubs, sortKey, search])
 
