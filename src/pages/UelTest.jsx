@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useRef } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useAuth } from '../lib/auth.jsx'
 import {
   buildEmptyRoster,
@@ -103,25 +103,23 @@ export default function UelTest({ slot }) {
     }
   }, [])
 
-  // Kayıtlı kadroyu yükle (girişliyse; slot'a göre ayrı)
-  const loadedRef = useRef(null)
+  // Kayıtlı kadroyu yükle. deps = [user?.id, slot] → AuthProvider'ın is_admin
+  // tazelemesi user NESNESİNİ değiştirse de (aynı id) effect yeniden çalışmaz;
+  // böylece yavaş havuz yüklemesi sürerken effect iptal edilip veri kaybolmaz.
+  const userId = user?.id
   useEffect(() => {
-    if (!user) {
+    if (!userId) {
       setSquadLoading(false)
       return
     }
-    const key = `${user.id}:${slot}`
-    if (loadedRef.current === key) return
-    loadedRef.current = key
     let alive = true
     setSquadLoading(true)
     ;(async () => {
       try {
-        // Kayıt + oyuncu havuzu paralel; havuz kadro yeniden kurulmadan hazır olsun
-        const [loaded, players] = await Promise.all([
-          loadUelSquad({ userId: user.id, slot }),
-          loadUelPlayers().catch(() => []),
-        ])
+        // ÖNCE oyuncu havuzu (yavaş; 20 takım), SONRA kadro — sıralı.
+        const players = await loadUelPlayers().catch(() => [])
+        if (!alive) return
+        const loaded = await loadUelSquad({ userId, slot })
         if (!alive) return
         if (!loaded) return // bu kullanıcı/slot için kayıt yok → boş kadro
         const byId = Object.fromEntries((players || []).map((p) => [String(p.id), p]))
@@ -130,8 +128,9 @@ export default function UelTest({ slot }) {
         const poolIds = new Set((players || []).map((p) => p.id))
         const matched = savedIds.filter((id) => poolIds.has(id) || poolIds.has(Number(id))).length
         console.log('[UEL] ID eşleşme: %d/%d', matched, savedIds.length)
-        console.log('[UEL] örnek kayıtlı id:', savedIds.slice(0, 6))
-        console.log('[UEL] örnek havuz id:', (players || []).slice(0, 6).map((p) => p.id))
+        console.log('[UEL] örnek kayıtlı id:', savedIds.slice(0, 6).map((id) => `${id}(${typeof id})`))
+        console.log('[UEL] örnek havuz id:', (players || []).slice(0, 6).map((p) => `${p.id}(${typeof p.id})`))
+        console.log('[UEL] havuz takım sayısı=%d, oyuncu sayısı=%d', new Set((players || []).map((p) => p.club)).size, (players || []).length)
         console.log('[UEL] havuz takımları:', [...new Set((players || []).map((p) => p.club))])
         const r = rebuildUelRoster(loaded.rows, byId)
         const resolved = ['KL', 'DF', 'OS', 'FW'].reduce((n, p) => n + r[p].filter((s) => s.player).length, 0)
@@ -143,7 +142,6 @@ export default function UelTest({ slot }) {
         setCaptainId(loaded.captainId ?? null)
         setSavedSig(signature(r, loaded.captainId ?? null))
       } catch (e) {
-        loadedRef.current = null // hata → sonraki mount'ta tekrar denensin
         if (alive) setSaveMsg('⚠ Kadro yüklenemedi: ' + (e.message || String(e)))
       } finally {
         if (alive) setSquadLoading(false)
@@ -152,7 +150,7 @@ export default function UelTest({ slot }) {
     return () => {
       alive = false
     }
-  }, [user, slot])
+  }, [userId, slot])
 
   useEffect(() => {
     if (!saveMsg) return

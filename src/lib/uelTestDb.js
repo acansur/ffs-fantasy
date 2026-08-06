@@ -14,16 +14,29 @@ const DB_TO_POS = { GK: 'KL', DF: 'DF', MF: 'OS', FW: 'FW' }
 // gibi geçerli ama map'te olmayan bir diziliş undefined→çökme yaratıyordu.)
 // Burada yapı doğrudan kayıttaki is_starter/bench_order'dan kurulur.
 export function rebuildUelRoster(rows, playersById) {
+  const poolKeys = Object.keys(playersById)
+  console.log('[UEL] rebuild START: rows=%d, havuz anahtar sayısı=%d', (rows || []).length, poolKeys.length)
+  console.log('[UEL] havuz örnek anahtarlar:', poolKeys.slice(0, 8))
   const byPos = { KL: [], DF: [], OS: [], FW: [] }
+  let found = 0
+  let missing = 0
   for (const r of rows || []) {
     const pos = DB_TO_POS[r.position_type]
-    if (!pos) continue
-    byPos[pos].push({
-      player: playersById[String(r.player_id)] || null,
-      starter: !!r.is_starter,
-      benchOrder: r.is_starter ? null : r.bench_order,
-    })
+    if (!pos) {
+      console.warn('[UEL] rebuild: bilinmeyen position_type=%o → satır atlandı', r.position_type)
+      continue
+    }
+    const key = String(r.player_id)
+    const player = playersById[key] || null
+    if (player) found += 1
+    else {
+      missing += 1
+      if (missing <= 6)
+        console.warn('[UEL] BULUNAMADI: player_id=%o (tip:%s) key="%s" pos=%s', r.player_id, typeof r.player_id, key, r.position_type)
+    }
+    byPos[pos].push({ player, starter: !!r.is_starter, benchOrder: r.is_starter ? null : r.bench_order })
   }
+  console.log('[UEL] rebuild SONUÇ: eşleşen=%d, eşleşmeyen=%d / %d', found, missing, (rows || []).length)
   const roster = {}
   for (const pos of POS_ORDER) {
     const starters = byPos[pos].filter((e) => e.starter)
@@ -109,6 +122,10 @@ export async function loadUelSquad({ userId, slot }) {
       return null
     }
     console.log('[UEL] LOAD player rows=%d', (rows || []).length)
+    console.log(
+      '[UEL] LOAD kayıtlı player_id örnek:',
+      (rows || []).slice(0, 8).map((x) => `${x.player_id}(${typeof x.player_id})/${x.position_type}/${x.is_starter ? 'st' : 'b' + x.bench_order}`)
+    )
     return { formation: squad.formation, captainId: squad.captain_player_id, rows: rows || [] }
   } catch (err) {
     console.error('[FFS] UEL test kadro yükleme hatası:', err)
