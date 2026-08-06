@@ -255,10 +255,12 @@ export default function UelTest({ slot }) {
   const weekAllFinished = locked && rosterList.length > 0 && rosterList.every((p) => scores.finishedById.get(p.id))
   const applySubs = weekAllFinished && !scores.loading
   const display = useMemo(
-    () => applyAutoSubs({ fieldByPos, benchEntries, ptsById: scores.ptsById, finishedById: scores.finishedById, apply: applySubs }),
-    [fieldByPos, benchEntries, scores.ptsById, scores.finishedById, applySubs]
+    () => applyAutoSubs({ fieldByPos, benchEntries, ptsById: scores.ptsById, finishedById: scores.finishedById, apply: applySubs, captainId }),
+    [fieldByPos, benchEntries, scores.ptsById, scores.finishedById, applySubs, captainId]
   )
-  const totalPoints = !locked ? null : scores.loading ? '…' : computeTotalPoints({ field: display.field, finishedById: scores.finishedById, captainId })
+  // Kaptanlık devri sonrası efektif kaptan (yedeğe geçtiyse yeni id)
+  const effectiveCaptainId = display.captainId
+  const totalPoints = !locked ? null : scores.loading ? '…' : computeTotalPoints({ field: display.field, finishedById: scores.finishedById, captainId: effectiveCaptainId })
 
   // Yuva altı bilgi: deadline öncesi rakip/değer değil, sadeleştirilmiş → değer;
   // deadline sonrası puan.
@@ -421,7 +423,7 @@ export default function UelTest({ slot }) {
         info={infoFor(view)}
         teamShort={locked && player ? player.clubShort || null : null}
         matchState={matchStateFor(player)}
-        isCaptain={player ? player.id === captainId : false}
+        isCaptain={player ? player.id === effectiveCaptainId : false}
         isTarget={isTarget}
         onClick={(e) => { e.stopPropagation(); onSlotClick(pos, index, view) }}
         posTag={opts.posTag}

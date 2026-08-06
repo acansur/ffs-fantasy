@@ -289,9 +289,12 @@ export default function Takimim() {
         ptsById: scores.ptsById,
         finishedById: scores.finishedById,
         apply: applySubs,
+        captainId,
       }),
-    [fieldByPos, benchEntries, scores.ptsById, scores.finishedById, applySubs]
+    [fieldByPos, benchEntries, scores.ptsById, scores.finishedById, applySubs, captainId]
   )
+  // Kaptanlık devri sonrası efektif kaptan (yedeğe geçtiyse yeni id)
+  const effectiveCaptainId = display.captainId
 
   // Toplam puan: deadline sonrası kümülatif (biten maçlar), son maç bitince
   // otomatik yedek uygulanmış final. Deadline öncesi gösterilmez.
@@ -299,7 +302,7 @@ export default function Takimim() {
     ? null
     : scores.loading
       ? '…'
-      : computeTotalPoints({ field: display.field, finishedById: scores.finishedById, captainId })
+      : computeTotalPoints({ field: display.field, finishedById: scores.finishedById, captainId: effectiveCaptainId })
 
   // Yuva tıklaması: yer değiştirme modundaysa hedef seç; değilse detay modalı aç
   const onSlotClick = (pos, index, viewPlayer, viewStarter) => {
@@ -366,7 +369,7 @@ export default function Takimim() {
         info={info}
         teamShort={locked && player ? player.clubShort || null : null}
         matchState={matchStateFor(player)}
-        isCaptain={player ? player.id === captainId : false}
+        isCaptain={player ? player.id === effectiveCaptainId : false}
         isSelected={Boolean(detail) && detail.pos === pos && detail.index === index}
         isTarget={isTarget}
         onClick={(e) => {

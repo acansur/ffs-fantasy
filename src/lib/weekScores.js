@@ -176,15 +176,22 @@ export async function scoreFixturesDetailed(fixtureIds) {
 // Maç sonu otomatik yedek: ilk 11'de 0 puan alanları, yedek sırasına göre
 // aynı mevkideki 0'dan yüksek puanlı yedeklerle değiştirir (görsel/puan).
 //
+// KAPTANLIK DEVRİ: Kaptan 0 puan aldıysa ve aynı mevkide puanlı bir yedek varsa,
+// kaptan öncelikli olarak sahadan çıkarılır ve kaptanlık sahaya giren yedeğe
+// GEÇER (yedeğin puanı total'de ×2 sayılır). Yedekte uygun oyuncu yoksa ya da
+// yedek de 0 aldıysa kaptan sahada kalır, kaptanlık değişmez.
+//
 // fieldByPos → { KL:[entry], DF:[...], OS:[...], FW:[...] } (ilk 11)
 // benchEntries → yedekler (benchOrder'a göre sıralı)
 // entry = { slot:{player,...}, pos, index }
 // ptsById → Map<id, number>
+// captainId → mevcut kaptan id'si (opsiyonel)
 // apply → false ise değişiklik yapılmaz (yalnızca puanlar iliştirilir)
 //
-// Dönüş: { field: {pos:[dEntry]}, bench:[dEntry], subs:[{outId,inId,pos}] }
-// dEntry = { ...entry, player, pts, subIn?, subOut? } (player = gösterilecek oyuncu)
-export function applyAutoSubs({ fieldByPos, benchEntries, ptsById, finishedById, apply }) {
+// Dönüş: { field, bench, subs, captainId } — captainId = DEVİR sonrası efektif
+// kaptan id'si (devir yoksa girişteki captainId). dEntry = { ...entry, player,
+// pts, subIn?, subOut?, captainIn? } (player = gösterilecek oyuncu)
+export function applyAutoSubs({ fieldByPos, benchEntries, ptsById, finishedById, apply, captainId = null }) {
   const POS = ['KL', 'DF', 'OS', 'FW']
   const ptsOf = (pl) => (pl ? ptsById.get(pl.id) ?? 0 : 0)
   const finOf = (pl) => (pl ? Boolean(finishedById?.get(pl.id)) : false)
@@ -207,13 +214,18 @@ export function applyAutoSubs({ fieldByPos, benchEntries, ptsById, finishedById,
   }))
 
   const subs = []
+  let effectiveCaptainId = captainId
   if (apply) {
     // Yedekleri sıraya göre gez; her puanlı yedek, aynı mevkideki 0 puanlı
     // (henüz değiştirilmemiş) bir ilk-11 oyuncusunun yerine geçer.
     for (const b of bench) {
       if (!b.player || (b.pts ?? 0) <= 0) continue
       const arr = field[b.pos] || []
-      const target = arr.find((f) => f.player && f.pts === 0 && !f._subbed)
+      // Hedef seçimi: aynı mevkideki 0 puanlı, henüz değişmemiş ilk-11 oyuncusu.
+      // Kaptan 0 puan aldıysa ÖNCELİKLE kaptan çıkarılır → kaptanlık yedeğe geçsin.
+      const target =
+        arr.find((f) => f.player && f.player.id === captainId && f.pts === 0 && !f._subbed) ||
+        arr.find((f) => f.player && f.pts === 0 && !f._subbed)
       if (!target) continue
       const inPlayer = b.player
       const outPlayer = target.player
@@ -230,11 +242,16 @@ export function applyAutoSubs({ fieldByPos, benchEntries, ptsById, finishedById,
       b.pts = outPts
       b.finished = outFin
       b.subOut = true
+      // Kaptan sahadan çıktıysa kaptanlık sahaya giren yedeğe geçer (puanı ×2).
+      if (captainId != null && outPlayer.id === captainId) {
+        effectiveCaptainId = inPlayer.id
+        target.captainIn = true // görsel "C" için işaret (opsiyonel)
+      }
       subs.push({ outId: outPlayer.id, inId: inPlayer.id, pos: b.pos })
     }
   }
 
-  return { field, bench, subs }
+  return { field, bench, subs, captainId: effectiveCaptainId }
 }
 
 // Efektif ilk 11 üzerinden toplam puan (biten maçlar sayılır, kaptan ×2).
