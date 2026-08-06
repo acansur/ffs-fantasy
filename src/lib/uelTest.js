@@ -15,27 +15,38 @@ export const UEL_PLAYER_PRICE = 6
 
 // Deadline: 6 Ağustos 2026 20:30 (Türkiye saati, UTC+3) — ilk 3 maç oynandı,
 // kalan ilk maçtan (21:00) 30 dk önce.
-export const UEL_DEADLINE_MS = Date.parse('2026-08-06T20:30:00+03:00')
+// Deadline: 6 Ağustos 2026 20:15 TR (PAOK vs Anderlecht'ten 30 dk önce)
+export const UEL_DEADLINE_MS = Date.parse('2026-08-06T20:15:00+03:00')
 
-// Kalan 7 maç (ilk 3 maç deadline'ı geçtiği için çıkarıldı). Hepsi 2026-08-06.
+// Kalan 3 maç (henüz başlamamış). Hepsi 2026-08-06.
 export const UEL_FIXTURES = [
-  { id: 1607177, home: { id: 347, name: 'Lech Poznan' }, away: { id: 701, name: 'KI Klaksvik' } },
-  { id: 1607178, home: { id: 667, name: 'Lincoln Red Imps FC' }, away: { id: 3402, name: 'Omonia Nicosia' } },
-  { id: 1607562, home: { id: 3723, name: 'Hradec Králové' }, away: { id: 549, name: 'Beşiktaş' } },
-  { id: 1607564, home: { id: 571, name: 'Red Bull Salzburg' }, away: { id: 3403, name: 'Pafos' } },
   { id: 1607565, home: { id: 619, name: 'PAOK' }, away: { id: 554, name: 'Anderlecht' } },
   { id: 1607179, home: { id: 1012, name: 'FC Thun' }, away: { id: 278, name: 'Vikingur Reykjavik' } },
   { id: 1607560, home: { id: 211, name: 'Benfica' }, away: { id: 254, name: 'Heart Of Midlothian' } },
 ]
 
-// Gösterilen maçların takımları (7 maç → 14 takım)
+// Gösterilen maçların takımları (3 maç → 6 takım) — picker bu takımlarla sınırlı
 export const UEL_TEAMS = UEL_FIXTURES.flatMap((f) => [f.home, f.away])
 
-// Oyuncu HAVUZU takımları: 14 güncel takım + çıkarılan 3 maçın 6 takımı.
-// Maçlar UEL_FIXTURES'tan çıkarıldı (deadline geçti) ama bu takımların
-// oyuncuları mevcut kadro kayıtlarında olabileceğinden havuzda tutulur; aksi
-// halde kayıtlı player_id'ler havuzda bulunamaz ve kadro boş görünür.
-const UEL_REMOVED_POOL_TEAMS = [
+// Oyuncu HAVUZU takımları: TÜM 20 takım. Maçlar UEL_FIXTURES'tan çıkarılsa da
+// bu takımların oyuncuları mevcut kadro KAYITLARINDA olabileceğinden havuzda
+// tutulur; aksi halde kayıtlı player_id'ler havuzda bulunamaz ve kadro boş görünür.
+// (Picker yalnızca güncel 6 takımı gösterir; havuz yükleme/çözümleme içindir.)
+export const UEL_POOL_TEAMS = [
+  { id: 619, name: 'PAOK' },
+  { id: 554, name: 'Anderlecht' },
+  { id: 1012, name: 'FC Thun' },
+  { id: 278, name: 'Vikingur Reykjavik' },
+  { id: 211, name: 'Benfica' },
+  { id: 254, name: 'Heart Of Midlothian' },
+  { id: 347, name: 'Lech Poznan' },
+  { id: 701, name: 'KI Klaksvik' },
+  { id: 667, name: 'Lincoln Red Imps FC' },
+  { id: 3402, name: 'Omonia Nicosia' },
+  { id: 3723, name: 'Hradec Králové' },
+  { id: 549, name: 'Beşiktaş' },
+  { id: 571, name: 'Red Bull Salzburg' },
+  { id: 3403, name: 'Pafos' },
   { id: 1165, name: 'KuPS' },
   { id: 632, name: 'Universitatea Craiova' },
   { id: 336, name: 'Jagiellonia' },
@@ -43,7 +54,6 @@ const UEL_REMOVED_POOL_TEAMS = [
   { id: 604, name: 'Maccabi Tel Aviv' },
   { id: 853, name: 'CSKA Sofia' },
 ]
-export const UEL_POOL_TEAMS = [...UEL_TEAMS, ...UEL_REMOVED_POOL_TEAMS]
 
 // API tam-mevki adı → UI mevki kodu
 const POS_MAP = { Goalkeeper: 'KL', Defender: 'DF', Midfielder: 'OS', Attacker: 'FW' }
