@@ -56,6 +56,19 @@ export async function loadAndScoreWeek(userId, week, fixtures) {
   return { byFixture, total }
 }
 
+// Kullanıcının tüm haftalardaki tahmin puanları → { [week]: total } (yalnızca gösterim)
+export async function loadAllWeekPoints(userId) {
+  if (!ok() || !userId) return {}
+  const { data, error } = await supabase
+    .from('prediction_points')
+    .select('week, total_points')
+    .eq('user_id', userId)
+  if (error) return {}
+  const map = {}
+  for (const r of data || []) map[r.week] = r.total_points
+  return map
+}
+
 // Tek maç tahmini kaydet/güncelle (deadline öncesi). Dönüş: satır
 export async function savePrediction(userId, week, fixtureId, prediction) {
   if (!ok() || !userId) throw new Error('Supabase veya oturum yok')
