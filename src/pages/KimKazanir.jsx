@@ -214,7 +214,7 @@ function WeekBody({ fixtures, byFixture, loading, locked, total, onPick, onSaveA
         return (
           <div key={fid} className="match">
             <div className="match-head">
-              <div className="teams">
+              <div className="kk-teams">
                 <span className="tn">{f.teams.home.name}</span>
                 <span className="vs">{finished ? `${f.goals.home}-${f.goals.away}` : 'vs'}</span>
                 <span className="tn">{f.teams.away.name}</span>

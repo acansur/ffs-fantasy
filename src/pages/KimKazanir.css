@@ -1,5 +1,21 @@
 /* /kim-kazanir — "tahmin kuponu" görünümü (koyu tema, altın aksan) */
 .kk {
+  /* Yeşil tema token'ları — global lacivert (.root) sızmasın (Takımım gibi) */
+  --bg: #0a130f;
+  --surface: #132019;
+  --surface-2: #1a2a21;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.15);
+  --ink: #eaf3ec;
+  --ink-2: #9cb0a4;
+  --ink-3: #6d8175;
+  --gold: #f0a500;
+  --gold-soft: #ffcb52;
+  --gold-deep: #c98600;
+  --gold-ink: #3a2a00;
+  --pitch: #1a5f3f;
+  --pitch-lit: #22794f;
+  --pitch-deep: #0f3f28;
   --win: #1bb87c;
   --lose: #f05a58;
   --shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
@@ -83,9 +99,9 @@
 .match { padding: 14px 4px; border-top: 1px solid rgba(255, 255, 255, 0.055); }
 .wk-inner .match:first-child { border-top: none; }
 .match-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
-.teams { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.teams .tn { font-size: 15px; font-weight: 700; color: #fff; }
-.teams .vs { font-family: 'Barlow Condensed', sans-serif; font-size: 12.5px; font-weight: 700; color: var(--gold-soft, #ffcb52); letter-spacing: 0.06em; flex: none; }
+.kk-teams { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.kk-teams .tn { font-size: 15px; font-weight: 700; color: #fff; }
+.kk-teams .vs { font-family: 'Barlow Condensed', sans-serif; font-size: 12.5px; font-weight: 700; color: var(--gold-soft, #ffcb52); letter-spacing: 0.06em; flex: none; }
 .mtime { font-size: 13px; color: var(--ink-3, #6d8175); font-weight: 600; flex: none; }
 .mres { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 15px; padding: 2px 11px; border-radius: 8px; flex: none; }
 .mres.ok { color: #43dca0; background: rgba(27, 184, 124, 0.16); }
@@ -131,8 +147,8 @@
   .kk-hero { flex-wrap: wrap; }
   .kk-word { font-size: 36px; }
   .kk-total { margin-left: 0; }
-  .teams { flex-wrap: wrap; gap: 6px; }
-  .teams .tn { font-size: 13.5px; }
+  .kk-teams { flex-wrap: wrap; gap: 6px; }
+  .kk-teams .tn { font-size: 13.5px; }
   .seg .lbl { font-size: 10.5px; }
   .wk-save { margin-left: 0; width: 100%; }
 }
