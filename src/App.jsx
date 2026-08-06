@@ -24,6 +24,7 @@ import Players2 from './pages/Players2.jsx'
 import Admin from './pages/Admin.jsx'
 import KimKazanir from './pages/KimKazanir.jsx'
 import AnnouncementBanner from './components/AnnouncementBanner.jsx'
+import ErrorBoundary from './components/ErrorBoundary.jsx'
 import Giris from './pages/Giris.jsx'
 import Kayit from './pages/Kayit.jsx'
 import NotFound from './pages/NotFound.jsx'
@@ -56,6 +57,7 @@ export default function App() {
       <Navbar />
       <AnnouncementBanner />
       <main className="app-main">
+        <ErrorBoundary>
         <Routes>
           {/* Yalnızca siteye ilk gelişte (kök adres) yönlendir; sonra Ana Sayfa görünür */}
           <Route path="/" element={redirectToSquad ? <Navigate to="/takimim" replace /> : <Home />} />
@@ -77,6 +79,7 @@ export default function App() {
           <Route path="/kayit" element={<Kayit />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
+        </ErrorBoundary>
       </main>
       <Footer />
     </div>

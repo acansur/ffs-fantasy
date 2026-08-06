@@ -79,7 +79,13 @@ export function sortByValue(list, dir = 'desc') {
 
 // Bir diziliş için saha ve yedek yuva sayıları (mevki başına).
 export function slotCounts(formation) {
-  const f = FORMATIONS[formation]
+  let f = FORMATIONS[formation]
+  if (!f) {
+    // Bilinmeyen ama geçerli diziliş (örn. "5-3-2" FORMATIONS'ta yok) → etiketten türet.
+    // Aksi halde f.DF undefined'da patlar ve kadro yüklemesi çöker.
+    const m = String(formation || '').match(/^(\d+)-(\d+)-(\d+)$/)
+    f = m ? { DF: Number(m[1]), OS: Number(m[2]), FW: Number(m[3]) } : FORMATIONS['4-4-2']
+  }
   const field = { KL: 1, DF: f.DF, OS: f.OS, FW: f.FW }
   const bench = {
     KL: SQUAD_TOTALS.KL - field.KL,

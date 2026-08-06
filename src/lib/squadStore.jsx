@@ -162,25 +162,28 @@ export function SquadProvider({ children }) {
 
   // Kullanıcı değişince (giriş / çıkış / başka hesap) kadro state'ini SIFIRLA —
   // önceki kullanıcının kadrosu cache'te kalıp yeni kullanıcıya sızmasın.
+  // deps = [user?.id, ...] → AuthProvider'ın is_admin tazelemesi user NESNESİNİ
+  // değiştirse de (aynı id) effect'ler yeniden çalışıp in-flight yüklemeyi
+  // iptal etmez (aksi halde squadLoading true'da takılır, "Yükleniyor" sürer).
+  const userId = user?.id ?? null
   const prevUserRef = useRef(null)
   useEffect(() => {
-    const uid = user?.id ?? null
-    if (prevUserRef.current === uid) return
-    prevUserRef.current = uid
+    if (prevUserRef.current === userId) return
+    prevUserRef.current = userId
     const empty = buildEmptyRoster()
     setRoster(empty)
     setCaptainId(null)
     setSavedSig(signature(empty, null))
     loadKeyRef.current = null // yeni kullanıcı için yeniden yükleme tetiklensin
-  }, [user])
+  }, [userId])
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
       setSquadLoading(false)
       return
     }
-    if (!user || !weeks.length) return
-    const key = `${user.id}:${week}`
+    if (!userId || !weeks.length) return
+    const key = `${userId}:${week}`
     if (loadKeyRef.current === key) return
     loadKeyRef.current = key
     const wkObj = weeks.find((w) => w.round === week) || null
@@ -189,17 +192,19 @@ export function SquadProvider({ children }) {
     setSquadLoading(true)
     ;(async () => {
       try {
-        const loaded = await loadSquadFromDb({ userId: user.id, week })
+        const loaded = await loadSquadFromDb({ userId, week })
         if (!alive) return
         if (loaded) {
           const raw = await loadSuperLigPlayers().catch(() => null)
-          if (!alive || !raw) return
-          const players = toAppPlayers(raw.players)
-          const byId = Object.fromEntries(players.map((p) => [String(p.id), p]))
-          const r = rebuildRoster(loaded.rows, byId, loaded.formation)
-          setRoster(r)
-          setCaptainId(loaded.captainId ?? null)
-          setSavedSig(signature(r, loaded.captainId ?? null))
+          if (!alive) return
+          if (raw) {
+            const players = toAppPlayers(raw.players)
+            const byId = Object.fromEntries(players.map((p) => [String(p.id), p]))
+            const r = rebuildRoster(loaded.rows, byId, loaded.formation)
+            setRoster(r)
+            setCaptainId(loaded.captainId ?? null)
+            setSavedSig(signature(r, loaded.captainId ?? null))
+          }
         } else if (weekLocked) {
           // Kilitli/geçmiş hafta, kayıt yok → boş kadro
           const empty = buildEmptyRoster()
@@ -210,6 +215,10 @@ export function SquadProvider({ children }) {
           // Açık hafta, kayıt yok → mevcut kadro taşınır; bu hafta için kaydedilmemiş
           setSavedSig(signature(buildEmptyRoster(), null))
         }
+      } catch (e) {
+        // Hata yut(ulmasın): logla, guard'ı sıfırla ki tekrar denensin, boş sayfa olmasın.
+        console.error('[FFS] Kadro yükleme hatası:', e)
+        loadKeyRef.current = null
       } finally {
         if (alive) setSquadLoading(false)
       }
@@ -217,7 +226,7 @@ export function SquadProvider({ children }) {
     return () => {
       alive = false
     }
-  }, [user, week, weeks])
+  }, [userId, week, weeks])
 
   // Mevcut kadroyu Supabase'e kaydet (kullanıcı + supabase varsa; yoksa no-op)
   const persist = useCallback(
