@@ -471,8 +471,9 @@ export default function Transfer() {
         </div>
       </div>
 
-      {/* Bu haftanın fikstürü — sticky bar'ın ALTINDA (Takımım düzeni) */}
-      <WeekFixtures fixtures={fixtures} round={week} />
+      {/* Bu haftanın fikstürü — sticky bar'ın ALTINDA (Takımım düzeni).
+          preMatchOnly: Transfer deadline'da kapandığından yalnızca saat gösterilir. */}
+      <WeekFixtures fixtures={fixtures} round={week} preMatchOnly />
 
       {/* Puanlama Rehberi modalı */}
       {scoringOpen && (

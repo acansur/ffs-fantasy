@@ -1,103 +1,39 @@
-/* Hafta fikstürü — saha görünümünün altında (Takımım/Transfer + PL test). */
-.wf {
-  max-width: 640px;
-  margin: 26px auto 6px;
-  padding: 0 4px;
-}
-.wf-head {
-  font-family: 'Barlow Semi Condensed', sans-serif;
-  font-weight: 700;
-  font-size: 1.05rem;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--gold-soft, #ffcb52);
-  text-align: center;
-  margin-bottom: 16px;
-}
-.wf-day { margin-bottom: 16px; }
-.wf-daylabel {
-  font-size: 0.76rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  text-transform: capitalize;
-  color: #9fb0c9;
-  margin: 0 6px 8px;
-}
-.wf-matches { display: flex; flex-direction: column; gap: 8px; }
-
-.wf-row {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-}
-.wf-row.live {
-  border-color: rgba(74, 222, 128, 0.42);
-  background: rgba(74, 222, 128, 0.06);
-}
-
-.wf-team {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #e8eef5;
-  line-height: 1.2;
-}
-.wf-team.home { text-align: right; }
-.wf-team.away { text-align: left; }
-
-.wf-mid {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-width: 60px;
-}
-.wf-score {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-weight: 700;
-  font-size: 1.3rem;
-  line-height: 1;
-  letter-spacing: 0.03em;
-  color: #fff;
-  display: inline-flex;
-  align-items: baseline;
-}
-.wf-score i { color: #6b7a90; font-style: normal; margin: 0 6px; }
-.wf-nostart { color: #6b7a90; }
-
-.wf-status { margin-top: 4px; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.03em; }
-.wf-time {
-  color: #9fb0c9;
-  font-family: 'Barlow Condensed', sans-serif;
-  font-size: 0.8rem;
-  letter-spacing: 0.05em;
-}
-.wf-live {
-  color: #4ade80;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-.wf-live::before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #4ade80;
-  animation: wf-pulse 1.4s ease-in-out infinite;
-}
-@keyframes wf-pulse {
-  0% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.5); }
-  70% { box-shadow: 0 0 0 6px rgba(74, 222, 128, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
-}
-.wf-ft { color: #8a97a8; }
-
-@media (max-width: 560px) {
-  .wf-team { font-size: 0.82rem; }
-  .wf-row { padding: 9px 12px; gap: 8px; }
-  .wf-score { font-size: 1.15rem; }
-}
+/* Hafta fikstürü — timeline görünüm. Tüm class'lar .fx- önekli (global çakışma yok). */
+.fx-wrap{margin-top:26px}
+.fx-head{display:flex;align-items:center;gap:14px;margin-bottom:20px}
+.fx-head .ttl{font-family:'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:22px} .fx-head .ttl b{color:#ffcb52}
+.fx-head .wk{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#ffcb52;background:rgba(240,165,0,.1);border:1px solid rgba(240,165,0,.3);padding:4px 12px;border-radius:99px}
+/* timeline */
+.fx-day{position:relative;padding-left:30px;padding-bottom:6px}
+.fx-day::before{content:"";position:absolute;left:9px;top:20px;bottom:-6px;width:2px;background:linear-gradient(var(--border-strong,rgba(255,255,255,.15)),rgba(255,255,255,.03))}
+.fx-day:last-child::before{display:none}
+.fx-node{position:absolute;left:3px;top:3px;width:14px;height:14px;border-radius:50%;background:var(--surface,#132019);border:2px solid #ffcb52;box-shadow:0 0 0 3px rgba(240,165,0,.1)}
+.fx-day.hasLive .fx-node{border-color:#ff5c5c;box-shadow:0 0 0 3px rgba(255,92,92,.14)}
+.fx-date{font-size:12.5px;font-weight:700;color:var(--ink-2,#9cb0a4);margin-bottom:10px;text-transform:capitalize}
+.fx-list{display:flex;flex-direction:column;gap:9px;margin-bottom:16px}
+/* maç kartı */
+.fx-match{position:relative;display:grid;grid-template-columns:1fr 96px 1fr;align-items:center;gap:14px;padding:15px 22px 16px;border-radius:14px;overflow:hidden;background:linear-gradient(180deg,var(--surface-2,#1a2a21),var(--surface,#132019));border:1px solid var(--border,rgba(255,255,255,.08));box-shadow:0 6px 18px rgba(0,0,0,.35);transition:.18s}
+.fx-match:hover{transform:translateY(-2px);border-color:var(--border-strong,rgba(255,255,255,.15))}
+.fx-match .strip{position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--hc) 0 46%, transparent 46% 54%, var(--ac) 54% 100%);opacity:.9}
+.fx-match::before{content:"";position:absolute;left:0;top:0;bottom:0;width:120px;background:radial-gradient(120px 80px at 0% 50%, var(--hc), transparent 70%);opacity:.10;pointer-events:none}
+.fx-match::after{content:"";position:absolute;right:0;top:0;bottom:0;width:120px;background:radial-gradient(120px 80px at 100% 50%, var(--ac), transparent 70%);opacity:.10;pointer-events:none}
+.fx-team{display:flex;align-items:center;gap:10px;min-width:0;position:relative;z-index:1}
+.fx-team.home{justify-content:flex-end;text-align:right} .fx-team.away{justify-content:flex-start}
+.fx-team .dot{width:9px;height:22px;border-radius:3px;flex:none;background:var(--c);box-shadow:0 0 10px -2px var(--c)}
+.fx-team .tn{font-size:15px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fx-cap{position:relative;z-index:1;justify-self:center;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:86px}
+.fx-cap .sc{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:26px;line-height:1;color:#fff;letter-spacing:.06em}
+.fx-cap.time .tm{display:inline-flex;align-items:center;gap:6px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;color:var(--ink,#eaf3ec);background:rgba(255,255,255,.05);border:1px solid var(--border-strong,rgba(255,255,255,.15));padding:5px 12px;border-radius:10px}
+.fx-cap.time .tm svg{width:14px;height:14px;color:#ffcb52}
+.fx-cap .ft{font-size:9.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3,#6d8175)}
+.fx-cap .lm{display:inline-flex;align-items:center;gap:5px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12.5px;color:#ff9a9a;background:rgba(255,92,92,.14);border:1px solid rgba(255,92,92,.4);padding:1px 9px;border-radius:99px}
+.fx-cap .lm .ld{width:6px;height:6px;border-radius:50%;background:#ff5c5c;animation:fxlp 1.4s infinite}
+@keyframes fxlp{0%{box-shadow:0 0 0 0 rgba(255,92,92,.6)}70%{box-shadow:0 0 0 6px rgba(255,92,92,0)}100%{box-shadow:0 0 0 0 rgba(255,92,92,0)}}
+.fx-match.is-live{border-color:rgba(255,92,92,.4);box-shadow:0 0 0 1px rgba(255,92,92,.18),0 12px 30px rgba(0,0,0,.5)}
+.fx-match.is-live::before,.fx-match.is-live::after{opacity:.14}
+.fx-live-badge{position:absolute;top:9px;right:12px;z-index:2;display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:800;letter-spacing:.1em;color:#fff;background:linear-gradient(180deg,#ff6a6a,#e23b3b);padding:3px 9px;border-radius:99px;box-shadow:0 3px 10px rgba(226,59,59,.4)}
+.fx-live-badge .ld{width:5px;height:5px;border-radius:50%;background:#fff;animation:fxlp2 1.2s infinite}
+@keyframes fxlp2{0%,100%{opacity:1}50%{opacity:.35}}
+.fx-prog{position:absolute;left:0;bottom:0;height:3px;background:linear-gradient(90deg,#ff5c5c,#ffa15c);box-shadow:0 0 10px rgba(255,92,92,.5)}
+.fx-match.is-done{opacity:.9} .fx-match.is-done .fx-cap .sc{color:#eef4ef}
+@media(max-width:600px){.fx-match{grid-template-columns:1fr 74px 1fr;padding:13px 12px 14px;gap:8px}.fx-team .tn{font-size:13px}.fx-team .dot{height:18px}}
