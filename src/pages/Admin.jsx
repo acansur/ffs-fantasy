@@ -4,12 +4,16 @@ import { useAuth } from '../lib/auth.jsx'
 import { normalizeText } from '../lib/normalize.js'
 import {
   listUsers, deleteUser,
-  listPlayers, savePlayerValue, refreshPlayersFromApi,
+  listPlayers, savePlayerValue,
   listLeagues,
   getTableCounts, getApiStatus,
   getActiveAnnouncement, setAnnouncement,
   getWeekOverrides, setWeekOverride,
 } from '../lib/adminDb.js'
+import {
+  refreshPlayers, refreshFixtures,
+  getPlayersUpdatedAt, getFixturesUpdatedAt,
+} from '../lib/dataCache.js'
 import './Admin.css'
 
 const TABS = [
@@ -22,6 +26,49 @@ const TABS = [
 ]
 
 const fmtDate = (s) => (s ? new Date(s).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul' }) : '—')
+
+// "6 Ağu 2026, 21:45" biçimi (son güncelleme damgası)
+const fmtStamp = (s) => {
+  if (!s) return '—'
+  const d = new Date(s)
+  const date = d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Europe/Istanbul' })
+  const time = d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Istanbul' })
+  return `${date}, ${time}`
+}
+
+// API→Supabase güncelleme kartı: buton → % ilerleme çubuğu → son güncelleme.
+// onRun(onProgress) bir Promise döndürür; onProgress(pct, label) ile ilerler.
+function UpdateCard({ title, buttonLabel, color, onRun, lastUpdated, onDone }) {
+  const [st, setSt] = useState({ busy: false, pct: 0, label: '', done: false, err: '' })
+  const run = async () => {
+    setSt({ busy: true, pct: 0, label: 'Başlatılıyor…', done: false, err: '' })
+    try {
+      const res = await onRun((pct, label) => setSt((s) => ({ ...s, pct, label })))
+      setSt({ busy: false, pct: 100, label: '', done: true, err: '' })
+      onDone?.(res)
+    } catch (e) {
+      setSt({ busy: false, pct: 0, label: '', done: false, err: e.message || String(e) })
+    }
+  }
+  return (
+    <div className={`adm-upd-card ${color}`}>
+      <div className="adm-upd-title">{title}</div>
+      {st.busy ? (
+        <div className="adm-upd-progress">
+          <div className="adm-upd-bar"><span style={{ width: `${st.pct}%` }} /></div>
+          <div className="adm-upd-pct">Güncelleniyor… %{st.pct}{st.label ? ` · ${st.label}` : ''}</div>
+        </div>
+      ) : (
+        <button className={`adm-btn ${color} big`} onClick={run}>{buttonLabel}</button>
+      )}
+      {st.err && <div className="adm-msg err" style={{ marginTop: 8 }}>⚠ {st.err}</div>}
+      <div className="adm-upd-meta">
+        {st.done && <span className="adm-upd-ok">✅ Tamamlandı — </span>}
+        Son güncelleme: <b>{fmtStamp(lastUpdated)}</b>
+      </div>
+    </div>
+  )
+}
 
 export default function Admin() {
   const { user } = useAuth()
@@ -96,18 +143,18 @@ function UsersTab() {
 function PlayersTab() {
   const [rows, setRows] = useState(null)
   const [msg, setMsg] = useState('')
-  const [busy, setBusy] = useState(false)
   const [q, setQ] = useState('')
   const [edit, setEdit] = useState({}) // id → value string
+  const [playersAt, setPlayersAt] = useState(null) // players tablosu son güncelleme
+  const [fixturesAt, setFixturesAt] = useState(null) // fixtures tablosu son güncelleme
   const load = () => { setRows(null); listPlayers().then(setRows).catch((e) => setMsg('⚠ ' + e.message)) }
-  useEffect(load, [])
+  useEffect(() => {
+    load()
+    // Sayfa yüklenince son güncelleme tarihleri Supabase'den gelir
+    getPlayersUpdatedAt().then(setPlayersAt).catch(() => {})
+    getFixturesUpdatedAt().then(setFixturesAt).catch(() => {})
+  }, [])
 
-  const onRefresh = async () => {
-    setBusy(true); setMsg('')
-    try { const n = await refreshPlayersFromApi((m) => setMsg('⏳ ' + m)); setMsg(`✓ ${n} oyuncu güncellendi.`); load() }
-    catch (e) { setMsg('⚠ ' + e.message) }
-    finally { setBusy(false) }
-  }
   const onSaveValue = async (p) => {
     const v = Number(edit[p.id])
     if (edit[p.id] == null || Number.isNaN(v) || v === Number(p.value)) return
@@ -129,8 +176,27 @@ function PlayersTab() {
 
   return (
     <div>
-      <div className="adm-row">
-        <button className="adm-btn gold" onClick={onRefresh} disabled={busy}>{busy ? 'Güncelleniyor…' : 'Oyuncu Listesini Güncelle'}</button>
+      {/* Güncelleme kartları — yan yana, belirgin */}
+      <div className="adm-upd-grid">
+        <UpdateCard
+          title="Oyuncular"
+          buttonLabel="Oyuncu Listesini Güncelle"
+          color="gold"
+          onRun={(onProgress) => refreshPlayers(onProgress)}
+          lastUpdated={playersAt}
+          onDone={(res) => { setPlayersAt(res.updatedAt); load() }}
+        />
+        <UpdateCard
+          title="Fikstür"
+          buttonLabel="Fikstürü Güncelle"
+          color="green"
+          onRun={(onProgress) => refreshFixtures(onProgress)}
+          lastUpdated={fixturesAt}
+          onDone={(res) => setFixturesAt(res.updatedAt)}
+        />
+      </div>
+
+      <div className="adm-row" style={{ marginTop: 18 }}>
         <input className="adm-input" placeholder="Oyuncu/takım ara…" value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
       {msg && <div className={`adm-msg ${msg.startsWith('⚠') ? 'err' : 'ok'}`}>{msg}</div>}

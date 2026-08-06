@@ -3,7 +3,6 @@
 // işlemleri için okuma/yazma yapar.
 
 import { supabase, isSupabaseConfigured } from './supabase.js'
-import { loadSuperLigPlayers, POSITION_VALUE } from './apiFootball.js'
 
 const ok = () => isSupabaseConfigured && supabase
 
@@ -50,37 +49,8 @@ export async function savePlayerValue(id, value) {
   return true
 }
 
-// API'den bu sezon kadrolarını çekip players tablosuna yazar (mevcut değerleri korur)
-export async function refreshPlayersFromApi(onProgress) {
-  if (!ok()) throw new Error('Supabase yok')
-  onProgress?.('Kadrolar API\'den çekiliyor…')
-  const { players } = await loadSuperLigPlayers()
-  const existing = await listPlayers()
-  const valById = new Map(existing.map((p) => [p.id, p.value]))
-  const seen = new Set()
-  const rows = []
-  for (const p of players) {
-    const pos = p.position === 'GK' ? 'KL' : p.position
-    if (!['KL', 'DF', 'OS', 'FW'].includes(pos)) continue
-    if (seen.has(p.id)) continue
-    seen.add(p.id)
-    rows.push({
-      id: p.id,
-      name: p.name,
-      team_name: p.team,
-      position: pos,
-      value: valById.get(p.id) ?? POSITION_VALUE[pos] ?? 6,
-      updated_at: new Date().toISOString(),
-    })
-  }
-  onProgress?.(`${rows.length} oyuncu kaydediliyor…`)
-  const CHUNK = 200
-  for (let i = 0; i < rows.length; i += CHUNK) {
-    const { error } = await supabase.from('players').upsert(rows.slice(i, i + CHUNK), { onConflict: 'id' })
-    if (error) throw error
-  }
-  return rows.length
-}
+// Not: Oyuncu/fikstür API→Supabase güncellemesi (ilerleme + 24s önbellek)
+// src/lib/dataCache.js içindedir (refreshPlayers / refreshFixtures).
 
 /* ---------- 3) Ligler ---------- */
 export async function listLeagues() {
@@ -106,7 +76,8 @@ export async function listLeagues() {
 /* ---------- 4) Sistem durumu ---------- */
 const COUNT_TABLES = [
   'users', 'squads', 'squad_players', 'uel_test_squads', 'uel_test_squad_players',
-  'player_season_stats_2025', 'players', 'leagues', 'league_members', 'announcements', 'week_overrides',
+  'player_season_stats_2025', 'players', 'fixtures', 'live_scores',
+  'leagues', 'league_members', 'announcements', 'week_overrides',
 ]
 export async function getTableCounts() {
   if (!ok()) return []

@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../lib/auth.jsx'
 import { useSquad } from '../lib/squadStore.jsx'
-import { loadSuperLigPlayers } from '../lib/apiFootball.js'
+import { loadCachedPlayers } from '../lib/dataCache.js'
 import { getVisibleWeeks, isLocked, formatDeadline, getTeamFixture } from '../lib/weeks.js'
 import { computeWeekScores, applyAutoSubs, computeTotalPoints } from '../lib/weekScores.js'
 import { useNow } from '../lib/useNow.js'
@@ -194,7 +194,7 @@ export default function Takimim() {
 
   // Transfer ekranı hızlı açılsın diye oyuncu listesini arka planda önyükle
   useEffect(() => {
-    loadSuperLigPlayers().catch(() => {})
+    loadCachedPlayers().catch(() => {})
   }, [])
 
   useEffect(() => {

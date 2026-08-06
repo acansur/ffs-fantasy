@@ -2,7 +2,8 @@ import { useMemo, useState, useRef, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth.jsx'
 import { useSquad, cloneRoster, rosterPlayers } from '../lib/squadStore.jsx'
-import { loadSuperLigPlayers, toAppPlayers, clubColors, clubShort } from '../lib/apiFootball.js'
+import { clubColors, clubShort } from '../lib/apiFootball.js'
+import { loadCachedPlayers } from '../lib/dataCache.js'
 import { getVisibleWeeks, formatDeadline, getTeamFixture, isLocked } from '../lib/weeks.js'
 import { useNow } from '../lib/useNow.js'
 import { normalizeText } from '../lib/normalize.js'
@@ -93,8 +94,9 @@ export default function Transfer() {
 
   useEffect(() => {
     let alive = true
-    loadSuperLigPlayers()
-      .then((res) => alive && setApi({ loading: false, error: null, players: toAppPlayers(res.players), teams: res.teams }))
+    // Önce Supabase önbelleği (24s TTL), gerekirse API — players zaten app formatında
+    loadCachedPlayers()
+      .then((res) => alive && setApi({ loading: false, error: null, players: res.players, teams: res.teams }))
       .catch((err) => alive && setApi({ loading: false, error: err.message || String(err), players: [], teams: [] }))
     return () => {
       alive = false

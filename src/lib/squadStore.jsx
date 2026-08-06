@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { SQUAD_TOTALS, START_LIMITS, TOTAL_BUDGET, slotCounts, formationLabel } from './squadData.js'
-import { fetchSuperLigFixtures, loadSuperLigPlayers, toAppPlayers } from './apiFootball.js'
+import { loadCachedFixtures, loadCachedPlayers } from './dataCache.js'
 import { buildWeeks, getActiveRound, isLocked } from './weeks.js'
 import { isSupabaseConfigured } from './supabase.js'
 import { useAuth } from './auth.jsx'
@@ -132,7 +132,7 @@ export function SquadProvider({ children }) {
   const bootedRef = useRef(false)
   useEffect(() => {
     let alive = true
-    fetchSuperLigFixtures()
+    loadCachedFixtures()
       .then((res) => {
         if (!alive) return
         const w = res ? buildWeeks(res.fixtures) : []
@@ -195,10 +195,10 @@ export function SquadProvider({ children }) {
         const loaded = await loadSquadFromDb({ userId, week })
         if (!alive) return
         if (loaded) {
-          const raw = await loadSuperLigPlayers().catch(() => null)
+          const raw = await loadCachedPlayers().catch(() => null)
           if (!alive) return
           if (raw) {
-            const players = toAppPlayers(raw.players)
+            const players = raw.players // zaten app formatında (id, name, pos, club, price…)
             const byId = Object.fromEntries(players.map((p) => [String(p.id), p]))
             const r = rebuildRoster(loaded.rows, byId, loaded.formation)
             setRoster(r)

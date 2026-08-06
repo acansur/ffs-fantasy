@@ -132,8 +132,11 @@ export function loadSuperLigPlayers() {
 
 // Süper Lig 2026-27 tüm oyuncuları (kadrolar) proxy üzerinden çeker.
 // Önce takımları, sonra her takımın kadrosunu çeker.
+// opts.onProgress(done, total) → her takım kadrosu tamamlandıkça çağrılır
+// (admin panelinde adım adım % ilerleme için).
 // Dönüş: { teams, players } | atar (throw) hata olursa
-export async function fetchSuperLigPlayers() {
+export async function fetchSuperLigPlayers(opts = {}) {
+  const { onProgress } = opts
   // 1) Takımlar
   const teamsRes = await fetch(`/api/football?path=teams&league=${SUPER_LIG_ID}&season=${SEASON}`)
   const teamsData = await teamsRes.json()
@@ -174,7 +177,13 @@ export async function fetchSuperLigPlayers() {
     return []
   }
 
-  const squads = await mapWithConcurrency(teams, 2, fetchSquad)
+  let done = 0
+  const squads = await mapWithConcurrency(teams, 2, async (team) => {
+    const list = await fetchSquad(team)
+    done += 1
+    onProgress?.(done, teams.length)
+    return list
+  })
   const players = squads.flat()
   console.log(`[FFS] Süper Lig 2026-27 kadrolar — ${teams.length} takım, ${players.length} oyuncu`)
   return { teams, players }
