@@ -450,10 +450,7 @@ export default function Transfer() {
         </div>
       </div>
 
-      {/* Bu haftanın fikstürü — saha görünümünün altında */}
-      <WeekFixtures fixtures={fixtures} round={week} />
-
-      {/* Sabit alt bar */}
+      {/* Sticky alt bar (Takımım gibi — kaydırınca görünür kalır, fikstürün üstünde) */}
       <div className="tr-footer">
         <div className="tr-footer-in">
           <div className="tr-count">
@@ -473,6 +470,9 @@ export default function Transfer() {
           </div>
         </div>
       </div>
+
+      {/* Bu haftanın fikstürü — sticky bar'ın ALTINDA (Takımım düzeni) */}
+      <WeekFixtures fixtures={fixtures} round={week} />
 
       {/* Puanlama Rehberi modalı */}
       {scoringOpen && (

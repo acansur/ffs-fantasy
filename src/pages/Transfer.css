@@ -34,7 +34,7 @@
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
   margin: -2rem -1.25rem -4rem;
-  padding: 26px 24px 110px;
+  padding: 26px 24px 32px;
   background:
     radial-gradient(900px 480px at 82% -160px, rgba(240, 165, 0, 0.1), transparent 60%),
     radial-gradient(1000px 600px at 12% 8%, rgba(26, 95, 63, 0.22), transparent 55%),
@@ -223,8 +223,10 @@
 @keyframes tr-skel { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.85; } }
 
 /* ---------- Sabit alt bar ---------- */
-.tr-footer { position: fixed; left: 0; right: 0; bottom: 0; z-index: 45; background: rgba(14, 25, 19, 0.92); backdrop-filter: blur(14px); border-top: 1px solid var(--border); }
-.tr-footer-in { max-width: 1120px; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; gap: 16px; }
+/* Takımım .actionbar ile aynı davranış: sticky — kaydırınca görünür kalır,
+   fikstür ondan SONRA (altında) akar. */
+.tr-footer { position: sticky; bottom: 16px; z-index: 45; margin-top: 18px; background: rgba(14, 25, 19, 0.94); backdrop-filter: blur(14px); border: 1px solid var(--border-strong); border-radius: 14px; box-shadow: 0 -6px 22px rgba(0, 0, 0, 0.5); }
+.tr-footer-in { padding: 14px 20px; display: flex; align-items: center; gap: 16px; }
 .tr-count { display: flex; align-items: center; gap: 11px; }
 .tr-count-num { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 22px; color: #fff; }
 .tr-count-num b { color: var(--gk); }
