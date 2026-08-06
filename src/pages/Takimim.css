@@ -563,6 +563,13 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* Deadline sonrası isim yanındaki takım kısaltması (örn. "Pavlidis · BEN") */
+.tm-page .name-plate .nm .nm-team {
+  color: var(--gold-soft);
+  font-weight: 700;
+  font-family: 'Barlow Condensed', sans-serif;
+  letter-spacing: 0.02em;
+}
 .tm-page .name-plate .pr {
   display: block;
   color: var(--gold-soft);

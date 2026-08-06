@@ -69,7 +69,7 @@ const IconGuide = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9" /><path d="M12 16v-4M12 8h.01" strokeLinecap="round" /></svg>
 )
 
-function SquadSlot({ pos, player, info, isCaptain, isSelected, isTarget, onClick, posTag, skeleton, subIn, subOut }) {
+function SquadSlot({ pos, player, info, teamShort, isCaptain, isSelected, isTarget, onClick, posTag, skeleton, subIn, subOut }) {
   const meta = POSITIONS[pos]
   const ring = RING[pos] || 'ring-mid'
   const tag = posTag ? <span className={`pos-tag ${TAG[pos] || 'tag-mid'}`}>{posTag}</span> : null
@@ -122,7 +122,10 @@ function SquadSlot({ pos, player, info, isCaptain, isSelected, isTarget, onClick
         <PlayerPhoto id={player.id} name={player.name} bg={bg} fg={fg} />
       </span>
       <span className="name-plate">
-        <span className="nm">{player.name}</span>
+        <span className="nm">
+          {teamShort ? surname(player.name) : player.name}
+          {teamShort && <span className="nm-team"> · {teamShort}</span>}
+        </span>
         <span className="pr tnum">{info}</span>
       </span>
     </button>
@@ -334,6 +337,7 @@ export default function Takimim() {
         pos={pos}
         player={player}
         info={info}
+        teamShort={locked && player ? player.clubShort || null : null}
         isCaptain={player ? player.id === captainId : false}
         isSelected={Boolean(detail) && detail.pos === pos && detail.index === index}
         isTarget={isTarget}

@@ -18,7 +18,7 @@ import {
 import { saveUelSquad, loadUelSquad, rebuildUelRoster } from '../lib/uelTestDb.js'
 import { formatDeadline } from '../lib/weeks.js'
 import { useNow } from '../lib/useNow.js'
-import { POSITIONS, SQUAD_TOTALS, TOTAL_BUDGET, MAX_PER_CLUB, initials, formationLabel } from '../lib/squadData.js'
+import { POSITIONS, SQUAD_TOTALS, TOTAL_BUDGET, MAX_PER_CLUB, initials, formationLabel, surname } from '../lib/squadData.js'
 import PlayerPhoto from '../components/PlayerPhoto.jsx'
 import './Takimim.css'
 import './Transfer.css'
@@ -40,7 +40,7 @@ function signature(roster, captainId) {
 }
 
 /* ---- Yuva ---- */
-function UelSlot({ pos, player, info, isCaptain, isTarget, onClick, posTag, subIn, subOut }) {
+function UelSlot({ pos, player, info, teamShort, isCaptain, isTarget, onClick, posTag, subIn, subOut }) {
   const meta = POSITIONS[pos]
   const ring = RING[pos] || 'ring-mid'
   const tag = posTag ? <span className={`pos-tag ${TAG[pos] || 'tag-mid'}`}>{posTag}</span> : null
@@ -61,7 +61,10 @@ function UelSlot({ pos, player, info, isCaptain, isTarget, onClick, posTag, subI
       {tag}
       <span className={`ava ${ring}`}><PlayerPhoto id={player.id} name={player.name} bg={player.clubBg} fg={player.clubFg} /></span>
       <span className="name-plate">
-        <span className="nm">{player.name}</span>
+        <span className="nm">
+          {teamShort ? surname(player.name) : player.name}
+          {teamShort && <span className="nm-team"> · {teamShort}</span>}
+        </span>
         <span className="pr tnum">{info}</span>
       </span>
     </button>
@@ -354,6 +357,7 @@ export default function UelTest({ slot }) {
         pos={pos}
         player={player}
         info={infoFor(view)}
+        teamShort={locked && player ? player.clubShort || null : null}
         isCaptain={player ? player.id === captainId : false}
         isTarget={isTarget}
         onClick={(e) => { e.stopPropagation(); onSlotClick(pos, index, view) }}
