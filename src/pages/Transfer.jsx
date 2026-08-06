@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth.jsx'
 import { useSquad, cloneRoster, rosterPlayers } from '../lib/squadStore.jsx'
 import { clubColors, clubShort } from '../lib/apiFootball.js'
-import { loadCachedPlayers } from '../lib/dataCache.js'
 import { getVisibleWeeks, formatDeadline, getTeamFixture, isLocked } from '../lib/weeks.js'
 import { useNow } from '../lib/useNow.js'
 import { normalizeText } from '../lib/normalize.js'
@@ -63,7 +62,7 @@ const IconSearch = () => (
 export default function Transfer() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { roster: committed, commitAndSave, week, setWeek, weeks, fixtures, weekOverrides, weeksLoading, squadLoading } = useSquad()
+  const { roster: committed, commitAndSave, week, setWeek, weeks, fixtures, weekOverrides, weeksLoading, squadLoading, loadPlayers, routes = { squad: '/takimim', transfer: '/transfer' } } = useSquad()
 
   const now = useNow(30000) // gerçek zamanlı deadline kontrolü (30 sn)
   const visibleWeeks = getVisibleWeeks(weeks, now)
@@ -94,14 +93,14 @@ export default function Transfer() {
 
   useEffect(() => {
     let alive = true
-    // Önce Supabase önbelleği (24s TTL), gerekirse API — players zaten app formatında
-    loadCachedPlayers()
+    // Dataset'e göre oyuncu listesi (SL: 24s önbellek; PL: 18 takım havuzu)
+    loadPlayers()
       .then((res) => alive && setApi({ loading: false, error: null, players: res.players, teams: res.teams }))
       .catch((err) => alive && setApi({ loading: false, error: err.message || String(err), players: [], teams: [] }))
     return () => {
       alive = false
     }
-  }, [])
+  }, [loadPlayers])
 
   useEffect(() => {
     if (!openDrop) return
@@ -123,7 +122,7 @@ export default function Transfer() {
   useEffect(() => {
     if (!locked) return
     setMsg('🔒 Deadline geçti, transfer kilitlendi — Takımıma dönülüyor…')
-    const t = setTimeout(() => navigate('/takimim'), 2500)
+    const t = setTimeout(() => navigate(routes.squad), 2500)
     return () => clearTimeout(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locked])
@@ -301,7 +300,7 @@ export default function Transfer() {
   const onSave = async () => {
     if (!canSave) return
     await commitAndSave(draft)
-    navigate('/takimim')
+    navigate(routes.squad)
   }
 
   const clubLabel = selectedClubs.length === 0 ? 'Tüm kulüpler' : `${selectedClubs.length} kulüp`
@@ -353,7 +352,7 @@ export default function Transfer() {
   return (
     <div className="tr-page">
       {/* Takımıma Dön */}
-      <Link to="/takimim" className="tr-backbtn"><IconBack />Takımıma Dön</Link>
+      <Link to={routes.squad} className="tr-backbtn"><IconBack />Takımıma Dön</Link>
 
       {/* Hero — market teması */}
       <div className="tr-hero">

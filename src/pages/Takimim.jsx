@@ -2,7 +2,6 @@ import { useMemo, useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../lib/auth.jsx'
 import { useSquad } from '../lib/squadStore.jsx'
-import { loadCachedPlayers } from '../lib/dataCache.js'
 import { getVisibleWeeks, isLocked, formatDeadline, getTeamFixture } from '../lib/weeks.js'
 import { computeWeekScores, applyAutoSubs, computeTotalPoints } from '../lib/weekScores.js'
 import { useNow } from '../lib/useNow.js'
@@ -168,6 +167,8 @@ export default function Takimim() {
     dirty,
     saveArrangement,
     swapSlots,
+    loadPlayers,
+    routes = { squad: '/takimim', transfer: '/transfer' },
   } = useSquad()
 
   const [view, setView] = useState('next')
@@ -194,8 +195,8 @@ export default function Takimim() {
 
   // Transfer ekranı hızlı açılsın diye oyuncu listesini arka planda önyükle
   useEffect(() => {
-    loadCachedPlayers().catch(() => {})
-  }, [])
+    loadPlayers?.().catch(() => {})
+  }, [loadPlayers])
 
   useEffect(() => {
     if (!saveMsg) return
@@ -486,7 +487,7 @@ export default function Takimim() {
 
         {!locked && (
           <div className="control-row">
-            <Link to="/transfer" className="tm-btn-primary"><IconSwap />Transfer Yap</Link>
+            <Link to={routes.transfer} className="tm-btn-primary"><IconSwap />Transfer Yap</Link>
             <div className="view-sel">
               <div className="select">
                 <svg className="vico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -535,7 +536,7 @@ export default function Takimim() {
             <b>{filledCount === 0 ? 'Kadron henüz boş' : 'Kadron henüz eksik'}</b>
             <span>Süper Lig oyuncularını seçip kadronu kurmak için transfer yap. Kaydettikten sonra kaptanını buradan seçebilirsin.</span>
           </div>
-          <Link to="/transfer" className="pg-btn">
+          <Link to={routes.transfer} className="pg-btn">
             Transfer Yap
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
           </Link>

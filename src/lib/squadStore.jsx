@@ -8,8 +8,23 @@ import { saveSquadToDb, loadSquadFromDb, loadWeekOverrides } from './squadDb.js'
 
 const POS_ORDER = ['KL', 'DF', 'OS', 'FW']
 const DB_TO_POS = { GK: 'KL', DF: 'DF', MF: 'OS', FW: 'FW' }
+const FINISHED = new Set(['FT', 'AET', 'PEN', 'WO'])
 
 const SquadContext = createContext(null)
+
+// Varsayılan (Süper Lig) veri kaynağı yapılandırması. /pl-test gibi test
+// ortamları SquadProvider'a kendi config'ini geçer; böylece AYNI Takımım/Transfer
+// bileşenleri farklı veri/tablolarla (birebir arayüz) çalışır.
+export const SUPER_LIG_CONFIG = {
+  loadFixtures: loadCachedFixtures, // () | ({force}) → { fixtures }
+  loadPlayers: loadCachedPlayers, // () → { players, teams }
+  buildWeeks, // (fixtures) → weeks
+  loadSquad: loadSquadFromDb, // ({userId, week}) → {formation, captainId, rows} | null
+  saveSquad: saveSquadToDb, // ({userId, week, formation, captainId, roster})
+  loadOverrides: loadWeekOverrides, // () → { round: locked }
+  pollFixtures: false, // deadline sonrası 45sn fikstür tazeleme
+  routes: { squad: '/takimim', transfer: '/transfer' },
+}
 
 // Boş kadro: her mevkide sabit sayıda yuva; hiç oyuncu yok (player: null).
 // Yuvaların ilk 11 / yedek işaretleri varsayılan 4-4-2 dizilişine göre kurulur;
@@ -102,7 +117,7 @@ function signature(roster, captainId) {
   return parts.join('|')
 }
 
-export function SquadProvider({ children }) {
+export function SquadProvider({ children, config = SUPER_LIG_CONFIG }) {
   const { user } = useAuth()
   const [roster, setRoster] = useState(buildEmptyRoster) // kaydedilmiş (committed) kadro
   const [captainId, setCaptainId] = useState(null)
@@ -125,17 +140,22 @@ export function SquadProvider({ children }) {
   // Admin manuel hafta kilidi override'ları: { round: locked(bool) }
   const [weekOverrides, setWeekOverrides] = useState({})
   useEffect(() => {
-    loadWeekOverrides().then(setWeekOverrides).catch(() => {})
-  }, [])
+    config.loadOverrides().then(setWeekOverrides).catch(() => {})
+  }, [config])
+  // Polling için güncel fikstür/hafta referansı (effect'i yeniden tetiklemeden)
+  const fixturesRef = useRef(fixtures)
+  const weeksRef = useRef(weeks)
+  fixturesRef.current = fixtures
+  weeksRef.current = weeks
   // Supabase'den kaydedilmiş kadro yüklenirken skeleton için
   const [squadLoading, setSquadLoading] = useState(isSupabaseConfigured)
   const bootedRef = useRef(false)
   useEffect(() => {
     let alive = true
-    loadCachedFixtures()
+    config.loadFixtures()
       .then((res) => {
         if (!alive) return
-        const w = res ? buildWeeks(res.fixtures) : []
+        const w = res ? config.buildWeeks(res.fixtures) : []
         setWeeks(w)
         setFixtures(res?.fixtures || [])
         setWeeksLoading(false)
@@ -149,7 +169,30 @@ export function SquadProvider({ children }) {
     return () => {
       alive = false
     }
-  }, [])
+  }, [config])
+
+  // Deadline sonrası fikstür durumunu 45sn'de bir tazele (config.pollFixtures).
+  // Canlı skor/FT yakalamak için; tüm maçlar bitince durur. Deadline öncesi
+  // veya SL (pollFixtures=false) için hiçbir şey yapmaz.
+  useEffect(() => {
+    if (!config.pollFixtures || !weeks.length) return
+    let id = null
+    const tick = async () => {
+      const wk = weeksRef.current[0]
+      if (!wk || Date.now() < wk.deadline) return // deadline öncesi: bekle
+      const cur = fixturesRef.current
+      const allDone = cur.length > 0 && cur.every((f) => FINISHED.has(f.fixture?.status?.short))
+      if (allDone) { if (id) clearInterval(id); return }
+      const res = await config.loadFixtures({ force: true }).catch(() => null)
+      if (res?.fixtures) {
+        setFixtures(res.fixtures)
+        setWeeks(config.buildWeeks(res.fixtures))
+      }
+    }
+    id = setInterval(tick, 45000)
+    tick()
+    return () => { if (id) clearInterval(id) }
+  }, [config, weeks.length])
 
   // Giriş yapmış kullanıcının kadrosunu Supabase'den yükle — SEÇİLİ HAFTAYA göre.
   // Hafta değişince (onSelectWeek → setWeek) o haftanın snapshot'ı yüklenir:
@@ -192,10 +235,10 @@ export function SquadProvider({ children }) {
     setSquadLoading(true)
     ;(async () => {
       try {
-        const loaded = await loadSquadFromDb({ userId, week })
+        const loaded = await config.loadSquad({ userId, week })
         if (!alive) return
         if (loaded) {
-          const raw = await loadCachedPlayers().catch(() => null)
+          const raw = await config.loadPlayers().catch(() => null)
           if (!alive) return
           if (raw) {
             const players = raw.players // zaten app formatında (id, name, pos, club, price…)
@@ -232,7 +275,7 @@ export function SquadProvider({ children }) {
   const persist = useCallback(
     async (rosterArg, captainArg) => {
       if (!user || !isSupabaseConfigured) return
-      await saveSquadToDb({
+      await config.saveSquad({
         userId: user.id,
         week: weekRef.current,
         formation: formationLabel(starterCounts(rosterArg)),
@@ -240,7 +283,7 @@ export function SquadProvider({ children }) {
         roster: rosterArg,
       })
     },
-    [user]
+    [user, config]
   )
 
   // Transfer ekranı kaydedince tüm kadroyu buraya işler (yalnızca in-memory)
@@ -367,6 +410,8 @@ export function SquadProvider({ children }) {
     remaining,
     counts,
     POS_ORDER,
+    loadPlayers: config.loadPlayers, // Transfer picker + Takımım önyükleme (dataset'e göre)
+    routes: config.routes, // { squad, transfer } — Takımım/Transfer navigasyonu
   }
   return <SquadContext.Provider value={value}>{children}</SquadContext.Provider>
 }
