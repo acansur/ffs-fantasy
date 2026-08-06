@@ -8,7 +8,6 @@ import { saveSquadToDb, loadSquadFromDb, loadWeekOverrides } from './squadDb.js'
 
 const POS_ORDER = ['KL', 'DF', 'OS', 'FW']
 const DB_TO_POS = { GK: 'KL', DF: 'DF', MF: 'OS', FW: 'FW' }
-const FINISHED = new Set(['FT', 'AET', 'PEN', 'WO'])
 
 const SquadContext = createContext(null)
 
@@ -22,7 +21,6 @@ export const SUPER_LIG_CONFIG = {
   loadSquad: loadSquadFromDb, // ({userId, week}) → {formation, captainId, rows} | null
   saveSquad: saveSquadToDb, // ({userId, week, formation, captainId, roster})
   loadOverrides: loadWeekOverrides, // () → { round: locked }
-  pollFixtures: false, // deadline sonrası 45sn fikstür tazeleme
   routes: { squad: '/takimim', transfer: '/transfer' },
 }
 
@@ -142,11 +140,6 @@ export function SquadProvider({ children, config = SUPER_LIG_CONFIG }) {
   useEffect(() => {
     config.loadOverrides().then(setWeekOverrides).catch(() => {})
   }, [config])
-  // Polling için güncel fikstür/hafta referansı (effect'i yeniden tetiklemeden)
-  const fixturesRef = useRef(fixtures)
-  const weeksRef = useRef(weeks)
-  fixturesRef.current = fixtures
-  weeksRef.current = weeks
   // Supabase'den kaydedilmiş kadro yüklenirken skeleton için
   const [squadLoading, setSquadLoading] = useState(isSupabaseConfigured)
   const bootedRef = useRef(false)
@@ -171,28 +164,14 @@ export function SquadProvider({ children, config = SUPER_LIG_CONFIG }) {
     }
   }, [config])
 
-  // Deadline sonrası fikstür durumunu 45sn'de bir tazele (config.pollFixtures).
-  // Canlı skor/FT yakalamak için; tüm maçlar bitince durur. Deadline öncesi
-  // veya SL (pollFixtures=false) için hiçbir şey yapmaz.
-  useEffect(() => {
-    if (!config.pollFixtures || !weeks.length) return
-    let id = null
-    const tick = async () => {
-      const wk = weeksRef.current[0]
-      if (!wk || Date.now() < wk.deadline) return // deadline öncesi: bekle
-      const cur = fixturesRef.current
-      const allDone = cur.length > 0 && cur.every((f) => FINISHED.has(f.fixture?.status?.short))
-      if (allDone) { if (id) clearInterval(id); return }
-      const res = await config.loadFixtures({ force: true }).catch(() => null)
-      if (res?.fixtures) {
-        setFixtures(res.fixtures)
-        setWeeks(config.buildWeeks(res.fixtures))
-      }
+  // Fikstürü API'den TAZE çekip günceller (canlı skor için Takımım 45sn'de bir çağırır).
+  const refreshFixtures = useCallback(async () => {
+    const res = await config.loadFixtures({ force: true }).catch(() => null)
+    if (res?.fixtures) {
+      setFixtures(res.fixtures)
+      setWeeks(config.buildWeeks(res.fixtures))
     }
-    id = setInterval(tick, 45000)
-    tick()
-    return () => { if (id) clearInterval(id) }
-  }, [config, weeks.length])
+  }, [config])
 
   // Giriş yapmış kullanıcının kadrosunu Supabase'den yükle — SEÇİLİ HAFTAYA göre.
   // Hafta değişince (onSelectWeek → setWeek) o haftanın snapshot'ı yüklenir:
@@ -412,6 +391,7 @@ export function SquadProvider({ children, config = SUPER_LIG_CONFIG }) {
     POS_ORDER,
     loadPlayers: config.loadPlayers, // Transfer picker + Takımım önyükleme (dataset'e göre)
     routes: config.routes, // { squad, transfer } — Takımım/Transfer navigasyonu
+    refreshFixtures, // canlı skor için fikstürü taze çeker
   }
   return <SquadContext.Provider value={value}>{children}</SquadContext.Provider>
 }

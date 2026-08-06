@@ -186,11 +186,13 @@ function roundsFromFixtures(fixtures) {
 }
 
 let _fixturesPromise = null
-export function loadCachedFixtures() {
+export function loadCachedFixtures({ force = false } = {}) {
+  // force=true → önbelleği atla, API'den TAZE çek (canlı skor tazeleme için).
+  if (force) _fixturesPromise = null
   if (!_fixturesPromise) {
     _fixturesPromise = (async () => {
-      // 1) Supabase taze mi?
-      if (ok()) {
+      // 1) Supabase taze mi? (force'ta atlanır)
+      if (!force && ok()) {
         const { data } = await supabase
           .from('fixtures')
           .select('data, updated_at')

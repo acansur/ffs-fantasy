@@ -1,0 +1,103 @@
+/* Hafta fikstürü — saha görünümünün altında (Takımım/Transfer + PL test). */
+.wf {
+  max-width: 640px;
+  margin: 26px auto 6px;
+  padding: 0 4px;
+}
+.wf-head {
+  font-family: 'Barlow Semi Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--gold-soft, #ffcb52);
+  text-align: center;
+  margin-bottom: 16px;
+}
+.wf-day { margin-bottom: 16px; }
+.wf-daylabel {
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: capitalize;
+  color: #9fb0c9;
+  margin: 0 6px 8px;
+}
+.wf-matches { display: flex; flex-direction: column; gap: 8px; }
+
+.wf-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+}
+.wf-row.live {
+  border-color: rgba(74, 222, 128, 0.42);
+  background: rgba(74, 222, 128, 0.06);
+}
+
+.wf-team {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #e8eef5;
+  line-height: 1.2;
+}
+.wf-team.home { text-align: right; }
+.wf-team.away { text-align: left; }
+
+.wf-mid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 60px;
+}
+.wf-score {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 1.3rem;
+  line-height: 1;
+  letter-spacing: 0.03em;
+  color: #fff;
+  display: inline-flex;
+  align-items: baseline;
+}
+.wf-score i { color: #6b7a90; font-style: normal; margin: 0 6px; }
+.wf-nostart { color: #6b7a90; }
+
+.wf-status { margin-top: 4px; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.03em; }
+.wf-time {
+  color: #9fb0c9;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+}
+.wf-live {
+  color: #4ade80;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.wf-live::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #4ade80;
+  animation: wf-pulse 1.4s ease-in-out infinite;
+}
+@keyframes wf-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.5); }
+  70% { box-shadow: 0 0 0 6px rgba(74, 222, 128, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
+}
+.wf-ft { color: #8a97a8; }
+
+@media (max-width: 560px) {
+  .wf-team { font-size: 0.82rem; }
+  .wf-row { padding: 9px 12px; gap: 8px; }
+  .wf-score { font-size: 1.15rem; }
+}

@@ -7,6 +7,7 @@ import { getVisibleWeeks, formatDeadline, getTeamFixture, isLocked } from '../li
 import { useNow } from '../lib/useNow.js'
 import { normalizeText } from '../lib/normalize.js'
 import WeekBar from '../components/WeekBar.jsx'
+import WeekFixtures from '../components/WeekFixtures.jsx'
 import PlayerPhoto from '../components/PlayerPhoto.jsx'
 import ScoringGuide from '../components/ScoringGuide.jsx'
 import PlayerDetailModal from '../components/PlayerDetailModal.jsx'
@@ -448,6 +449,9 @@ export default function Transfer() {
           </div>
         </div>
       </div>
+
+      {/* Bu haftanın fikstürü — saha görünümünün altında */}
+      <WeekFixtures fixtures={fixtures} round={week} />
 
       {/* Sabit alt bar */}
       <div className="tr-footer">

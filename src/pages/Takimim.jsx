@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useRef, useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../lib/auth.jsx'
 import { useSquad } from '../lib/squadStore.jsx'
@@ -9,6 +9,7 @@ import WeekBar from '../components/WeekBar.jsx'
 import PlayerPhoto from '../components/PlayerPhoto.jsx'
 import PlayerDetailModal from '../components/PlayerDetailModal.jsx'
 import ScoringGuide from '../components/ScoringGuide.jsx'
+import WeekFixtures from '../components/WeekFixtures.jsx'
 import {
   POSITIONS,
   CLUBS,
@@ -24,6 +25,7 @@ const POS_ORDER = ['KL', 'DF', 'OS', 'FW']
 // Maç durum kategorileri (kart durum noktası için)
 const MS_NOT_STARTED = new Set(['NS', 'TBD', 'PST', 'CANC', 'ABD', 'AWD'])
 const MS_FINISHED = new Set(['FT', 'AET', 'PEN', 'WO'])
+const roundNo = (r) => Number(String(r).match(/\d+/)?.[0] ?? 0)
 
 // Pozisyon → halka / rozet renk sınıfı (yeşil KL, kırmızı DF, mavi OS, turuncu FW)
 const RING = { KL: 'ring-gk', DF: 'ring-def', OS: 'ring-mid', FW: 'ring-fwd' }
@@ -169,6 +171,7 @@ export default function Takimim() {
     swapSlots,
     loadPlayers,
     routes = { squad: '/takimim', transfer: '/transfer' },
+    refreshFixtures,
   } = useSquad()
 
   const [view, setView] = useState('next')
@@ -197,6 +200,27 @@ export default function Takimim() {
   useEffect(() => {
     loadPlayers?.().catch(() => {})
   }, [loadPlayers])
+
+  // Canlı skor: seçili haftanın deadline'ı geçtiyse ve maçlar bitmediyse,
+  // fikstürü 45sn'de bir taze çek (skorlar akar). Ref'lerle döngüsüz.
+  const fixturesRef = useRef(fixtures)
+  const weeksRef = useRef(weeks)
+  fixturesRef.current = fixtures
+  weeksRef.current = weeks
+  useEffect(() => {
+    if (!refreshFixtures) return
+    const tick = () => {
+      const wk = weeksRef.current.find((w) => w.round === week)
+      if (!wk || Date.now() < wk.deadline) return // deadline öncesi: bekle
+      const cur = fixturesRef.current.filter((f) => roundNo(f.league?.round) === week)
+      const allDone = cur.length > 0 && cur.every((f) => MS_FINISHED.has(f.fixture?.status?.short))
+      if (allDone) return // hafta bitti → tazelemeye gerek yok
+      refreshFixtures()
+    }
+    const id = setInterval(tick, 45000)
+    tick()
+    return () => clearInterval(id)
+  }, [refreshFixtures, week])
 
   useEffect(() => {
     if (!saveMsg) return
@@ -621,6 +645,9 @@ export default function Takimim() {
           </div>
         )}
       </div>
+
+      {/* Bu haftanın fikstürü — saha görünümünün altında (canlı skorlar akar) */}
+      <WeekFixtures fixtures={fixtures} round={week} />
 
       {/* Puanlama Rehberi modalı (Transfer ile aynı) */}
       {scoringOpen && (

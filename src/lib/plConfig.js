@@ -13,6 +13,5 @@ export const PL_CONFIG = {
   loadSquad: loadPlSquad,
   saveSquad: savePlSquad,
   loadOverrides: loadPlOverrides,
-  pollFixtures: true, // deadline sonrası 45sn fikstür tazeleme
   routes: { squad: '/pl-test', transfer: '/pl-test/transfer' },
 }
