@@ -22,6 +22,7 @@ import ScoringTest from './pages/ScoringTest.jsx'
 import UelTest from './pages/UelTest.jsx'
 import { SquadProvider } from './lib/squadStore.jsx'
 import { PL_CONFIG } from './lib/plConfig.js'
+import { PL_PRED_DB } from './lib/plPredictionsDb.js'
 import RequireAdmin from './components/RequireAdmin.jsx'
 import Players2 from './pages/Players2.jsx'
 import Admin from './pages/Admin.jsx'
@@ -81,6 +82,7 @@ export default function App() {
               Navbar'da görünmez; sadece bu adreslerden erişilir. */}
           <Route path="/pl-test" element={<SquadProvider config={PL_CONFIG}><Takimim /></SquadProvider>} />
           <Route path="/pl-test/transfer" element={<SquadProvider config={PL_CONFIG}><Transfer /></SquadProvider>} />
+          <Route path="/pl-test/kim-kazanir" element={<SquadProvider config={PL_CONFIG}><KimKazanir predDb={PL_PRED_DB} /></SquadProvider>} />
           <Route path="/players2" element={<RequireAdmin><Players2 /></RequireAdmin>} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/giris" element={<Giris />} />

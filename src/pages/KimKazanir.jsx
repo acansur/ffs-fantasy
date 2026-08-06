@@ -7,6 +7,11 @@ import { useNow } from '../lib/useNow.js'
 import { loadAndScoreWeek, savePrediction, loadAllWeekPoints, fixtureOutcome } from '../lib/predictionsDb.js'
 import './KimKazanir.css'
 
+// Varsayılan (Süper Lig) tahmin veri katmanı. /pl-test/kim-kazanir kendi
+// predDb'sini (pl_test_predictions) geçer; böylece AYNI bileşen farklı tabloyla
+// çalışır — fixtures/weeks zaten SquadProvider config'inden gelir.
+const SL_PRED_DB = { loadAndScoreWeek, savePrediction, loadAllWeekPoints }
+
 const roundNo = (r) => Number(String(r).match(/\d+/)?.[0] ?? 0)
 const FINISHED = new Set(['FT', 'AET', 'PEN', 'WO'])
 // prediction key → segment sembolü + etiket
@@ -18,7 +23,8 @@ const SEGS = [
 const dt = (iso) =>
   new Date(iso).toLocaleString('tr-TR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Istanbul' })
 
-export default function KimKazanir() {
+export default function KimKazanir({ predDb = SL_PRED_DB }) {
+  const { loadAndScoreWeek, savePrediction, loadAllWeekPoints } = predDb
   const { user } = useAuth()
   const { weeks, fixtures, weekOverrides, weeksLoading } = useSquad()
   const now = useNow(30000) // gerçek zamanlı deadline kontrolü (30 sn)
