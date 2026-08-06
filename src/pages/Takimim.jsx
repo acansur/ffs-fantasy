@@ -668,6 +668,8 @@ export default function Takimim() {
           locked={locked}
           week={week}
           fixture={detailFixture}
+          weeks={weeks}
+          fixtures={fixtures}
           breakdown={(scores.partsById.get(detailPlayer.id) || []).map((p) => ({
             stat: p.label,
             value: p.n != null && p.n !== 0 ? String(p.n) : '',

@@ -181,50 +181,8 @@ export default function PlayerDetailModal({
           </table>
         )}
 
-        {/* Info görünümü: haftalık rakip + puan tablosu (puan şimdilik "—") */}
-        {isInfo && (
-          <table className="pdm-breakdown pdm-weekly">
-            <thead>
-              <tr>
-                <th>Hafta</th>
-                <th>Rakip</th>
-                <th>Puan</th>
-              </tr>
-            </thead>
-            <tbody>
-              {weeks.length === 0 ? (
-                <tr>
-                  <td>—</td>
-                  <td>—</td>
-                  <td>—</td>
-                </tr>
-              ) : (
-                weeks.map((w) => {
-                  const fx = getTeamFixture(fixtures, player.club, w.round)
-                  const h = fx?.teams?.home
-                  const a = fx?.teams?.away
-                  const isHome = h?.name === player.club
-                  const opp = fx ? (isHome ? a?.name : h?.name) : null
-                  return (
-                    <tr key={w.round}>
-                      <td>{w.round}. Hafta</td>
-                      <td className="pdm-opp">
-                        {opp ? (
-                          <>
-                            <span className="pdm-ha">{isHome ? 'E' : 'D'}</span> {opp}
-                          </>
-                        ) : (
-                          '—'
-                        )}
-                      </td>
-                      <td>—</td>
-                    </tr>
-                  )
-                })
-              )}
-            </tbody>
-          </table>
-        )}
+        {/* Info görünümü (Transfer): haftalık rakip + puan tablosu */}
+        {isInfo && <WeeklyPointsTable weeks={weeks} fixtures={fixtures} playerClub={player.club} />}
 
         {/* Aksiyonlar: kaptan + yer değiştirme (info görünümünde / hideActions ile gizli) */}
         {!isInfo && !hideActions && (
@@ -250,9 +208,63 @@ export default function PlayerDetailModal({
           </div>
         )}
 
+        {/* Geçmiş hafta puanları (Takımım, deadline öncesi) — aksiyon butonlarının
+            ALTINDA; Transfer info tablosuyla birebir aynı. Puanlar sezon başlayınca dolar. */}
+        {!isInfo && !hideActions && !locked && (
+          <WeeklyPointsTable weeks={weeks} fixtures={fixtures} playerClub={player.club} />
+        )}
+
         {/* Info görünümünde alt boşluk */}
         {isInfo && <div className="pdm-info-foot" />}
       </div>
     </div>
+  )
+}
+
+// Geçmiş hafta puanları tablosu (Hafta | Rakip | Puan). Puan verisi gelene kadar
+// "—" gösterilir. Transfer info kartı ile Takımım detay modalı ORTAK kullanır.
+function WeeklyPointsTable({ weeks = [], fixtures = [], playerClub }) {
+  return (
+    <table className="pdm-breakdown pdm-weekly">
+      <thead>
+        <tr>
+          <th>Hafta</th>
+          <th>Rakip</th>
+          <th>Puan</th>
+        </tr>
+      </thead>
+      <tbody>
+        {weeks.length === 0 ? (
+          <tr>
+            <td>—</td>
+            <td>—</td>
+            <td>—</td>
+          </tr>
+        ) : (
+          weeks.map((w) => {
+            const fx = getTeamFixture(fixtures, playerClub, w.round)
+            const h = fx?.teams?.home
+            const a = fx?.teams?.away
+            const isHome = h?.name === playerClub
+            const opp = fx ? (isHome ? a?.name : h?.name) : null
+            return (
+              <tr key={w.round}>
+                <td>{w.round}. Hafta</td>
+                <td className="pdm-opp">
+                  {opp ? (
+                    <>
+                      <span className="pdm-ha">{isHome ? 'E' : 'D'}</span> {opp}
+                    </>
+                  ) : (
+                    '—'
+                  )}
+                </td>
+                <td>—</td>
+              </tr>
+            )
+          })
+        )}
+      </tbody>
+    </table>
   )
 }
