@@ -22,8 +22,9 @@
   --glow-gold: 0 6px 22px rgba(240, 165, 0, 0.32);
   font-family: 'Inter', system-ui, sans-serif;
   color: var(--ink, #eaf3ec);
-  max-width: 860px;
+  max-width: 1120px;
   margin: 0 auto;
+  padding: 26px 24px 60px;
 }
 .kk .cond { font-family: 'Barlow Condensed', sans-serif; }
 

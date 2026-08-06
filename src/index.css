@@ -1,16 +1,38 @@
 :root {
-  --bg: #0b1120;
-  --bg-soft: #111a2e;
-  --surface: #16223c;
-  --surface-2: #1d2b4a;
-  --border: #26365e;
-  --text: #e8eefc;
+  /* Yeşil-siyah tema (global) */
+  --bg: #0a130f;
+  --bg-2: #0e1913;
+  --surface: #132019;
+  --surface-2: #1a2a21;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.15);
+  --ink: #eaf3ec;
+  --ink-2: #9cb0a4;
+  --ink-3: #6d8175;
+  --gold: #f0a500;
+  --gold-soft: #ffcb52;
+  --gold-deep: #c98600;
+  --gold-ink: #3a2a00;
+  --pitch: #1a5f3f;
+  --pitch-lit: #22794f;
+  --pitch-deep: #0f3f28;
+  --gk: #1bb87c;
+  --def: #f05a58;
+  --mid: #4a8bf0;
+  --fwd: #f4903a;
+  --win: #1bb87c;
+  --lose: #f05a58;
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  --glow-gold: 0 6px 22px rgba(240, 165, 0, 0.32);
+
+  /* Eski App.css uyumluluğu — Ana Sayfa/Liglerim sonra yenilenecek */
+  --bg-soft: #0e1913;
+  --text: #eaf3ec;
   --text-muted: #9aa9c6;
   --accent: #e11d48;
   --accent-2: #22c55e;
   --accent-soft: rgba(225, 29, 72, 0.15);
   --radius: 14px;
-  --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
 
   font-family: 'Inter Variable', 'Inter', system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   color-scheme: dark;
@@ -28,11 +50,11 @@ body,
 }
 
 body {
+  color: var(--ink);
   background:
-    radial-gradient(1200px 600px at 80% -10%, rgba(34, 197, 94, 0.08), transparent 60%),
-    radial-gradient(1000px 500px at 0% 0%, rgba(225, 29, 72, 0.1), transparent 55%),
+    radial-gradient(900px 480px at 82% -160px, rgba(240, 165, 0, 0.08), transparent 60%),
+    radial-gradient(1000px 600px at 10% 6%, rgba(26, 95, 63, 0.2), transparent 55%),
     var(--bg);
-  color: var(--text);
   line-height: 1.6;
 }
 
