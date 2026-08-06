@@ -64,6 +64,7 @@ function synthesizePlayersFromLineups(lineups, events) {
     if (e?.type === 'Goal') {
       const d = e?.detail || ''
       if (d === 'Own Goal' || d === 'Missed Penalty') continue // gol değil / motorda ayrı
+      if ((e?.comments || '').includes('Shootout')) continue // penaltı atışları gol sayılmaz
       inc(goals, e?.player?.id)
       inc(assists, e?.assist?.id)
     } else if (e?.type === 'Card') {
