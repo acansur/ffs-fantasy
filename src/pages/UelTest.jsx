@@ -77,6 +77,7 @@ export default function UelTest({ slot }) {
   const [action, setAction] = useState(null) // { pos, index }
   const [swapMode, setSwapMode] = useState(null) // { source:{pos,index}, targetType }
   const [posFilter, setPosFilter] = useState(null)
+  const [clubFilter, setClubFilter] = useState('')
   const [search, setSearch] = useState('')
   const [saveMsg, setSaveMsg] = useState('')
   const [api, setApi] = useState({ loading: true, error: null, players: [] })
@@ -228,6 +229,7 @@ export default function UelTest({ slot }) {
   const openPicker = (pos, index) => {
     setPicker({ pos, index })
     setPosFilter(pos)
+    setClubFilter('')
     setSearch('')
     setAction(null)
   }
@@ -322,13 +324,23 @@ export default function UelTest({ slot }) {
   const canSave = filledCount === TOTAL_SLOTS && !overBudget && dirty
 
   // Picker liste
+  // Picker takım filtresi seçenekleri (güncel 14 takım)
+  const clubOptions = useMemo(
+    () =>
+      [...new Set(api.players.filter((p) => CURRENT_TEAM_IDS.has(p.teamId)).map((p) => p.club))].sort((a, b) =>
+        a.localeCompare(b, 'tr')
+      ),
+    [api.players]
+  )
+
   const list = useMemo(() => {
     let l = api.players.filter((p) => CURRENT_TEAM_IDS.has(p.teamId))
     if (posFilter) l = l.filter((p) => p.pos === posFilter)
+    if (clubFilter) l = l.filter((p) => p.club === clubFilter)
     const q = search.trim().toLocaleLowerCase('tr')
     if (q) l = l.filter((p) => p.name.toLocaleLowerCase('tr').includes(q))
     return [...l].sort((a, b) => a.name.localeCompare(b.name, 'tr')).slice(0, 300)
-  }, [api.players, posFilter, search])
+  }, [api.players, posFilter, clubFilter, search])
 
   const pickerSlotPlayer = picker ? roster[picker.pos][picker.index].player : null
   const slotVal = pickerSlotPlayer ? pickerSlotPlayer.price : 0
@@ -502,6 +514,22 @@ export default function UelTest({ slot }) {
                 {POS_TABS.map((t) => (
                   <button key={t.label} type="button" className={`tr-sm-tab${posFilter === t.key ? ' on' : ''}`} onClick={() => setPosFilter(t.key)}>{t.label}</button>
                 ))}
+              </div>
+              <div className="tr-sm-filters" style={{ marginTop: 12 }}>
+                <select
+                  value={clubFilter}
+                  onChange={(e) => setClubFilter(e.target.value)}
+                  style={{
+                    width: '100%', fontFamily: 'inherit', fontSize: 13, fontWeight: 600,
+                    color: clubFilter ? 'var(--gold-soft)' : 'var(--ink)', background: '#0f1a14',
+                    border: '1px solid var(--border-strong)', padding: '10px 13px', borderRadius: 11, cursor: 'pointer',
+                  }}
+                >
+                  <option value="">Tüm takımlar</option>
+                  {clubOptions.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
               </div>
               <div className="tr-sm-search">
                 <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Oyuncu ara…" />
