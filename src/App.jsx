@@ -22,6 +22,7 @@ import ScoringTest from './pages/ScoringTest.jsx'
 import UelTest from './pages/UelTest.jsx'
 import { SquadProvider } from './lib/squadStore.jsx'
 import { PL_CONFIG } from './lib/plConfig.js'
+import RequireAdmin from './components/RequireAdmin.jsx'
 import Players2 from './pages/Players2.jsx'
 import Admin from './pages/Admin.jsx'
 import KimKazanir from './pages/KimKazanir.jsx'
@@ -69,17 +70,18 @@ export default function App() {
           <Route path="/transfer" element={<Transfer />} />
           <Route path="/liglerim" element={<Liglerim />} />
           <Route path="/kurallar" element={<Kurallar />} />
-          <Route path="/fikstur" element={<Fikstur />} />
-          <Route path="/players" element={<Players />} />
-          <Route path="/stats-test" element={<StatsTest />} />
-          <Route path="/stats-test2" element={<StatsTest2 />} />
-          <Route path="/scoring-test" element={<ScoringTest />} />
+          {/* Geliştirici araçları — yalnızca admin (admin değilse ana sayfaya yönlenir) */}
+          <Route path="/fikstur" element={<RequireAdmin><Fikstur /></RequireAdmin>} />
+          <Route path="/players" element={<RequireAdmin><Players /></RequireAdmin>} />
+          <Route path="/stats-test" element={<RequireAdmin><StatsTest /></RequireAdmin>} />
+          <Route path="/stats-test2" element={<RequireAdmin><StatsTest2 /></RequireAdmin>} />
+          <Route path="/scoring-test" element={<RequireAdmin><ScoringTest /></RequireAdmin>} />
           <Route path="/uel-test" element={<UelTest slot="uel-test" />} />
           {/* Polonya Ekstraklasa test ortamı — aynı Takımım/Transfer, PL verisi + izole tablolar.
               Navbar'da görünmez; sadece bu adreslerden erişilir. */}
           <Route path="/pl-test" element={<SquadProvider config={PL_CONFIG}><Takimim /></SquadProvider>} />
           <Route path="/pl-test/transfer" element={<SquadProvider config={PL_CONFIG}><Transfer /></SquadProvider>} />
-          <Route path="/players2" element={<Players2 />} />
+          <Route path="/players2" element={<RequireAdmin><Players2 /></RequireAdmin>} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/giris" element={<Giris />} />
           <Route path="/kayit" element={<Kayit />} />

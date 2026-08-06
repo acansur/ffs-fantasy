@@ -78,3 +78,22 @@
 .adm-kv li span { color: #9aa9c6; }
 .adm-kv li b { color: #e8eefc; font-variant-numeric: tabular-nums; }
 .adm-kv li b.gold { color: #ffcb52; }
+
+/* ---------- Geliştirici Araçları sekmesi ---------- */
+.adm-dev-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+@media (max-width: 640px) { .adm-dev-list { grid-template-columns: 1fr; } }
+.adm-dev-card {
+  display: block;
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 14px 16px;
+  transition: 0.14s;
+}
+.adm-dev-card:hover { background: rgba(255, 255, 255, 0.06); border-color: rgba(240, 165, 0, 0.4); }
+.adm-dev-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 7px; }
+.adm-dev-path { font-family: 'Barlow Condensed', ui-monospace, monospace; font-weight: 700; font-size: 1.02rem; letter-spacing: 0.02em; color: #ffcb52; }
+.adm-dev-go { font-size: 0.78rem; font-weight: 700; color: #9aa9c6; flex: none; }
+.adm-dev-card:hover .adm-dev-go { color: #ffcb52; }
+.adm-dev-desc { font-size: 0.84rem; line-height: 1.4; color: #cdd7e6; }

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Navigate, Link } from 'react-router-dom'
 import { useAuth } from '../lib/auth.jsx'
 import { normalizeText } from '../lib/normalize.js'
 import {
@@ -23,6 +23,17 @@ const TABS = [
   ['system', 'Sistem'],
   ['announce', 'Duyuru'],
   ['weeks', 'Hafta Override'],
+  ['devtools', 'Geliştirici Araçları'],
+]
+
+// Yalnızca admin erişimine açık geliştirici/test sayfaları
+const DEV_PAGES = [
+  { path: '/players', desc: 'Süper Lig 2026-27 oyuncu listesi (mevki gruplu, filtreli)' },
+  { path: '/players2', desc: 'Geçen sezon (2025-26) oyuncu performans analizi, değerleme için' },
+  { path: '/stats-test', desc: "API'den çekilen maç istatistiklerinin ham görünümü" },
+  { path: '/stats-test2', desc: 'Antalyaspor-Fenerbahçe maçı detaylı istatistik ve CSV indirme' },
+  { path: '/scoring-test', desc: '5 maç üzerinden puanlama motoru testi' },
+  { path: '/fikstur', desc: 'Süper Lig 2026-27 tam fikstür listesi' },
 ]
 
 const fmtDate = (s) => (s ? new Date(s).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul' }) : '—')
@@ -95,6 +106,7 @@ export default function Admin() {
         {tab === 'system' && <SystemTab />}
         {tab === 'announce' && <AnnounceTab />}
         {tab === 'weeks' && <WeeksTab />}
+        {tab === 'devtools' && <DevToolsTab />}
       </div>
     </div>
   )
@@ -363,6 +375,29 @@ function WeeksTab() {
           </tbody>
         </table>
       )}
+    </div>
+  )
+}
+
+/* ---------- 7) Geliştirici Araçları ---------- */
+function DevToolsTab() {
+  return (
+    <div>
+      <p className="adm-note" style={{ padding: 0, marginBottom: 14 }}>
+        Test/geliştirme sayfaları — yalnızca admin erişimine açıktır. Admin olmayan biri
+        bu adreslere giderse ana sayfaya yönlendirilir.
+      </p>
+      <div className="adm-dev-list">
+        {DEV_PAGES.map((p) => (
+          <Link key={p.path} to={p.path} className="adm-dev-card">
+            <div className="adm-dev-top">
+              <code className="adm-dev-path">{p.path}</code>
+              <span className="adm-dev-go">Aç →</span>
+            </div>
+            <div className="adm-dev-desc">{p.desc}</div>
+          </Link>
+        ))}
+      </div>
     </div>
   )
 }
