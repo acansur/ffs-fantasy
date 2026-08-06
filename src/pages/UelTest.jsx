@@ -17,6 +17,7 @@ import {
 } from '../lib/uelTest.js'
 import { saveUelSquad, loadUelSquad, rebuildUelRoster } from '../lib/uelTestDb.js'
 import { formatDeadline } from '../lib/weeks.js'
+import { useNow } from '../lib/useNow.js'
 import { POSITIONS, SQUAD_TOTALS, TOTAL_BUDGET, MAX_PER_CLUB, initials, formationLabel } from '../lib/squadData.js'
 import PlayerPhoto from '../components/PlayerPhoto.jsx'
 import './Takimim.css'
@@ -85,7 +86,7 @@ export default function UelTest({ slot }) {
   const [squadLoading, setSquadLoading] = useState(Boolean(user))
   const [scores, setScores] = useState({ loading: false, ptsById: new Map(), finishedById: new Map(), forKey: null })
 
-  const now = Date.now()
+  const now = useNow(30000) // gerçek zamanlı deadline kontrolü (30 sn)
   const locked = now >= UEL_DEADLINE_MS
   const deadlineText = formatDeadline(UEL_DEADLINE_MS)
 

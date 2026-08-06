@@ -5,6 +5,7 @@ import { useSquad } from '../lib/squadStore.jsx'
 import { loadSuperLigPlayers } from '../lib/apiFootball.js'
 import { getVisibleWeeks, isLocked, formatDeadline, getTeamFixture } from '../lib/weeks.js'
 import { computeWeekScores, applyAutoSubs, computeTotalPoints } from '../lib/weekScores.js'
+import { useNow } from '../lib/useNow.js'
 import WeekBar from '../components/WeekBar.jsx'
 import PlayerPhoto from '../components/PlayerPhoto.jsx'
 import PlayerDetailModal from '../components/PlayerDetailModal.jsx'
@@ -157,7 +158,7 @@ export default function Takimim() {
   // Deadline sonrası haftalık puanlar: { loading, ptsById, finishedById, forKey }
   const [scores, setScores] = useState({ loading: false, ptsById: new Map(), finishedById: new Map(), forKey: null })
 
-  const now = Date.now()
+  const now = useNow(30000) // gerçek zamanlı deadline kontrolü (30 sn)
   const visibleWeeks = getVisibleWeeks(weeks, now)
   const selectedWeek = weeks.find((w) => w.round === week) || null
   // Admin manuel override varsa deadline'dan bağımsız uygulanır
