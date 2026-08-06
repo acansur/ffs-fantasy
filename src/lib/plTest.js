@@ -9,8 +9,7 @@
 
 import { clubColors, clubShort } from './apiFootball.js'
 
-const LEAGUE_ID = 106
-const SEASON = 2026
+// Polonya Ekstraklasa — lig 106, sezon 2026 (fikstürler doğrudan 'ids' ile çekilir)
 export const PL_PLAYER_PRICE = 6
 
 // Gösterilen/puanlanan 7 maç (fixture id'leri). Round uygulamada 1'e remap edilir.
@@ -128,27 +127,21 @@ export function loadPlPlayers() {
   return _playersPromise
 }
 
-// 7 maçın canlı durumunu (status/skor/tarih) çeker. Round 1'e remap edilir ki
-// hafta seçici "1. Hafta" göstersin ve getTeamFixture(round=1) eşleşsin.
+// 7 maçın canlı durumunu (status/skor/tarih) çeker — TEK 'ids' sorgusuyla
+// (tarih tarih bölmek yerine; biri boş dönerse maç düşmesin diye). Round 1'e
+// remap edilir ki hafta seçici "1. Hafta" göstersin ve getTeamFixture(round=1)
+// eşleşsin.
 let _fixturesPromise = null
 export function loadPlFixtures({ force = false } = {}) {
   if (force) _fixturesPromise = null
   if (!_fixturesPromise) {
     _fixturesPromise = (async () => {
       const idSet = new Set(PL_FIXTURE_IDS)
-      const dates = ['2026-08-07', '2026-08-08', '2026-08-09']
-      const all = []
-      for (const date of dates) {
-        const d = await getJson(
-          `/api/football?path=fixtures&league=${LEAGUE_ID}&season=${SEASON}&date=${date}&timezone=Europe/Istanbul`
-        )
-        for (const f of d?.response || []) {
-          if (idSet.has(f.fixture?.id)) {
-            // Round'u 1'e remap et (tek hafta)
-            all.push({ ...f, league: { ...f.league, round: 'Regular Season - 1' } })
-          }
-        }
-      }
+      const ids = PL_FIXTURE_IDS.join('-')
+      const d = await getJson(`/api/football?path=fixtures&ids=${ids}&timezone=Europe/Istanbul`)
+      const all = (d?.response || [])
+        .filter((f) => idSet.has(f.fixture?.id))
+        .map((f) => ({ ...f, league: { ...f.league, round: 'Regular Season - 1' } }))
       return { fixtures: all }
     })().catch((e) => {
       _fixturesPromise = null
