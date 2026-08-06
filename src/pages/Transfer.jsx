@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth.jsx'
 import { useSquad, cloneRoster, rosterPlayers } from '../lib/squadStore.jsx'
 import { loadSuperLigPlayers, toAppPlayers, clubColors, clubShort } from '../lib/apiFootball.js'
-import { getVisibleWeeks, formatDeadline, getTeamFixture } from '../lib/weeks.js'
+import { getVisibleWeeks, formatDeadline, getTeamFixture, isLocked } from '../lib/weeks.js'
+import { useNow } from '../lib/useNow.js'
 import WeekBar from '../components/WeekBar.jsx'
 import PlayerPhoto from '../components/PlayerPhoto.jsx'
 import ScoringGuide from '../components/ScoringGuide.jsx'
@@ -60,12 +61,15 @@ const IconSearch = () => (
 export default function Transfer() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { roster: committed, commitAndSave, week, setWeek, weeks, fixtures, weeksLoading, squadLoading } = useSquad()
+  const { roster: committed, commitAndSave, week, setWeek, weeks, fixtures, weekOverrides, weeksLoading, squadLoading } = useSquad()
 
-  const now = Date.now()
+  const now = useNow(30000) // gerçek zamanlı deadline kontrolü (30 sn)
   const visibleWeeks = getVisibleWeeks(weeks, now)
   const selectedWeek = weeks.find((w) => w.round === week) || null
   const deadlineText = selectedWeek ? formatDeadline(selectedWeek.deadline) : '—'
+  // Seçili haftanın deadline'ı (admin override'a saygı). Geçince transfer kilitlenir.
+  const override = weekOverrides?.[week]
+  const locked = override != null ? override : isLocked(selectedWeek, now)
 
   // Taslak: kaydedilene kadar kadroya yansımaz
   const [draft, setDraft] = useState(() => cloneRoster(committed))
@@ -111,6 +115,15 @@ export default function Transfer() {
     const t = setTimeout(() => setMsg(''), 2800)
     return () => clearTimeout(t)
   }, [msg])
+
+  // Deadline geçince: transfer kilitlenir, mesaj gösterilir ve Takımım'a dönülür.
+  useEffect(() => {
+    if (!locked) return
+    setMsg('🔒 Deadline geçti, transfer kilitlendi — Takımıma dönülüyor…')
+    const t = setTimeout(() => navigate('/takimim'), 2500)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [locked])
 
   // Kaydedilmiş kadronun imzası (yuva sırasına göre oyuncu id'leri)
   const committedSig = useMemo(() => {
@@ -278,7 +291,7 @@ export default function Transfer() {
 
   const emptyCount = 15 - filledCount
   // Kaydet yalnızca 15/15, bütçe uygun VE bir değişiklik yapıldıysa aktif
-  const canSave = filledCount === 15 && !overBudget && isDirty
+  const canSave = filledCount === 15 && !overBudget && isDirty && !locked
 
   const onSave = async () => {
     if (!canSave) return

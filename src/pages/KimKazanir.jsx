@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../lib/auth.jsx'
 import { useSquad } from '../lib/squadStore.jsx'
 import { getVisibleWeeks, getActiveRound, isLocked, formatDeadline } from '../lib/weeks.js'
+import { useNow } from '../lib/useNow.js'
 import { loadAndScoreWeek, savePrediction, loadAllWeekPoints, fixtureOutcome } from '../lib/predictionsDb.js'
 import './KimKazanir.css'
 
@@ -20,7 +21,7 @@ const dt = (iso) =>
 export default function KimKazanir() {
   const { user } = useAuth()
   const { weeks, fixtures, weekOverrides, weeksLoading } = useSquad()
-  const now = Date.now()
+  const now = useNow(30000) // gerçek zamanlı deadline kontrolü (30 sn)
 
   const visibleDesc = useMemo(
     () => [...getVisibleWeeks(weeks, now)].sort((a, b) => b.round - a.round),

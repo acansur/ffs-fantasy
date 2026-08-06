@@ -473,7 +473,7 @@ export default function Takimim() {
       {squadLoading ? (
         <p className="hint">Kadron yükleniyor…</p>
       ) : locked ? (
-        <div className="lock-note">🔒 Hafta {week} kilitli — deadline geçti, kadro değişikliği yapılamaz.</div>
+        <div className="lock-note">🔒 Deadline geçti, kadro kilitlendi — Hafta {week} için değişiklik yapılamaz.</div>
       ) : swapMode ? (
         <div className="swap-note">
           {swapMode.targetType === 'bench'

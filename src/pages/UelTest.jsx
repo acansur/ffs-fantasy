@@ -418,7 +418,7 @@ export default function UelTest({ slot }) {
       ) : api.error ? (
         <div className="lock-note">⚠ Oyuncu verisi alınamadı: {api.error}</div>
       ) : locked ? (
-        <div className="lock-note">🔒 Deadline geçti — kadro kilitli. Maçlar bittikçe puanlar işlenir.</div>
+        <div className="lock-note">🔒 Deadline geçti, kadro kilitlendi. Maçlar bittikçe puanlar işlenir.</div>
       ) : swapMode ? (
         <div className="swap-note">
           {swapMode.targetType === 'bench' ? 'Yedeğe göndereceğin yuvayı seç.' : "İlk 11'e alacağın yuvayı seç."}
