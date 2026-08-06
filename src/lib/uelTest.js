@@ -139,9 +139,12 @@ export function loadUelPlayers() {
   return _playersPromise
 }
 
-// 10 maçın canlı durumunu (status/skor/tarih) çeker. Tek tarih sorgusu.
+// Maçların canlı durumunu (status/skor/tarih) çeker. Tek tarih sorgusu.
+// force=true → modül önbelleğini atla ve API'den TAZE çek (canlı/FT güncellemesi
+// için periyodik çağrılır; aksi halde durum sayfa açılışında donar).
 let _fixturesPromise = null
-export function loadUelFixtures() {
+export function loadUelFixtures({ force = false } = {}) {
+  if (force) _fixturesPromise = null
   if (!_fixturesPromise) {
     _fixturesPromise = (async () => {
       const idSet = new Set(UEL_FIXTURES.map((f) => f.id))

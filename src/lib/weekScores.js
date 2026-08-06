@@ -45,7 +45,12 @@ function fetchFixtureData(fixtureId) {
           getJson(`/api/football?path=fixtures/players&fixture=${fixtureId}`),
           getJson(`/api/football?path=fixtures/events&fixture=${fixtureId}`),
         ])
-        return { players: p.response || [], events: e.response || [] }
+        const players = p.response || []
+        const events = e.response || []
+        // Boş istatistik (maç yeni bitti, API henüz doldurmadı) → önbelleğe ALMA;
+        // sonraki tazelemede tekrar denensin, aksi halde puan kalıcı 0 kalır.
+        if (!players.length) _cache.delete(fixtureId)
+        return { players, events }
       })().catch(() => {
         _cache.delete(fixtureId) // hata → yeniden denenebilsin
         return { players: [], events: [] }

@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useRef, useState, useEffect } from 'react'
 import { useAuth } from '../lib/auth.jsx'
 import {
   buildEmptyRoster,
@@ -128,6 +128,30 @@ export default function UelTest({ slot }) {
     }
   }, [])
 
+  // Maç durumunu (canlı skor / FT) periyodik TAZELE. Aksi halde durum sayfa
+  // açılışında donar; maç bitse (FT) bile yeşil nokta yanıp söner ve puan gelmez.
+  // Deadline geçtiyse ve henüz bitmemiş maç varsa 45 sn'de bir API'den taze çekilir;
+  // tüm maçlar bitince durur (gereksiz istek yok).
+  const fixturesRef = useRef(fixtures)
+  fixturesRef.current = fixtures
+  useEffect(() => {
+    if (!locked || api.loading) return
+    let alive = true
+    let id = null
+    const tick = async () => {
+      const fx = fixturesRef.current
+      const allDone = fx.length > 0 && fx.every((f) => MS_FINISHED.has(f.fixture?.status?.short))
+      if (allDone) { if (id) clearInterval(id); return }
+      try {
+        const fresh = await loadUelFixtures({ force: true })
+        if (alive) setFixtures(fresh)
+      } catch { /* yut */ }
+    }
+    id = setInterval(tick, 45000)
+    tick() // hemen bir kez (bayat önbelleği anında tazele)
+    return () => { alive = false; if (id) clearInterval(id) }
+  }, [locked, api.loading])
+
   // Kayıtlı kadroyu yükle. deps = [user?.id, slot] → AuthProvider'ın is_admin
   // tazelemesi user NESNESİNİ değiştirse de (aynı id) effect yeniden çalışmaz;
   // böylece yavaş havuz yüklemesi sürerken effect iptal edilip veri kaybolmaz.
@@ -198,8 +222,11 @@ export default function UelTest({ slot }) {
   const dirty = signature(roster, captainId) !== savedSig
   const captainPlayer = rosterList.find((p) => p.id === captainId) || null
 
-  // Puanlar (deadline sonrası)
-  const scoreKey = locked ? rosterList.map((p) => p.id).join(',') : null
+  // Puanlar (deadline sonrası). scoreKey'e maç DURUM imzası da katılır: maç
+  // LIVE→FT olunca key değişir ve puan yeniden hesaplanır (yalnızca oyuncu
+  // id'lerine bakılsaydı durum değişse de recompute atlanırdı).
+  const statusSig = fixtures.map((f) => `${f.fixture?.id}:${f.fixture?.status?.short}`).join(',')
+  const scoreKey = locked ? `${statusSig}|${rosterList.map((p) => p.id).join(',')}` : null
   useEffect(() => {
     if (!locked || api.loading || !fixtures.length || rosterList.length === 0) return
     if (scores.forKey === scoreKey) return
