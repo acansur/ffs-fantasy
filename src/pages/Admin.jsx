@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth.jsx'
+import { normalizeText } from '../lib/normalize.js'
 import {
   listUsers, deleteUser,
   listPlayers, savePlayerValue, refreshPlayersFromApi,
@@ -117,8 +118,9 @@ function PlayersTab() {
 
   const filtered = useMemo(() => {
     if (!rows) return []
-    const s = q.trim().toLocaleLowerCase('tr')
-    return s ? rows.filter((r) => (r.name || '').toLocaleLowerCase('tr').includes(s) || (r.team_name || '').toLocaleLowerCase('tr').includes(s)) : rows
+    // Özel karakter olmadan da bulunsun (ASCII normalize: ç→c, ş→s, ı→i ...)
+    const s = normalizeText(q.trim())
+    return s ? rows.filter((r) => normalizeText(r.name || '').includes(s) || normalizeText(r.team_name || '').includes(s)) : rows
   }, [rows, q])
 
   // Satır düzenlendi mi (kaydet butonu aktifliği)

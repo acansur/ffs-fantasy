@@ -18,6 +18,7 @@ import {
 import { saveUelSquad, loadUelSquad, rebuildUelRoster } from '../lib/uelTestDb.js'
 import { formatDeadline } from '../lib/weeks.js'
 import { useNow } from '../lib/useNow.js'
+import { normalizeText } from '../lib/normalize.js'
 import { POSITIONS, SQUAD_TOTALS, TOTAL_BUDGET, MAX_PER_CLUB, initials, formationLabel, surname } from '../lib/squadData.js'
 import PlayerPhoto from '../components/PlayerPhoto.jsx'
 import PlayerDetailModal from '../components/PlayerDetailModal.jsx'
@@ -363,8 +364,9 @@ export default function UelTest({ slot }) {
     let l = api.players.filter((p) => CURRENT_TEAM_IDS.has(p.teamId))
     if (posFilter) l = l.filter((p) => p.pos === posFilter)
     if (clubFilter) l = l.filter((p) => p.club === clubFilter)
-    const q = search.trim().toLocaleLowerCase('tr')
-    if (q) l = l.filter((p) => p.name.toLocaleLowerCase('tr').includes(q))
+    // Özel karakter olmadan da bulunsun (ASCII normalize: ç→c, ş→s, ı→i ...)
+    const q = normalizeText(search.trim())
+    if (q) l = l.filter((p) => normalizeText(p.name).includes(q))
     return [...l].sort((a, b) => a.name.localeCompare(b.name, 'tr')).slice(0, 300)
   }, [api.players, posFilter, clubFilter, search])
 
