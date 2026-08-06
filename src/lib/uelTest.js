@@ -13,14 +13,12 @@ const FINISHED = new Set(['FT', 'AET', 'PEN', 'WO'])
 // Tüm oyuncular sabit değerde
 export const UEL_PLAYER_PRICE = 6
 
-// Deadline: 6 Ağustos 2026 18:30 (Türkiye saati, UTC+3)
-export const UEL_DEADLINE_MS = Date.parse('2026-08-06T18:30:00+03:00')
+// Deadline: 6 Ağustos 2026 20:30 (Türkiye saati, UTC+3) — ilk 3 maç oynandı,
+// kalan ilk maçtan (21:00) 30 dk önce.
+export const UEL_DEADLINE_MS = Date.parse('2026-08-06T20:30:00+03:00')
 
-// 10 maç (API-Football fixture id'leri + takım id/adları). Hepsi 2026-08-06.
+// Kalan 7 maç (ilk 3 maç deadline'ı geçtiği için çıkarıldı). Hepsi 2026-08-06.
 export const UEL_FIXTURES = [
-  { id: 1607175, home: { id: 1165, name: 'KuPS' }, away: { id: 632, name: 'Universitatea Craiova' } },
-  { id: 1598830, home: { id: 336, name: 'Jagiellonia' }, away: { id: 257, name: 'Rangers' } },
-  { id: 1607563, home: { id: 604, name: 'Maccabi Tel Aviv' }, away: { id: 853, name: 'CSKA Sofia' } },
   { id: 1607177, home: { id: 347, name: 'Lech Poznan' }, away: { id: 701, name: 'KI Klaksvik' } },
   { id: 1607178, home: { id: 667, name: 'Lincoln Red Imps FC' }, away: { id: 3402, name: 'Omonia Nicosia' } },
   { id: 1607562, home: { id: 3723, name: 'Hradec Králové' }, away: { id: 549, name: 'Beşiktaş' } },

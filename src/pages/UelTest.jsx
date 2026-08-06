@@ -279,10 +279,21 @@ export default function UelTest({ slot }) {
 
   const onSave = async () => {
     if (overBudget || filledCount !== TOTAL_SLOTS || !dirty) return
+    if (!user) {
+      setSaveMsg('⚠ Giriş yapılmadı — kayıt için giriş gerekli.')
+      return
+    }
     const counts = starterCounts(roster)
-    if (user) await saveUelSquad({ userId: user.id, slot, formation: formationLabel(counts), captainId, roster })
-    setSavedSig(signature(roster, captainId))
-    setSaveMsg(user ? 'Kadro kaydedildi ✓' : 'Giriş yapılmadı — yalnızca yerel')
+    const res = await saveUelSquad({ userId: user.id, slot, formation: formationLabel(counts), captainId, roster })
+    if (res?.ok) {
+      setSavedSig(signature(roster, captainId))
+      setSaveMsg('Kadro kaydedildi ✓')
+    } else if (res?.skipped) {
+      setSaveMsg('⚠ Supabase yapılandırılmadı — kaydedilemedi.')
+    } else {
+      const m = res?.error?.message || res?.error?.details || String(res?.error || 'bilinmeyen hata')
+      setSaveMsg('⚠ Kaydedilemedi: ' + m)
+    }
   }
 
   const canSave = filledCount === TOTAL_SLOTS && !overBudget && dirty
