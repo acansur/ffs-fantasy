@@ -190,9 +190,28 @@ function WeekBody({ fixtures, byFixture, loading, locked, total, onPick }) {
 
   const picked = fixtures.filter((f) => byFixture[f.fixture.id]?.prediction).length
   const correct = fixtures.filter((f) => byFixture[f.fixture.id]?.is_correct === true).length
+  // Görsel özet için yanlış sayısı (mevcut is_correct verisinden; hesap değil)
+  const wrong = fixtures.filter((f) => byFixture[f.fixture.id]?.is_correct === false).length
 
   return (
     <>
+      {/* Kilitli hafta özeti — yalnızca görsel; veriler mevcut mantıktan */}
+      {locked && (
+        <div className="summary">
+          <span className="sm-stat">
+            <b className="ok">{correct}</b> doğru · <b className="no">{wrong}</b> yanlış
+          </span>
+          <span className="sm-dots">
+            {fixtures.map((f) => (
+              <span
+                key={f.fixture.id}
+                className={`sm-dot ${byFixture[f.fixture.id]?.is_correct === true ? 'ok' : 'no'}`}
+              />
+            ))}
+          </span>
+          <span className="sm-pts">+{total} puan</span>
+        </div>
+      )}
       {fixtures.map((f) => {
         const fid = f.fixture.id
         const pred = byFixture[fid]?.prediction
@@ -204,11 +223,15 @@ function WeekBody({ fixtures, byFixture, loading, locked, total, onPick }) {
             <div className="match-head">
               <div className="kk-teams">
                 <span className="tn">{f.teams.home.name}</span>
-                <span className="vs">{finished ? `${f.goals.home}-${f.goals.away}` : 'vs'}</span>
+                {finished && f.goals?.home != null ? (
+                  <span className="ms">{f.goals.home}-{f.goals.away}</span>
+                ) : (
+                  <span className="vs">vs</span>
+                )}
                 <span className="tn">{f.teams.away.name}</span>
               </div>
               {finished && pred ? (
-                <span className={`mres ${correctPick ? 'ok' : 'no'}`}>{correctPick ? '+1' : '+0'}</span>
+                <span className={`mres ${correctPick ? 'ok' : 'no'}`}>{correctPick ? '✓ +1' : '+0'}</span>
               ) : (
                 <span className="mtime">{dt(f.fixture.date)}</span>
               )}
@@ -216,9 +239,15 @@ function WeekBody({ fixtures, byFixture, loading, locked, total, onPick }) {
             <div className={`tripick${locked ? ' locked' : ''}`}>
               {SEGS.map((s) => {
                 let cls = ''
+                let mk = '' // köşe işaretçisi (yalnızca görsel; cls ile aynı mantıktan)
                 if (finished && out) {
-                  if (s.key === pred) cls = s.key === out ? ' correct' : ' wrong'
-                  else if (s.key === out) cls = ' answer'
+                  if (s.key === pred) {
+                    cls = s.key === out ? ' correct' : ' wrong'
+                    mk = s.key === out ? 'SONUÇ' : '✕'
+                  } else if (s.key === out) {
+                    cls = ' answer'
+                    mk = 'SONUÇ'
+                  }
                 } else if (pred === s.key) {
                   cls = ' sel'
                 }
@@ -229,6 +258,7 @@ function WeekBody({ fixtures, byFixture, loading, locked, total, onPick }) {
                     data-p={s.p}
                     onClick={() => !locked && onPick(fid, s.key)}
                   >
+                    {mk && <span className="mk">{mk}</span>}
                     <span className="sym">{s.p}</span>
                     <span className="lbl">{s.lbl}</span>
                   </div>

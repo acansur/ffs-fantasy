@@ -119,6 +119,73 @@
 .seg.answer { border-color: rgba(27, 184, 124, 0.55); border-style: dashed; }
 .seg.answer .sym { color: #43dca0; }
 
+/* ---------- Kilitli hafta görsel sonuç katmanı (yalnızca tasarım) ---------- */
+/* Skor kutusu (takım isimleri arasında) */
+.kk .kk-teams .ms {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+  padding: 2px 10px;
+  border-radius: 8px;
+  flex: none;
+}
+/* Kazanılan puan rozeti — pill + kenarlık + "✓" boşluğu */
+.kk .mres {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 12px;
+  border-radius: 99px;
+}
+.kk .mres.ok { border: 1px solid rgba(27, 184, 124, 0.4); }
+.kk .mres.no { border: 1px solid var(--border, rgba(255, 255, 255, 0.08)); }
+/* Segment köşe işaretçisi (SONUÇ / ✕) */
+.kk .seg .mk {
+  position: absolute;
+  top: 7px;
+  right: 9px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+.kk .seg.correct .mk { color: #43dca0; }
+.kk .seg.wrong .mk { color: #f4908f; }
+.kk .seg.answer .mk { color: #43dca0; }
+
+/* Hafta özeti şeridi (kilitli hafta gövdesinin en üstü) */
+.kk .summary {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 14px;
+  margin: 6px 0 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+  border-radius: 12px;
+}
+.kk .sm-stat { font-size: 13.5px; font-weight: 600; color: var(--ink-2, #9cb0a4); }
+.kk .sm-stat b.ok { color: #43dca0; }
+.kk .sm-stat b.no { color: #f4908f; }
+.kk .sm-dots { display: flex; gap: 5px; flex-wrap: wrap; flex: 1; min-width: 60px; }
+.kk .sm-dot { width: 11px; height: 11px; border-radius: 50%; }
+.kk .sm-dot.ok { background: var(--win, #1bb87c); box-shadow: 0 0 6px rgba(27, 184, 124, 0.5); }
+.kk .sm-dot.no { background: var(--lose, #f05a58); opacity: 0.85; }
+.kk .sm-pts {
+  margin-left: auto;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--gold-ink, #3a2a00);
+  background: linear-gradient(180deg, var(--gold-soft, #ffcb52), var(--gold, #f0a500));
+  border: 1px solid var(--gold-deep, #c98600);
+  padding: 4px 15px;
+  border-radius: 99px;
+}
+
 /* ---------- Footer ---------- */
 .wk-foot { display: flex; align-items: center; gap: 14px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border, rgba(255, 255, 255, 0.08)); flex-wrap: wrap; }
 .wk-count { font-size: 13.5px; color: var(--ink, #eaf3ec); font-weight: 600; }
