@@ -39,7 +39,8 @@ export default function PlayerDetailModal({
   weeks = [],
   fixtures = [], // info görünümünde haftalık rakip için
   hideActions = false, // kaptan/yedek butonlarını gizle (örn. UEL kilitli görünüm)
-  breakdown = null, // gerçek puan kırılımı [{ stat, value, pts }] (yalnızca maç bittiyse)
+  breakdown = null, // puan kırılımı [{ stat, value, pts }] (canlı: live_scores; bitmiş: hesaplanan)
+  loading = false, // canlı kırılım (live_scores) yükleniyor → "Yükleniyor…"
 }) {
   const isInfo = variant === 'info'
   const bd = breakdown || []
@@ -136,20 +137,22 @@ export default function PlayerDetailModal({
           </div>
         )}
 
-        {/* Maç devam ediyor (LIVE/1H/2H/HT/ET) — puanlar henüz kesin değil */}
-        {!isInfo && inPlay && (
-          <div className="pdm-live-note">Maç devam ediyor</div>
+        {/* Canlı kırılım yükleniyor (live_scores'tan) */}
+        {!isInfo && inPlay && loading && (
+          <div className="pdm-live-note">Yükleniyor…</div>
         )}
 
-        {/* Puan toggle — yalnızca maç BİTTİYSE (FT), gerçek verilerden */}
-        {!isInfo && isFinished && (
+        {/* Puan toggle — maç BAŞLADIYSA (canlı live_scores'tan / bitmiş hesaplanan).
+            Canlı ve yükleniyorken gösterilmez. */}
+        {!isInfo && started && !(inPlay && loading) && (
           <button className="pdm-toggle" onClick={() => setOpen((o) => !o)}>
+            {inPlay && <span className="pdm-livetag">● CANLI</span>}
             {bdTotal} puan <span className="pdm-arrow">{open ? '▲' : '▼'}</span>
           </button>
         )}
 
-        {/* Puan kırılım tablosu — gerçek istatistiklerden (maç bittiyse) */}
-        {!isInfo && isFinished && open && (
+        {/* Puan kırılım tablosu (canlı veya bitmiş) */}
+        {!isInfo && started && !(inPlay && loading) && open && (
           <table className="pdm-breakdown">
             <thead>
               <tr>

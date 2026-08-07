@@ -4,6 +4,7 @@ import { useAuth } from '../lib/auth.jsx'
 import { useSquad } from '../lib/squadStore.jsx'
 import { getVisibleWeeks, isLocked, formatDeadline, getTeamFixture } from '../lib/weeks.js'
 import { computeWeekScores, applyAutoSubs, computeTotalPoints } from '../lib/weekScores.js'
+import { getLivePlayerScore } from '../lib/liveScoresDb.js'
 import { useNow } from '../lib/useNow.js'
 import WeekBar from '../components/WeekBar.jsx'
 import PlayerPhoto from '../components/PlayerPhoto.jsx'
@@ -418,6 +419,35 @@ export default function Takimim() {
   // Açık modal için oyuncu bilgileri (gösterilen oyuncu)
   const detailPlayer = detail?.player || null
   const detailFixture = detailPlayer ? getTeamFixture(fixtures, detailPlayer.club, week) : null
+  const detailIsLive = detailPlayer ? matchStateFor(detailPlayer) === 'live' : false
+
+  // Detay modalı canlı maç için: oyuncunun anlık kırılımını live_scores'tan OKU
+  // (API isteği YOK). Maç bitmişse mevcut mantık (scores.partsById) kullanılır.
+  const [liveBd, setLiveBd] = useState({ loading: false, parts: [], forId: null })
+  useEffect(() => {
+    if (!detailPlayer || !detailIsLive) {
+      setLiveBd({ loading: false, parts: [], forId: null })
+      return
+    }
+    const fid = detailFixture?.fixture?.id
+    if (!fid) return
+    let alive = true
+    setLiveBd({ loading: true, parts: [], forId: detailPlayer.id })
+    getLivePlayerScore(fid, detailPlayer.id)
+      .then((s) => alive && setLiveBd({ loading: false, parts: s?.parts || [], forId: detailPlayer.id }))
+      .catch(() => alive && setLiveBd({ loading: false, parts: [], forId: detailPlayer.id }))
+    return () => { alive = false }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [detailPlayer, detailIsLive])
+
+  // Modal kırılımı: canlı → live_scores parts; bitmiş → hesaplanan partsById.
+  const partToRow = (p) => ({ stat: p.label, value: p.n != null && p.n !== 0 ? String(p.n) : '', pts: p.pts })
+  const detailBreakdown = !detailPlayer
+    ? []
+    : detailIsLive
+      ? (liveBd.forId === detailPlayer.id ? liveBd.parts : []).map(partToRow)
+      : (scores.partsById.get(detailPlayer.id) || []).map(partToRow)
+  const detailLoading = detailIsLive && (liveBd.loading || liveBd.forId !== detailPlayer?.id)
 
   const saveActive = dirty && !overBudget
   const msgOk = saveMsg.includes('✓')
@@ -676,11 +706,8 @@ export default function Takimim() {
           fixture={detailFixture}
           weeks={weeks}
           fixtures={fixtures}
-          breakdown={(scores.partsById.get(detailPlayer.id) || []).map((p) => ({
-            stat: p.label,
-            value: p.n != null && p.n !== 0 ? String(p.n) : '',
-            pts: p.pts,
-          }))}
+          breakdown={detailBreakdown}
+          loading={detailLoading}
           onMakeCaptain={() => {
             makeCaptain(detailPlayer.id)
             setDetail(null)
