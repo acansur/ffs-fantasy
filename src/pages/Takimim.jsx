@@ -5,6 +5,7 @@ import { useSquad } from '../lib/squadStore.jsx'
 import { getVisibleWeeks, isLocked, formatDeadline, getTeamFixture } from '../lib/weeks.js'
 import { computeWeekScores, applyAutoSubs, computeTotalPoints } from '../lib/weekScores.js'
 import { getLivePlayerScore } from '../lib/liveScoresDb.js'
+import { isSupabaseConfigured } from '../lib/supabase.js'
 import { useNow } from '../lib/useNow.js'
 import WeekBar from '../components/WeekBar.jsx'
 import PlayerPhoto from '../components/PlayerPhoto.jsx'
@@ -173,6 +174,7 @@ export default function Takimim() {
     loadPlayers,
     routes = { squad: '/takimim', transfer: '/transfer' },
     refreshFixtures,
+    loadTransferMeta,
   } = useSquad()
 
   const [view, setView] = useState('next')
@@ -182,6 +184,16 @@ export default function Takimim() {
   const [scoringOpen, setScoringOpen] = useState(false)
   // Deadline sonrası haftalık puanlar: { loading, ptsById, finishedById, forKey }
   const [scores, setScores] = useState({ loading: false, ptsById: new Map(), finishedById: new Map(), startedById: new Map(), partsById: new Map(), forKey: null })
+  // Bu haftanın ekstra transfer puan kesintisi (squad_transfers) → toplamdan düşülür
+  const [pointDeductions, setPointDeductions] = useState(0)
+  useEffect(() => {
+    if (!user || !isSupabaseConfigured || !loadTransferMeta) { setPointDeductions(0); return }
+    let alive = true
+    loadTransferMeta({ userId: user.id, week })
+      .then((m) => alive && setPointDeductions(m?.point_deductions || 0))
+      .catch(() => alive && setPointDeductions(0))
+    return () => { alive = false }
+  }, [user, week, loadTransferMeta])
 
   const now = useNow(30000) // gerçek zamanlı deadline kontrolü (30 sn)
   const visibleWeeks = getVisibleWeeks(weeks, now)
@@ -334,12 +346,13 @@ export default function Takimim() {
   const effectiveCaptainId = display.captainId
 
   // Toplam puan: deadline sonrası kümülatif (biten maçlar), son maç bitince
-  // otomatik yedek uygulanmış final. Deadline öncesi gösterilmez.
+  // otomatik yedek uygulanmış final. Ekstra transfer puan kesintisi (varsa)
+  // düşülür. Deadline öncesi gösterilmez.
   const totalPoints = !locked
     ? null
     : scores.loading
       ? '…'
-      : computeTotalPoints({ field: display.field, finishedById: scores.finishedById, startedById: scores.startedById, captainId: effectiveCaptainId })
+      : computeTotalPoints({ field: display.field, finishedById: scores.finishedById, startedById: scores.startedById, captainId: effectiveCaptainId }) - pointDeductions
 
   // Yuva tıklaması: yer değiştirme modundaysa hedef seç; değilse detay modalı aç
   const onSlotClick = (pos, index, viewPlayer, viewStarter) => {

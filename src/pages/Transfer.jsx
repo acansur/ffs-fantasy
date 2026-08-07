@@ -1,6 +1,7 @@
 import { useMemo, useState, useRef, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth.jsx'
+import { isSupabaseConfigured } from '../lib/supabase.js'
 import { useSquad, cloneRoster, rosterPlayers } from '../lib/squadStore.jsx'
 import { clubColors, clubShort } from '../lib/apiFootball.js'
 import { getVisibleWeeks, formatDeadline, getTeamFixture, isLocked } from '../lib/weeks.js'
@@ -63,7 +64,13 @@ const IconSearch = () => (
 export default function Transfer() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { roster: committed, commitAndSave, week, setWeek, weeks, fixtures, weekOverrides, weeksLoading, squadLoading, loadPlayers, pickerClubs, routes = { squad: '/takimim', transfer: '/transfer' } } = useSquad()
+  const { roster: committed, commitAndSave, week, setWeek, weeks, fixtures, weekOverrides, weeksLoading, squadLoading, loadPlayers, pickerClubs, loadTransferMeta, saveTransferMeta, routes = { squad: '/takimim', transfer: '/transfer' } } = useSquad()
+
+  // Serbest transfer hakkı: Hafta 1 sınırsız (ilk kurulum), Hafta 2+ → 3 hak.
+  // 4. transferden itibaren her ekstra transfer -2 puan.
+  const FREE_TRANSFERS = 3
+  const DEDUCT_PER_TRANSFER = 2
+  const isWeek1 = week === 1
 
   const now = useNow(30000) // gerçek zamanlı deadline kontrolü (30 sn)
   const visibleWeeks = getVisibleWeeks(weeks, now)
@@ -91,6 +98,20 @@ export default function Transfer() {
 
   // Gerçek API oyuncuları
   const [api, setApi] = useState({ loading: true, error: null, players: [], teams: [] })
+
+  // Bu haftanın KAYDEDİLMİŞ transfer sayacı + puan kesintisi (squad_transfers)
+  const [meta, setMeta] = useState({ transfer_count: 0, point_deductions: 0 })
+  useEffect(() => {
+    if (!user || !isSupabaseConfigured || !loadTransferMeta) {
+      setMeta({ transfer_count: 0, point_deductions: 0 })
+      return
+    }
+    let alive = true
+    loadTransferMeta({ userId: user.id, week })
+      .then((m) => alive && setMeta(m || { transfer_count: 0, point_deductions: 0 }))
+      .catch(() => alive && setMeta({ transfer_count: 0, point_deductions: 0 }))
+    return () => { alive = false }
+  }, [user, week, loadTransferMeta])
 
   useEffect(() => {
     let alive = true
@@ -160,10 +181,32 @@ export default function Transfer() {
 
   const filledCount = draftList.length
   const spent = draftList.reduce((s, p) => s + p.price, 0)
+  // Bütçe = TOTAL − Σ(güncel değerler). Bu, "önceki kalan + satılan − alınan"a
+  // eşittir (hepsi o anki Supabase değerinden): oyuncu satınca değeri eklenir,
+  // alınca düşülür. Kadro taşındığında da aynı oyuncularla kalan bütçe taşınır.
   const remaining = TOTAL_BUDGET - spent
   const overBudget = remaining < 0
   const spentPct = Math.max(0, Math.min(100, (spent / TOTAL_BUDGET) * 100))
   const countPct = (filledCount / 15) * 100
+
+  // Transfer sayımı: kaydedilmiş kadroda (committed) olup taslakta (draft) OLMAYAN
+  // — yani SATILAN — geçerli oyuncular sayılır. Kaydetmeden geri alınırsa (draft
+  // committed'a eşitlenir) sayı 0'a döner. Kaydedilmiş bir transferi sonradan geri
+  // almak da committed'dan bir sapma olduğundan YENİ transfer sayılır.
+  // Kulüpsüz (Süper Lig'den ayrılmış, havuzda olmayan) oyuncunun satışı SAYILMAZ.
+  const validIds = useMemo(() => new Set(api.players.map((p) => p.id)), [api.players])
+  const committedList = useMemo(() => rosterPlayers(committed), [committed])
+  const pendingCount = useMemo(() => {
+    const draftIds = new Set(draftList.map((p) => p.id))
+    return committedList.filter((p) => !draftIds.has(p.id) && validIds.has(p.id) && p.club).length
+  }, [committedList, draftList, validIds])
+
+  // Görünen kullanılan transfer = bu hafta kaydedilmiş + bekleyen (taslak) transferler
+  const usedTransfers = (meta.transfer_count || 0) + pendingCount
+  const overFree = !isWeek1 && usedTransfers > FREE_TRANSFERS
+  // Kaydedilince oluşacak TOPLAM kesinti ve bu kaydın EKLEYECEĞİ kesinti
+  const totalDeduction = isWeek1 ? 0 : Math.max(0, usedTransfers - FREE_TRANSFERS) * DEDUCT_PER_TRANSFER
+  const addedDeduction = Math.max(0, totalDeduction - (meta.point_deductions || 0))
 
   // Kulüp filtresi için takım listesi (renk + kısa kod)
   const teamsInfo = useMemo(
@@ -304,6 +347,12 @@ export default function Transfer() {
 
   const onSave = async () => {
     if (!canSave) return
+    // Transfer sayacı + puan kesintisini yaz (Hafta 1 hariç; sınırsız → kesinti yok).
+    if (!isWeek1 && saveTransferMeta && user) {
+      const newCount = (meta.transfer_count || 0) + pendingCount
+      const newDeductions = Math.max(0, newCount - FREE_TRANSFERS) * DEDUCT_PER_TRANSFER
+      await saveTransferMeta({ userId: user.id, week, transferCount: newCount, pointDeductions: newDeductions })
+    }
     await commitAndSave(draft)
     navigate(routes.squad)
   }
@@ -411,7 +460,13 @@ export default function Transfer() {
             <span className="eyebrow">Serbest Transfer Hakkı</span>
             <span className="tr-stat-ico ico-gold"><IconSwap /></span>
           </div>
-          <div className="tr-stat-big semi">Sınırsız</div>
+          {isWeek1 ? (
+            <div className="tr-stat-big semi">Sınırsız</div>
+          ) : (
+            <div className={`tr-stat-big semi${overFree ? ' neg' : ''}`}>
+              {usedTransfers}/{FREE_TRANSFERS}
+            </div>
+          )}
         </div>
       </div>
 
@@ -425,6 +480,14 @@ export default function Transfer() {
         loading={weeksLoading}
       />
       <div className="tr-hint">Hafta {week} için transfer yapıyorsunuz</div>
+
+      {/* Ekstra transfer puan kesintisi uyarısı (kaydetmeden önce) */}
+      {addedDeduction > 0 && (
+        <div className="tr-deduct-warn">
+          ⚠ Bu transfer{pendingCount > 1 ? 'ler' : ''} kaydedilince <b>-{addedDeduction} puan</b> kesilmesine
+          neden olacak · {usedTransfers}/{FREE_TRANSFERS} serbest transfer aşıldı.
+        </div>
+      )}
 
       {msg && !picker && <div className={`tr-msg${msg.startsWith('⚠') ? ' warn' : ' ok'}`}>{msg}</div>}
 

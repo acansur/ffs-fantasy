@@ -146,10 +146,25 @@
 .tr-budget-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--gk), var(--gold)); box-shadow: 0 0 12px rgba(240, 165, 0, 0.4); transition: width 0.35s ease; }
 .tr-budget-meta { display: flex; justify-content: space-between; font-size: 11px; color: var(--ink-3); font-weight: 500; margin-top: 6px; }
 .tr-stat-big { font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 26px; color: #fff; margin-top: auto; }
+/* 3'ten fazla transfer → sayaç kırmızı (örn. "4/3") */
+.tr-stat-big.neg { color: #ff8b7a; }
 .tr-stat-dash { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 30px; color: var(--ink-3); margin-top: auto; }
 
 /* ---------- İpucu + mesaj ---------- */
 .tr-hint { font-size: 13.5px; color: var(--gold-soft); margin: 16px 2px 12px; font-weight: 600; }
+/* Ekstra transfer puan kesintisi uyarısı */
+.tr-deduct-warn {
+  margin: 0 2px 12px;
+  padding: 10px 14px;
+  border-radius: 11px;
+  background: rgba(240, 96, 94, 0.14);
+  border: 1px solid rgba(240, 96, 94, 0.5);
+  color: #f7a6a4;
+  font-size: 0.86rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.tr-deduct-warn b { color: #ff8b7a; font-weight: 800; }
 .tr-msg { margin: 0 0 10px; padding: 0.55rem 0.9rem; border-radius: 10px; font-weight: 700; font-size: 0.9rem; }
 .tr-msg.warn { background: rgba(240, 96, 94, 0.14); border: 1px solid rgba(240, 96, 94, 0.5); color: #f0918f; }
 .tr-msg.ok { background: rgba(240, 165, 0, 0.14); border: 1px solid rgba(240, 165, 0, 0.5); color: var(--gold); }

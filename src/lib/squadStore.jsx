@@ -4,7 +4,10 @@ import { loadCachedFixtures, loadCachedPlayers } from './dataCache.js'
 import { buildWeeks, getActiveRound, isLocked } from './weeks.js'
 import { isSupabaseConfigured } from './supabase.js'
 import { useAuth } from './auth.jsx'
-import { saveSquadToDb, loadSquadFromDb, loadWeekOverrides } from './squadDb.js'
+import {
+  saveSquadToDb, loadSquadFromDb, loadWeekOverrides,
+  loadPrevSquadFromDb, loadTransferMetaFromDb, saveTransferMetaToDb,
+} from './squadDb.js'
 
 const POS_ORDER = ['KL', 'DF', 'OS', 'FW']
 const DB_TO_POS = { GK: 'KL', DF: 'DF', MF: 'OS', FW: 'FW' }
@@ -20,6 +23,9 @@ export const SUPER_LIG_CONFIG = {
   buildWeeks, // (fixtures) → weeks
   loadSquad: loadSquadFromDb, // ({userId, week}) → {formation, captainId, rows} | null
   saveSquad: saveSquadToDb, // ({userId, week, formation, captainId, roster})
+  loadPrevSquad: loadPrevSquadFromDb, // ({userId, beforeWeek}) → önceki hafta kadrosu (carry-forward)
+  loadTransferMeta: loadTransferMetaFromDb, // ({userId, week}) → { transfer_count, point_deductions } | null
+  saveTransferMeta: saveTransferMetaToDb, // ({userId, week, transferCount, pointDeductions})
   loadOverrides: loadWeekOverrides, // () → { round: locked }
   routes: { squad: '/takimim', transfer: '/transfer' },
 }
@@ -230,15 +236,31 @@ export function SquadProvider({ children, config = SUPER_LIG_CONFIG }) {
             setCaptainId(loaded.captainId ?? null)
             setSavedSig(signature(r, loaded.captainId ?? null))
           }
-        } else if (weekLocked) {
-          // Kilitli/geçmiş hafta, kayıt yok → boş kadro
-          const empty = buildEmptyRoster()
-          setRoster(empty)
-          setCaptainId(null)
-          setSavedSig(signature(empty, null))
         } else {
-          // Açık hafta, kayıt yok → mevcut kadro taşınır; bu hafta için kaydedilmemiş
-          setSavedSig(signature(buildEmptyRoster(), null))
+          // Kayıt yok → ÖNCEKİ haftadan kadroyu OTOMATİK taşı (carry-forward).
+          // Hafta N+1 açılınca Hafta N kadrosuyla (diziliş + yedek düzeni) başlar;
+          // bütçe de taşınır (kalan = TOTAL − güncel değerler, aynı oyuncular).
+          const prev = await config.loadPrevSquad?.({ userId, beforeWeek: week })
+          if (!alive) return
+          if (prev && prev.rows?.length) {
+            const raw = await config.loadPlayers().catch(() => null)
+            if (!alive) return
+            const byId = raw ? Object.fromEntries(raw.players.map((p) => [String(p.id), p])) : {}
+            const r = rebuildRoster(prev.rows, byId, prev.formation)
+            setRoster(r)
+            setCaptainId(prev.captainId ?? null)
+            // Taşınan kadro OTOMATİK geçerli (dirty=false → tekrar "Kaydet" gerekmez)
+            setSavedSig(signature(r, prev.captainId ?? null))
+            // Açık haftada kalıcı yaz (puanlanabilsin + transfer baz kadrosu olsun).
+            // Kilitli/geçmiş haftada yalnızca gösterim için taşınır (yazılmaz).
+            if (!weekLocked) await persist(r, prev.captainId ?? null)
+          } else {
+            // Hiç önceki kadro yok (Hafta 1 / ilk kez) → boş kadro (ilk kurulum)
+            const empty = buildEmptyRoster()
+            setRoster(empty)
+            setCaptainId(null)
+            setSavedSig(signature(empty, null))
+          }
         }
       } catch (e) {
         // Hata yut(ulmasın): logla, guard'ı sıfırla ki tekrar denensin, boş sayfa olmasın.
@@ -396,6 +418,8 @@ export function SquadProvider({ children, config = SUPER_LIG_CONFIG }) {
     routes: config.routes, // { squad, transfer } — Takımım/Transfer navigasyonu
     pickerClubs: config.pickerClubs, // Transfer picker'ı bu kulüplerle sınırlar (varsa)
     refreshFixtures, // canlı skor için fikstürü taze çeker
+    loadTransferMeta: config.loadTransferMeta, // ({userId, week}) → { transfer_count, point_deductions }
+    saveTransferMeta: config.saveTransferMeta, // ({userId, week, transferCount, pointDeductions})
   }
   return <SquadContext.Provider value={value}>{children}</SquadContext.Provider>
 }
