@@ -140,14 +140,34 @@ export default function Transfer() {
     return () => clearTimeout(t)
   }, [msg])
 
-  // Deadline geçince: transfer kilitlenir, mesaj gösterilir ve Takımım'a dönülür.
+  // İlk AÇIK (deadline geçmemiş, override ile kilitli olmayan) hafta — transfer
+  // yalnızca açık hafta için yapılır. getActiveRound "bitmemiş ilk hafta"yı
+  // (deadline geçmiş ama maçları sürmekte olan KİLİTLİ N) seçebildiğinden,
+  // transfer ekranının doğru varsayılanı bir sonraki AÇIK hafta (N+1) olmalı.
+  const firstOpenWeek = useMemo(() => {
+    for (const w of weeks) {
+      const ov = weekOverrides?.[w.round]
+      const open = ov != null ? !ov : now < w.deadline
+      if (open) return w.round
+    }
+    return null
+  }, [weeks, weekOverrides, now])
+
+  // Seçili hafta kilitliyse:
+  //  - Açık bir hafta varsa (örn. N+1) → oraya geç (doğrudan /transfer veya
+  //    Takımım'dan kilitli hafta seçiliyken gelme durumunu düzeltir).
+  //  - Hiç açık hafta yoksa (sezon bitti) → mesaj göster, Takımıma dön.
   useEffect(() => {
-    if (!locked) return
+    if (weeksLoading || !weeks.length || !locked) return
+    if (firstOpenWeek != null) {
+      if (firstOpenWeek !== week) setWeek(firstOpenWeek)
+      return
+    }
     setMsg('🔒 Deadline geçti, transfer kilitlendi — Takımıma dönülüyor…')
     const t = setTimeout(() => navigate(routes.squad), 2500)
     return () => clearTimeout(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [locked])
+  }, [locked, firstOpenWeek, weeksLoading, weeks, week])
 
   // Kaydedilmiş kadronun imzası (yuva sırasına göre oyuncu id'leri)
   const committedSig = useMemo(() => {
