@@ -22,3 +22,22 @@ export async function getLivePlayerScore(fixtureId, playerId) {
     return null
   }
 }
+
+// Bir haftadaki fixture id kümesi için TÜM live_scores satırlarını tek istekte
+// okur (kart puanları için — API isteği YOK). Kadrodaki canlı maçların oyuncu
+// puanları buradan gelir; GitHub Actions cron'u tabloyu 5 dakikada bir tazeler.
+// Dönüş: Map<fixture_id, { players, status, elapsed, home_goals, away_goals, updated_at }>
+export async function getLiveScoresByFixtures(fixtureIds) {
+  const ids = [...(fixtureIds || [])].filter((x) => x != null)
+  if (!isSupabaseConfigured || !supabase || ids.length === 0) return new Map()
+  try {
+    const { data, error } = await supabase
+      .from('live_scores')
+      .select('fixture_id, status, elapsed, home_goals, away_goals, players, updated_at')
+      .in('fixture_id', ids)
+    if (error || !data) return new Map()
+    return new Map(data.map((r) => [r.fixture_id, r]))
+  } catch {
+    return new Map()
+  }
+}

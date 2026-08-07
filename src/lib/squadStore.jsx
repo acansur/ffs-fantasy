@@ -165,7 +165,9 @@ export function SquadProvider({ children, config = SUPER_LIG_CONFIG }) {
     }
   }, [config])
 
-  // Fikstürü API'den TAZE çekip günceller (canlı skor için Takımım 45sn'de bir çağırır).
+  // Fikstür DURUM/skor listesini API'den TAZE çeker (tek /fixtures çağrısı; canlı/bitmiş
+  // tespiti + skor başlığı için). Takımım 5 dakikada bir çağırır. Oyuncu kart PUANLARI
+  // ise API'den değil Supabase live_scores'tan gelir (computeWeekScores).
   const refreshFixtures = useCallback(async () => {
     const res = await config.loadFixtures({ force: true }).catch(() => null)
     if (res?.fixtures) {

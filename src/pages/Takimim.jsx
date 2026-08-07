@@ -203,7 +203,12 @@ export default function Takimim() {
   }, [loadPlayers])
 
   // Canlı skor: seçili haftanın deadline'ı geçtiyse ve maçlar bitmediyse,
-  // fikstürü 45sn'de bir taze çek (skorlar akar). Ref'lerle döngüsüz.
+  // fikstür DURUM/skor listesini periyodik tazele (canlı/bitmiş tespiti + skor
+  // başlığı için — TEK hafif /fixtures çağrısı). Oyuncu KART puanları artık API'den
+  // DEĞİL, Supabase live_scores tablosundan gelir (computeWeekScores); tabloyu
+  // GitHub Actions cron'u 5 dakikada bir günceller. Bu yüzden tazeleme aralığı da
+  // 5 dakikaya çekildi (cron ile hizalı) — /fixtures/players polling'i kaldırıldı,
+  // kota korunur. Ref'lerle döngüsüz.
   const fixturesRef = useRef(fixtures)
   const weeksRef = useRef(weeks)
   fixturesRef.current = fixtures
@@ -218,7 +223,7 @@ export default function Takimim() {
       if (allDone) return // hafta bitti → tazelemeye gerek yok
       refreshFixtures()
     }
-    const id = setInterval(tick, 45000)
+    const id = setInterval(tick, 300000) // 5 dk (cron cadence'i ile hizalı)
     tick()
     return () => clearInterval(id)
   }, [refreshFixtures, week])
