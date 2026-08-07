@@ -284,6 +284,12 @@ export function applyAutoSubs({ fieldByPos, benchEntries, ptsById, finishedById,
 
 // Efektif ilk 11 üzerinden toplam puan (maçı BAŞLAMIŞ oyuncular sayılır → canlı
 // dahil; kaptan ×2). startedById verilmezse finishedById kullanılır (geriye uyum).
+//
+// CANLI KAPTAN KURALI: kaptanın maçı DEVAM EDERKEN (henüz bitmemişse) kaptan ×2
+// yalnızca puan > 0 iken uygulanır; puan 0 iken ×2 uygulanmaz, normal sayılır.
+// Kaptanın maçı BİTTİYSE (FT) mevcut mantık korunur → koşulsuz ×2. Haftanın son
+// maçı bitince otomatik yedek + kaptanlık devri applyAutoSubs'ta hâlledildiği için
+// buraya (FT davranışına) dokunulmaz.
 export function computeTotalPoints({ field, finishedById, startedById, captainId }) {
   const countable = startedById || finishedById
   let total = 0
@@ -294,7 +300,11 @@ export function computeTotalPoints({ field, finishedById, startedById, captainId
       if (!countable.get(pl.id)) continue // maçı başlamamış → henüz 0 katkı
       const pts = e.pts ?? 0
       total += pts
-      if (pl.id === captainId) total += pts // kaptan ×2
+      if (pl.id === captainId) {
+        // Maçı bitmişse (FT) koşulsuz ×2; canlıysa yalnızca puan > 0 iken ×2.
+        const capFinished = Boolean(finishedById?.get(pl.id))
+        if (capFinished || pts > 0) total += pts // kaptan ×2
+      }
     }
   }
   return total
