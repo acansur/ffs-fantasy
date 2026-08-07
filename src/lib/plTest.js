@@ -100,12 +100,19 @@ async function fetchTeamSquad(team) {
   return []
 }
 
-// 7 maçtaki 14 takımın tüm oyuncuları — { players, teams } (app formatı).
+// Picker'da GÖRÜNEN kulüpler (7 maçtaki 14 takım). Havuz 18 takım olsa da
+// picker/kulüp filtresi bu sete göre sınırlıdır.
+export const PL_PICKER_CLUBS = new Set(PL_MATCH_TEAMS.map((t) => t.name))
+
+// Oyuncu HAVUZU: 18 takımın TÜMÜ. Kaydedilmiş kadroda (ertelenen takımlar dahil)
+// herhangi bir oyuncu ÇÖZÜLEBİLSİN diye tam havuz yüklenir; aksi halde o oyuncular
+// null olup kadrodan "kaybolur". Picker yalnızca 14 takımı gösterir (PL_PICKER_CLUBS).
+// Dönüş: { players (18 takım — çözümleme için), teams (14 takım — kulüp filtresi) }.
 let _playersPromise = null
 export function loadPlPlayers() {
   if (!_playersPromise) {
     _playersPromise = (async () => {
-      const squads = await mapWithConcurrency(PL_MATCH_TEAMS, 3, fetchTeamSquad)
+      const squads = await mapWithConcurrency(PL_POOL_TEAMS, 3, fetchTeamSquad)
       const seen = new Set()
       const players = []
       for (const list of squads) {

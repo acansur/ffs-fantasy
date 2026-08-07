@@ -11,6 +11,8 @@ import { scoreFixture } from './scoring.js'
 import { getTeamFixture } from './weeks.js'
 
 const FINISHED = new Set(['FT', 'AET', 'PEN', 'WO'])
+// Başlamamış (henüz oynanmayan) durumlar → başlamış = bunlardan biri DEĞİL.
+const NOT_STARTED = new Set(['NS', 'TBD', 'PST', 'CANC', 'ABD', 'AWD'])
 
 // Fixture verisi önbelleği (fixtureId → Promise<{players, events}>).
 // Aynı maç birden çok oyuncu için tekrar çekilmez.
@@ -103,7 +105,9 @@ function synthesizePlayersFromLineups(lineups, events) {
   return out
 }
 
-function fetchFixtureData(fixtureId) {
+// force=true → önbelleği atla (canlı maçlarda taze istatistik için).
+function fetchFixtureData(fixtureId, force = false) {
+  if (force) _cache.delete(fixtureId)
   if (!_cache.has(fixtureId)) {
     _cache.set(
       fixtureId,
@@ -135,37 +139,47 @@ function fetchFixtureData(fixtureId) {
 
 // Bir haftadaki oyuncuların puanlarını hesapla.
 // players → uygulama oyuncu nesneleri ({ id, club, ... })
-// Dönüş: { ptsById: Map<id, number>, finishedById: Map<id, boolean>,
-//          partsById: Map<id, parts[]> } (puan kırılımı gösterimi için parts dahil)
+// Maçı BAŞLAMIŞ (canlı VEYA bitmiş) oyuncular puanlanır → canlı puanlar da gelir.
+// finishedById auto-sub geçidi için (yalnızca FT), startedById gösterim için.
+// Dönüş: { ptsById, finishedById, startedById, partsById }
 export async function computeWeekScores(players, week, fixtures) {
   const finishedById = new Map()
+  const startedById = new Map()
   const fixtureIds = new Set()
+  const liveFixtureIds = new Set() // canlı (başlamış ama bitmemiş) → önbellek atlanır
 
   for (const p of players) {
     const fx = getTeamFixture(fixtures, p.club, week)
-    const fin = FINISHED.has(fx?.fixture?.status?.short)
+    const status = fx?.fixture?.status?.short
+    const started = Boolean(status) && !NOT_STARTED.has(status) // canlı + bitmiş
+    const fin = FINISHED.has(status)
     finishedById.set(p.id, fin)
-    if (fin && fx?.fixture?.id) fixtureIds.add(fx.fixture.id)
+    startedById.set(p.id, started)
+    if (started && fx?.fixture?.id) {
+      fixtureIds.add(fx.fixture.id)
+      if (!fin) liveFixtureIds.add(fx.fixture.id)
+    }
   }
 
-  const detailed = await scoreFixturesDetailed(fixtureIds)
+  const detailed = await scoreFixturesDetailed(fixtureIds, liveFixtureIds)
   const ptsById = new Map()
   const partsById = new Map()
   for (const [id, s] of detailed) {
     ptsById.set(id, s.total)
     partsById.set(id, s.parts)
   }
-  return { ptsById, finishedById, partsById }
+  return { ptsById, finishedById, startedById, partsById }
 }
 
 // Verilen fixture id'leri için tam skorlanmış oyuncu nesnesini döner →
 // Map<playerId, {total, parts, ...}> (Takımım ve UEL test sayfası ortak kullanır)
 // (puan kırılımı gösterimi için parts dahil.)
-export async function scoreFixturesDetailed(fixtureIds) {
+// liveIds → bu maçlar için önbellek atlanır (canlı maçta taze veri).
+export async function scoreFixturesDetailed(fixtureIds, liveIds = new Set()) {
   const byId = new Map()
   await Promise.all(
     [...fixtureIds].map(async (id) => {
-      const data = await fetchFixtureData(id)
+      const data = await fetchFixtureData(id, liveIds.has(id))
       const scored = scoreFixture(data.players, data.events)
       for (const s of scored) byId.set(s.id, s)
     })
@@ -254,15 +268,16 @@ export function applyAutoSubs({ fieldByPos, benchEntries, ptsById, finishedById,
   return { field, bench, subs, captainId: effectiveCaptainId }
 }
 
-// Efektif ilk 11 üzerinden toplam puan (biten maçlar sayılır, kaptan ×2).
-// field → applyAutoSubs sonucu field
-export function computeTotalPoints({ field, finishedById, captainId }) {
+// Efektif ilk 11 üzerinden toplam puan (maçı BAŞLAMIŞ oyuncular sayılır → canlı
+// dahil; kaptan ×2). startedById verilmezse finishedById kullanılır (geriye uyum).
+export function computeTotalPoints({ field, finishedById, startedById, captainId }) {
+  const countable = startedById || finishedById
   let total = 0
   for (const pos of Object.keys(field)) {
     for (const e of field[pos]) {
       const pl = e.player
       if (!pl) continue
-      if (!finishedById.get(pl.id)) continue // maçı bitmemiş → henüz 0 katkı
+      if (!countable.get(pl.id)) continue // maçı başlamamış → henüz 0 katkı
       const pts = e.pts ?? 0
       total += pts
       if (pl.id === captainId) total += pts // kaptan ×2

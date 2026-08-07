@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useMemo, useCallback, useEffect, useRef } from 'react'
-import { SQUAD_TOTALS, START_LIMITS, TOTAL_BUDGET, slotCounts, formationLabel } from './squadData.js'
+import { SQUAD_TOTALS, START_LIMITS, TOTAL_BUDGET, formationLabel } from './squadData.js'
 import { loadCachedFixtures, loadCachedPlayers } from './dataCache.js'
 import { buildWeeks, getActiveRound, isLocked } from './weeks.js'
 import { isSupabaseConfigured } from './supabase.js'
@@ -68,37 +68,38 @@ function within(pos, n) {
 }
 
 // DB satırlarından (squad_players) kadro yapısını yeniden kur.
-export function rebuildRoster(rows, playersById, formation) {
-  const { field, bench } = slotCounts(formation || '4-4-2')
+// Formasyona BAĞLI DEĞİL: yapı doğrudan kayıttaki is_starter/bench_order'dan
+// kurulur. Eski hâli slotCounts(formation) kadar starter/yedek YUVASI açıp
+// fazlasını truncate ediyordu; formation kayıtlı starter sayısıyla uyuşmazsa
+// (örn. 5 orta saha starter ama formation "4-4-2") fazla oyuncular "kayboluyordu".
+// Bu sürüm her kayıtlı oyuncuyu korur. (formation parametresi artık kullanılmaz.)
+export function rebuildRoster(rows, playersById) {
   const byPos = { KL: [], DF: [], OS: [], FW: [] }
   for (const r of rows) {
     const pos = DB_TO_POS[r.position_type]
     if (!pos) continue
     byPos[pos].push({
       player: playersById[String(r.player_id)] || null,
-      starter: r.is_starter,
-      benchOrder: r.bench_order,
+      starter: !!r.is_starter,
+      benchOrder: r.is_starter ? null : r.bench_order,
     })
   }
   const roster = {}
   let benchCounter = 1
   for (const pos of POS_ORDER) {
-    const starters = byPos[pos].filter((e) => e.starter)
-    const benchEntries = byPos[pos]
+    const starters = byPos[pos]
+      .filter((e) => e.starter)
+      .map((e) => ({ player: e.player, starter: true, benchOrder: null }))
+    const bench = byPos[pos]
       .filter((e) => !e.starter)
       .sort((a, b) => (a.benchOrder ?? 99) - (b.benchOrder ?? 99))
-    const slots = []
-    for (let i = 0; i < field[pos]; i++) {
-      slots.push({ player: starters[i]?.player ?? null, starter: true, benchOrder: null })
-    }
-    for (let i = 0; i < bench[pos]; i++) {
-      const e = benchEntries[i]
-      let bo = e?.benchOrder
-      if (bo == null) bo = pos === 'KL' ? 0 : benchCounter++
-      else if (pos !== 'KL') benchCounter = Math.max(benchCounter, bo + 1)
-      slots.push({ player: e?.player ?? null, starter: false, benchOrder: bo })
-    }
-    roster[pos] = slots
+      .map((e) => {
+        let bo = e.benchOrder
+        if (bo == null) bo = pos === 'KL' ? 0 : benchCounter++
+        else if (pos !== 'KL') benchCounter = Math.max(benchCounter, bo + 1)
+        return { player: e.player, starter: false, benchOrder: bo }
+      })
+    roster[pos] = [...starters, ...bench]
   }
   return roster
 }
@@ -391,6 +392,7 @@ export function SquadProvider({ children, config = SUPER_LIG_CONFIG }) {
     POS_ORDER,
     loadPlayers: config.loadPlayers, // Transfer picker + Takımım önyükleme (dataset'e göre)
     routes: config.routes, // { squad, transfer } — Takımım/Transfer navigasyonu
+    pickerClubs: config.pickerClubs, // Transfer picker'ı bu kulüplerle sınırlar (varsa)
     refreshFixtures, // canlı skor için fikstürü taze çeker
   }
   return <SquadContext.Provider value={value}>{children}</SquadContext.Provider>

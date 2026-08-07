@@ -63,7 +63,7 @@ const IconSearch = () => (
 export default function Transfer() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { roster: committed, commitAndSave, week, setWeek, weeks, fixtures, weekOverrides, weeksLoading, squadLoading, loadPlayers, routes = { squad: '/takimim', transfer: '/transfer' } } = useSquad()
+  const { roster: committed, commitAndSave, week, setWeek, weeks, fixtures, weekOverrides, weeksLoading, squadLoading, loadPlayers, pickerClubs, routes = { squad: '/takimim', transfer: '/transfer' } } = useSquad()
 
   const now = useNow(30000) // gerçek zamanlı deadline kontrolü (30 sn)
   const visibleWeeks = getVisibleWeeks(weeks, now)
@@ -173,6 +173,9 @@ export default function Transfer() {
 
   const list = useMemo(() => {
     let l = api.players
+    // pickerClubs verilmişse (örn. /pl-test) picker yalnızca bu kulüpleri gösterir.
+    // Havuz daha geniş olabilir (kayıtlı kadro çözümlemesi için) ama seçim sınırlı.
+    if (pickerClubs) l = l.filter((p) => pickerClubs.has(p.club))
     if (posFilter) l = l.filter((p) => p.pos === posFilter)
     if (selectedClubs.length) l = l.filter((p) => selectedClubs.includes(p.club))
     // Özel karakter olmadan da bulunsun: aranan metin ve oyuncu adı ASCII'ye
@@ -180,7 +183,7 @@ export default function Transfer() {
     const q = normalizeText(search.trim())
     if (q) l = l.filter((p) => normalizeText(p.name).includes(q))
     return sortPlayers(l, sortKey)
-  }, [api.players, posFilter, selectedClubs, sortKey, search])
+  }, [api.players, posFilter, selectedClubs, sortKey, search, pickerClubs])
 
   const setDraftSlot = (pos, index, player) => {
     editedRef.current = true
@@ -232,7 +235,8 @@ export default function Transfer() {
   // mümkün olan en yüksek değerli oyuncularla doldurur (kalanları da
   // dolduracak minimum maliyeti rezerve ederek bütçeyi aşmaz).
   const autoFill = () => {
-    const pool = api.players
+    // Otomatik doldur da picker'la aynı kulüplerle sınırlı (pickerClubs varsa).
+    const pool = pickerClubs ? api.players.filter((p) => pickerClubs.has(p.club)) : api.players
     const next = cloneRoster(draft)
     const used = new Set()
     const clubCount = {}

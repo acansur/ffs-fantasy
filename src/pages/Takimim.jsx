@@ -180,7 +180,7 @@ export default function Takimim() {
   const [saveMsg, setSaveMsg] = useState('')
   const [scoringOpen, setScoringOpen] = useState(false)
   // Deadline sonrası haftalık puanlar: { loading, ptsById, finishedById, forKey }
-  const [scores, setScores] = useState({ loading: false, ptsById: new Map(), finishedById: new Map(), partsById: new Map(), forKey: null })
+  const [scores, setScores] = useState({ loading: false, ptsById: new Map(), finishedById: new Map(), startedById: new Map(), partsById: new Map(), forKey: null })
 
   const now = useNow(30000) // gerçek zamanlı deadline kontrolü (30 sn)
   const visibleWeeks = getVisibleWeeks(weeks, now)
@@ -230,7 +230,13 @@ export default function Takimim() {
 
   // Deadline geçtiğinde: kadrodaki her oyuncunun o haftaki puanını
   // (tamamlanmış maçlardan) scoring.js ile hesapla.
-  const scoreKey = locked ? `${week}:${rosterList.map((p) => p.id).join(',')}` : null
+  // scoreKey'e maç DURUM imzası da katılır: maç NS→canlı→FT oldukça key değişir
+  // ve canlı puanlar yeniden hesaplanır (yalnızca oyuncu id'lerine bakılsaydı
+  // fikstür durumu değişse de recompute atlanırdı).
+  const statusSig = fixtures
+    .map((f) => `${f.fixture?.id}:${f.fixture?.status?.short}:${f.fixture?.status?.elapsed ?? ''}:${f.goals?.home ?? ''}-${f.goals?.away ?? ''}`)
+    .join(',')
+  const scoreKey = locked ? `${week}:${statusSig}:${rosterList.map((p) => p.id).join(',')}` : null
   useEffect(() => {
     if (!locked || weeksLoading || squadLoading) return
     if (!fixtures.length || rosterList.length === 0) return
@@ -239,7 +245,7 @@ export default function Takimim() {
     setScores((s) => ({ ...s, loading: true }))
     computeWeekScores(rosterList, week, fixtures)
       .then((res) => {
-        if (alive) setScores({ loading: false, ptsById: res.ptsById, finishedById: res.finishedById, partsById: res.partsById, forKey: scoreKey })
+        if (alive) setScores({ loading: false, ptsById: res.ptsById, finishedById: res.finishedById, startedById: res.startedById, partsById: res.partsById, forKey: scoreKey })
       })
       .catch(() => {
         if (alive) setScores((s) => ({ ...s, loading: false, forKey: scoreKey }))
@@ -327,7 +333,7 @@ export default function Takimim() {
     ? null
     : scores.loading
       ? '…'
-      : computeTotalPoints({ field: display.field, finishedById: scores.finishedById, captainId: effectiveCaptainId })
+      : computeTotalPoints({ field: display.field, finishedById: scores.finishedById, startedById: scores.startedById, captainId: effectiveCaptainId })
 
   // Yuva tıklaması: yer değiştirme modundaysa hedef seç; değilse detay modalı aç
   const onSlotClick = (pos, index, viewPlayer, viewStarter) => {
@@ -375,14 +381,14 @@ export default function Takimim() {
       Boolean(swapMode) && swapMode.source.pos === pos && swapMode.source.index === index
     const isTarget =
       Boolean(swapMode) && !isSwapSource && (swapMode.targetType === 'bench' ? !starter : starter)
-    // Deadline sonrası puan bilgisi doğrudan gösterim nesnesinden gelir
-    // (maç bitmemişse "-", bittiyse "N P"); öncesinde görünüm dropdown'ına göre.
+    // Deadline sonrası puan: maç BAŞLADIYSA (canlı veya bitmiş) "N P" — canlı
+    // puanlar da akar; başlamadıysa "-". Öncesinde görünüm dropdown'ına göre.
     const info = !player
       ? null
       : locked
         ? scores.loading
           ? '…'
-          : view.finished
+          : scores.startedById.get(player.id)
             ? `${view.pts ?? 0} P`
             : '-'
         : slotInfoFor(player)
