@@ -78,11 +78,12 @@ export function getTeamFixture(fixtures, teamName, round) {
   )
 }
 
-// Deadline'ı Türkiye saatiyle biçimlendir (örn. "14 Ağu 21:00")
+// Deadline'ı Türkiye saatiyle biçimlendir (örn. "14 Ağu 21:00 TSİ").
+// Yalnızca görünen metin; deadline hesabı/mantığı bu fonksiyonda DEĞİLDİR.
 export function formatDeadline(ms) {
   if (ms == null) return '—'
   const d = new Date(ms)
   const date = d.toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', timeZone: 'Europe/Istanbul' })
   const time = d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Istanbul' })
-  return `${date} ${time}`
+  return `${date} ${time} TSİ`
 }
