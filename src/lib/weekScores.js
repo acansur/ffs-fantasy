@@ -140,58 +140,45 @@ function fetchFixtureData(fixtureId, force = false) {
 
 // Bir haftadaki oyuncuların puanlarını hesapla.
 // players → uygulama oyuncu nesneleri ({ id, club, ... })
-// Maçı BAŞLAMIŞ (canlı VEYA bitmiş) oyuncular puanlanır → canlı puanlar da gelir.
 //
-// KAYNAK AYRIMI (kota koruması):
-//   - CANLI maçlar (başlamış ama bitmemiş) → puanlar Supabase live_scores
-//     tablosundan okunur. API isteği ATILMAZ; tabloyu GitHub Actions cron'u
-//     5 dakikada bir günceller.
-//   - BİTMİŞ maçlar (FT/AET/PEN/WO) → kesin final için scoring motoruyla bir kez
-//     hesaplanır (önbellekli). live_scores yalnızca IN_PLAY yazdığından biten
-//     maçın satırı donuk kalır; final doğruluğu için motor kullanılır.
+// Maçı BAŞLAMIŞ (canlı VEYA bitmiş) TÜM oyuncuların puanı Supabase live_scores
+// tablosundan okunur — API isteği YOKTUR. Tabloyu GitHub Actions cron'u besler
+// (scripts/live-scores.mjs):
+//   - Oynanırken 5 dakikada bir 'IN_PLAY' satırı,
+//   - Maç bitince (FT/AET/PEN/WO) BİR KEZ final istatistiği 'FT' işaretiyle.
+// getLiveScoresByFixtures fixture_id ile okur (durum işareti fark etmez): finalize
+// yazılmadan önce son 'IN_PLAY' anlık görüntüsü, yazıldıktan sonra kesin final
+// gelir. Böylece kart puanı kullanıcı sayısından bağımsız tek otoriter kaynaktan
+// gelir ve final puan garanti edilir.
 //
 // finishedById auto-sub geçidi için (yalnızca FT), startedById gösterim için.
 // Dönüş: { ptsById, finishedById, startedById, partsById }
 export async function computeWeekScores(players, week, fixtures) {
   const finishedById = new Map()
   const startedById = new Map()
-  const finishedFixtureIds = new Set() // FT → scoring motoru (kesin final)
-  const liveFixtureIds = new Set() // canlı → live_scores (API YOK)
+  const startedFixtureIds = new Set() // canlı + bitmiş → hepsi live_scores'tan okunur
 
   for (const p of players) {
     const fx = getTeamFixture(fixtures, p.club, week)
     const status = fx?.fixture?.status?.short
     const started = Boolean(status) && !NOT_STARTED.has(status) // canlı + bitmiş
-    const fin = FINISHED.has(status)
-    finishedById.set(p.id, fin)
+    finishedById.set(p.id, FINISHED.has(status))
     startedById.set(p.id, started)
-    if (started && fx?.fixture?.id) {
-      if (fin) finishedFixtureIds.add(fx.fixture.id)
-      else liveFixtureIds.add(fx.fixture.id)
-    }
+    if (started && fx?.fixture?.id) startedFixtureIds.add(fx.fixture.id)
   }
 
   const ptsById = new Map()
   const partsById = new Map()
 
-  // CANLI: puanları live_scores'tan oku (tek Supabase isteği, API YOK).
-  if (liveFixtureIds.size) {
-    const liveMap = await getLiveScoresByFixtures(liveFixtureIds)
+  // Puanları live_scores'tan oku (tek Supabase isteği; canlı ve final dahil, API YOK).
+  if (startedFixtureIds.size) {
+    const liveMap = await getLiveScoresByFixtures(startedFixtureIds)
     for (const row of liveMap.values()) {
       for (const pl of row.players || []) {
         if (pl?.id == null) continue
         ptsById.set(pl.id, pl.total ?? 0)
         partsById.set(pl.id, pl.parts || [])
       }
-    }
-  }
-
-  // BİTMİŞ: kesin final için scoring motoru (bir kez, önbellekli).
-  if (finishedFixtureIds.size) {
-    const detailed = await scoreFixturesDetailed(finishedFixtureIds)
-    for (const [id, s] of detailed) {
-      ptsById.set(id, s.total)
-      partsById.set(id, s.parts)
     }
   }
 
