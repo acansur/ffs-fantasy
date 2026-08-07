@@ -5,20 +5,21 @@ import { normalizeText } from '../lib/normalize.js'
 import {
   listUsers, deleteUser,
   listPlayers, savePlayerValue,
-  listLeagues,
+  listLeagues, listFixtures,
   getTableCounts, getApiStatus,
   getActiveAnnouncement, setAnnouncement,
   getWeekOverrides, setWeekOverride,
 } from '../lib/adminDb.js'
 import {
   refreshPlayers, refreshFixtures,
-  getPlayersUpdatedAt, getFixturesUpdatedAt,
+  getPlayersUpdatedAt, getFixturesUpdatedAt, getDataSource,
 } from '../lib/dataCache.js'
 import './Admin.css'
 
 const TABS = [
   ['users', 'Kullanıcılar'],
   ['players', 'Oyuncular'],
+  ['fixtures', 'Fikstür'],
   ['leagues', 'Ligler'],
   ['system', 'Sistem'],
   ['announce', 'Duyuru'],
@@ -47,9 +48,23 @@ const fmtStamp = (s) => {
   return `${date}, ${time}`
 }
 
+// Fikstür önizlemesi için kompakt gün/saat
+const fmtDay = (s) => (s ? new Date(s).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', timeZone: 'Europe/Istanbul' }) : '—')
+const fmtHm = (s) => (s ? new Date(s).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Istanbul' }) : '—')
+// "Süper Lig - 3" → "3. Hafta"
+const roundLabel = (r) => {
+  const n = Number(String(r || '').match(/\d+/)?.[0])
+  return n ? `${n}. Hafta` : r || '—'
+}
+const roundNum = (r) => Number(String(r || '').match(/\d+/)?.[0] ?? 1e9)
+
+// Kaynak kodu → okunur etiket ("API'den otomatik" / "Manuel güncelleme")
+const SOURCE_LABEL = { auto: "API'den otomatik", manual: 'Manuel güncelleme' }
+
 // API→Supabase güncelleme kartı: buton → % ilerleme çubuğu → son güncelleme.
 // onRun(onProgress) bir Promise döndürür; onProgress(pct, label) ile ilerler.
-function UpdateCard({ title, buttonLabel, color, onRun, lastUpdated, onDone }) {
+// source: 'auto' | 'manual' | null → "Kaynak" göstergesi (yalnızca verildiğinde).
+function UpdateCard({ title, buttonLabel, color, onRun, lastUpdated, source, onDone }) {
   const [st, setSt] = useState({ busy: false, pct: 0, label: '', done: false, err: '' })
   const run = async () => {
     setSt({ busy: true, pct: 0, label: 'Başlatılıyor…', done: false, err: '' })
@@ -77,6 +92,18 @@ function UpdateCard({ title, buttonLabel, color, onRun, lastUpdated, onDone }) {
         {st.done && <span className="adm-upd-ok">✅ Tamamlandı — </span>}
         Son güncelleme: <b>{fmtStamp(lastUpdated)}</b>
       </div>
+      {source !== undefined && (
+        <div className="adm-upd-src">
+          Kaynak:{' '}
+          {source ? (
+            <span className={`adm-src-badge ${source}`}>
+              {source === 'auto' ? '🔄' : '✋'} {SOURCE_LABEL[source] || source}
+            </span>
+          ) : (
+            <b>—</b>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -102,6 +129,7 @@ export default function Admin() {
       <div className="adm-body">
         {tab === 'users' && <UsersTab />}
         {tab === 'players' && <PlayersTab />}
+        {tab === 'fixtures' && <FixturesTab />}
         {tab === 'leagues' && <LeaguesTab />}
         {tab === 'system' && <SystemTab />}
         {tab === 'announce' && <AnnounceTab />}
@@ -243,6 +271,109 @@ function PlayersTab() {
             </table>
           </div>
         </>
+      )}
+    </div>
+  )
+}
+
+/* ---------- 2b) Fikstür ---------- */
+function FixturesTab() {
+  const [playersAt, setPlayersAt] = useState(null)
+  const [fixturesAt, setFixturesAt] = useState(null)
+  const [playersSrc, setPlayersSrc] = useState(null) // 'auto' | 'manual' | null
+  const [fixturesSrc, setFixturesSrc] = useState(null)
+  const [rows, setRows] = useState(null) // fikstür önizleme satırları
+  const [err, setErr] = useState('')
+
+  const loadPreview = () => {
+    setRows(null)
+    listFixtures().then(setRows).catch((e) => { setErr(e.message); setRows([]) })
+  }
+  useEffect(() => {
+    getPlayersUpdatedAt().then(setPlayersAt).catch(() => {})
+    getFixturesUpdatedAt().then(setFixturesAt).catch(() => {})
+    getDataSource('players').then((d) => setPlayersSrc(d?.source || null)).catch(() => {})
+    getDataSource('fixtures').then((d) => setFixturesSrc(d?.source || null)).catch(() => {})
+    loadPreview()
+  }, [])
+
+  // Hafta hafta gruplama (maç tarihine göre gelmiş satırlar → round bazında)
+  const groups = useMemo(() => {
+    if (!rows) return []
+    const map = new Map()
+    for (const f of rows) {
+      const k = f.round || '—'
+      if (!map.has(k)) map.set(k, [])
+      map.get(k).push(f)
+    }
+    return [...map.entries()]
+      .map(([round, matches]) => ({ round, matches }))
+      .sort((a, b) => roundNum(a.round) - roundNum(b.round))
+  }, [rows])
+
+  return (
+    <div>
+      {/* Hatırlatma notu */}
+      <div className="adm-remind">
+        🔔 <b>Her gün güncelle.</b> Oyuncu değerleri ve fikstür (maç tarihi/saati)
+        güncel kalması için günde bir kez API'den çekin.
+      </div>
+
+      {/* Güncelleme kartları — yan yana, ayırt edici renkler */}
+      <div className="adm-upd-grid">
+        <UpdateCard
+          title="Oyuncular"
+          buttonLabel="Oyuncu Listesini Güncelle"
+          color="cyan"
+          onRun={(onProgress) => refreshPlayers(onProgress)}
+          lastUpdated={playersAt}
+          source={playersSrc}
+          onDone={(res) => { setPlayersAt(res.updatedAt); setPlayersSrc('manual') }}
+        />
+        <UpdateCard
+          title="Fikstür"
+          buttonLabel="Fikstürü Güncelle"
+          color="violet"
+          onRun={(onProgress) => refreshFixtures(onProgress)}
+          lastUpdated={fixturesAt}
+          source={fixturesSrc}
+          onDone={(res) => { setFixturesAt(res.updatedAt); setFixturesSrc('manual'); loadPreview() }}
+        />
+      </div>
+
+      {/* Fikstür önizlemesi */}
+      <div className="adm-fx-head">
+        <h3>Güncel Fikstür (Supabase)</h3>
+        {rows && rows.length > 0 && (
+          <span className="adm-fx-sum">{groups.length} hafta · {rows.length} maç</span>
+        )}
+      </div>
+      {err && <div className="adm-msg err">⚠ {err}</div>}
+      {rows === null ? (
+        <div className="adm-note">Yükleniyor…</div>
+      ) : rows.length === 0 ? (
+        <div className="adm-note">Fikstür yok. "Fikstürü Güncelle" ile API'den çekin.</div>
+      ) : (
+        <div className="adm-fx-weeks">
+          {groups.map((g) => (
+            <div key={g.round} className="adm-fx-week">
+              <div className="adm-fx-week-head">
+                <span className="adm-fx-round">{roundLabel(g.round)}</span>
+                <span className="adm-fx-count">{g.matches.length} maç</span>
+              </div>
+              <ul className="adm-fx-list">
+                {g.matches.map((m) => (
+                  <li key={m.fixture_id} className="adm-fx-match">
+                    <span className="adm-fx-home">{m.home}</span>
+                    <span className="adm-fx-vs">vs</span>
+                    <span className="adm-fx-away">{m.away}</span>
+                    <span className="adm-fx-when">{fmtDay(m.match_date)} · {fmtHm(m.match_date)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   )

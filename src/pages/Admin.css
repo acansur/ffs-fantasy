@@ -16,6 +16,9 @@
 .adm-btn.danger:hover { background: rgba(240, 96, 94, 0.2); }
 .adm-btn.sm { padding: 5px 10px; font-size: 0.75rem; }
 .adm-btn.green { color: #052112; background: linear-gradient(180deg, #4ade80, #16a34a); border-color: #15803d; }
+/* Fikstür sekmesi güncelleme butonları — diğerlerinden farklı renkler */
+.adm-btn.cyan { color: #04252b; background: linear-gradient(180deg, #34e0e0, #06b6d4); border-color: #0891b2; }
+.adm-btn.violet { color: #f4ecff; background: linear-gradient(180deg, #a586ff, #7c4dff); border-color: #6d28d9; }
 .adm-btn.big { width: 100%; padding: 13px 16px; font-size: 0.95rem; border-radius: 11px; box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35); }
 
 /* --- Güncelleme kartları (Oyuncular / Fikstür) --- */
@@ -32,16 +35,61 @@
 }
 .adm-upd-card.gold { border-color: rgba(240, 165, 0, 0.35); box-shadow: inset 0 0 0 1px rgba(240, 165, 0, 0.08); }
 .adm-upd-card.green { border-color: rgba(34, 197, 94, 0.35); box-shadow: inset 0 0 0 1px rgba(34, 197, 94, 0.08); }
+.adm-upd-card.cyan { border-color: rgba(6, 182, 212, 0.4); box-shadow: inset 0 0 0 1px rgba(6, 182, 212, 0.1); }
+.adm-upd-card.violet { border-color: rgba(124, 77, 255, 0.4); box-shadow: inset 0 0 0 1px rgba(124, 77, 255, 0.1); }
 .adm-upd-title { font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 1rem; letter-spacing: 0.02em; color: #e8eefc; }
 .adm-upd-progress { display: flex; flex-direction: column; gap: 6px; }
 .adm-upd-bar { height: 12px; border-radius: 999px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
 .adm-upd-bar > span { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #4ade80, #16a34a); transition: width 0.35s ease; }
 .adm-upd-card.gold .adm-upd-bar > span { background: linear-gradient(90deg, #ffcb52, #f0a500); }
+.adm-upd-card.cyan .adm-upd-bar > span { background: linear-gradient(90deg, #34e0e0, #06b6d4); }
+.adm-upd-card.violet .adm-upd-bar > span { background: linear-gradient(90deg, #a586ff, #7c4dff); }
 .adm-upd-pct { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.9rem; color: #ffcb52; letter-spacing: 0.02em; }
 .adm-upd-card.green .adm-upd-pct { color: #4ade80; }
+.adm-upd-card.cyan .adm-upd-pct { color: #34e0e0; }
+.adm-upd-card.violet .adm-upd-pct { color: #b79bff; }
 .adm-upd-meta { font-size: 0.78rem; color: #9fb0c9; }
 .adm-upd-meta b { color: #e8eefc; }
 .adm-upd-ok { color: #4ade80; font-weight: 700; }
+/* Kaynak göstergesi */
+.adm-upd-src { font-size: 0.78rem; color: #9fb0c9; }
+.adm-src-badge { display: inline-block; font-weight: 800; font-size: 0.72rem; padding: 2px 9px; border-radius: 99px; letter-spacing: 0.02em; }
+.adm-src-badge.auto { background: rgba(52, 224, 224, 0.16); color: #5ee7e7; }
+.adm-src-badge.manual { background: rgba(165, 134, 255, 0.18); color: #c3aaff; }
+
+/* Hatırlatma notu (Fikstür sekmesi) */
+.adm-remind {
+  background: linear-gradient(180deg, rgba(240, 165, 0, 0.14), rgba(240, 165, 0, 0.06));
+  border: 1px solid rgba(240, 165, 0, 0.4);
+  color: #ffe6ab;
+  border-radius: 12px;
+  padding: 11px 15px;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  margin-bottom: 14px;
+}
+.adm-remind b { color: #ffcb52; }
+
+/* Fikstür önizlemesi */
+.adm-fx-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin: 22px 0 12px; }
+.adm-fx-head h3 { margin: 0; font-size: 1rem; }
+.adm-fx-sum { font-weight: 800; color: #ffcb52; font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+.adm-fx-weeks { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+@media (max-width: 720px) { .adm-fx-weeks { grid-template-columns: 1fr; } }
+.adm-fx-week { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; overflow: hidden; }
+.adm-fx-week-head { display: flex; align-items: center; justify-content: space-between; padding: 9px 13px; background: rgba(124, 77, 255, 0.12); border-bottom: 1px solid rgba(255, 255, 255, 0.07); }
+.adm-fx-round { font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 800; font-size: 0.95rem; color: #cdb8ff; letter-spacing: 0.02em; }
+.adm-fx-count { font-size: 0.72rem; font-weight: 700; color: #9aa9c6; }
+.adm-fx-list { list-style: none; margin: 0; padding: 4px 0; }
+.adm-fx-match { display: grid; grid-template-columns: 1fr auto 1fr auto; align-items: center; gap: 8px; padding: 7px 13px; border-bottom: 1px solid rgba(255, 255, 255, 0.04); font-size: 0.82rem; }
+.adm-fx-match:last-child { border-bottom: none; }
+.adm-fx-home { text-align: right; font-weight: 600; color: #e8eefc; }
+.adm-fx-away { text-align: left; font-weight: 600; color: #e8eefc; }
+.adm-fx-vs { font-size: 0.68rem; font-weight: 700; color: #9aa9c6; }
+.adm-fx-when { grid-column: 1 / -1; text-align: center; font-size: 0.72rem; color: #8fa0ba; font-variant-numeric: tabular-nums; }
+@media (min-width: 480px) {
+  .adm-fx-when { grid-column: auto; text-align: right; white-space: nowrap; }
+}
 
 .adm-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
 .adm-input, .adm-textarea, .adm-val { font-family: inherit; font-size: 0.85rem; color: #e8eefc; background: #0f1a24; border: 1px solid rgba(255, 255, 255, 0.16); border-radius: 8px; padding: 8px 10px; }

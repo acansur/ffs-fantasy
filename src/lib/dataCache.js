@@ -104,6 +104,7 @@ export function loadCachedPlayers() {
       if (ok()) {
         try {
           await savePlayers(apiPlayers)
+          await recordSource('players', 'auto')
           const { data } = await supabase
             .from('players')
             .select('*')
@@ -140,6 +141,7 @@ export async function refreshPlayers(onProgress) {
   })
   onProgress?.(94, 'Kaydediliyor…')
   const res = await savePlayers(players)
+  await recordSource('players', 'manual')
   _playersPromise = null // sonraki okuma tazelensin
   onProgress?.(100, 'Tamamlandı')
   return res
@@ -215,6 +217,7 @@ export function loadCachedFixtures({ force = false } = {}) {
       if (ok() && fixtures.length) {
         try {
           await saveFixtures(fixtures)
+          await recordSource('fixtures', 'auto')
         } catch (e) {
           console.warn('[FFS] fixtures önbelleği yazılamadı:', e.message)
         }
@@ -242,6 +245,7 @@ export async function refreshFixtures(onProgress) {
   if (!res || !res.fixtures?.length) throw new Error('Fikstür alınamadı (API boş döndü)')
   onProgress?.(65, 'Kaydediliyor…')
   const saved = await saveFixtures(res.fixtures)
+  await recordSource('fixtures', 'manual')
   _fixturesPromise = null
   onProgress?.(100, 'Tamamlandı')
   return saved
@@ -256,4 +260,35 @@ export async function getFixturesUpdatedAt() {
     .limit(1)
     .maybeSingle()
   return data?.updated_at || null
+}
+
+/* ==================== KAYNAK DAMGASI ==================== */
+// Son güncellemenin kaynağını (manuel/otomatik) data_sources tablosuna yazar.
+// Tablo yoksa (migration 0012 uygulanmadıysa) HATA YOK SAYILIR → uygulama akışı
+// hiçbir şekilde bozulmaz; gösterge yalnızca "—" olur.
+async function recordSource(key, source) {
+  if (!ok()) return
+  try {
+    await supabase
+      .from('data_sources')
+      .upsert({ key, source, updated_at: new Date().toISOString() }, { onConflict: 'key' })
+  } catch {
+    /* data_sources tablosu yok → yok say */
+  }
+}
+
+// key ('players' | 'fixtures') için { source, updated_at } | null döner.
+export async function getDataSource(key) {
+  if (!ok()) return null
+  try {
+    const { data, error } = await supabase
+      .from('data_sources')
+      .select('source, updated_at')
+      .eq('key', key)
+      .maybeSingle()
+    if (error) return null
+    return data || null
+  } catch {
+    return null
+  }
 }

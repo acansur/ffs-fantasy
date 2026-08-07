@@ -52,6 +52,24 @@ export async function savePlayerValue(id, value) {
 // Not: Oyuncu/fikstür API→Supabase güncellemesi (ilerleme + 24s önbellek)
 // src/lib/dataCache.js içindedir (refreshPlayers / refreshFixtures).
 
+// Supabase'deki güncel fikstürü önizleme için okur (hafta hafta gruplama Admin'de).
+// Döner: [{ fixture_id, round, match_date, home, away }] — maç tarihine göre sıralı.
+export async function listFixtures() {
+  if (!ok()) return []
+  const { data, error } = await supabase
+    .from('fixtures')
+    .select('fixture_id, round, match_date, data')
+    .order('match_date', { ascending: true })
+  if (error) throw error
+  return (data || []).map((r) => ({
+    fixture_id: r.fixture_id,
+    round: r.round,
+    match_date: r.match_date,
+    home: r.data?.teams?.home?.name || '—',
+    away: r.data?.teams?.away?.name || '—',
+  }))
+}
+
 /* ---------- 3) Ligler ---------- */
 export async function listLeagues() {
   if (!ok()) return []
