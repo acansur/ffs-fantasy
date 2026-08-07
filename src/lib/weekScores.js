@@ -9,11 +9,10 @@
 
 import { scoreFixture } from './scoring.js'
 import { getTeamFixture } from './weeks.js'
-import { getLiveScoresByFixtures } from './liveScoresDb.js'
 
+// Bitmiş (puanların kesinleştiği) durum kodları. live_scores.status FT işaretini
+// ve olası eski kodları (AET/PEN/WO) kapsar.
 const FINISHED = new Set(['FT', 'AET', 'PEN', 'WO'])
-// Başlamamış (henüz oynanmayan) durumlar → başlamış = bunlardan biri DEĞİL.
-const NOT_STARTED = new Set(['NS', 'TBD', 'PST', 'CANC', 'ABD', 'AWD'])
 
 // Fixture verisi önbelleği (fixtureId → Promise<{players, events}>).
 // Aynı maç birden çok oyuncu için tekrar çekilmez.
@@ -140,45 +139,41 @@ function fetchFixtureData(fixtureId, force = false) {
 
 // Bir haftadaki oyuncuların puanlarını hesapla.
 // players → uygulama oyuncu nesneleri ({ id, club, ... })
+// liveMap → Map<fixture_id, live_scores satırı> (Takımım Supabase'den çeker)
 //
-// Maçı BAŞLAMIŞ (canlı VEYA bitmiş) TÜM oyuncuların puanı Supabase live_scores
-// tablosundan okunur — API isteği YOKTUR. Tabloyu GitHub Actions cron'u besler
-// (scripts/live-scores.mjs):
-//   - Oynanırken 5 dakikada bir 'IN_PLAY' satırı,
-//   - Maç bitince (FT/AET/PEN/WO) BİR KEZ final istatistiği 'FT' işaretiyle.
-// getLiveScoresByFixtures fixture_id ile okur (durum işareti fark etmez): finalize
-// yazılmadan önce son 'IN_PLAY' anlık görüntüsü, yazıldıktan sonra kesin final
-// gelir. Böylece kart puanı kullanıcı sayısından bağımsız tek otoriter kaynaktan
-// gelir ve final puan garanti edilir.
+// Maç DURUMU ve PUANLARI tamamen Supabase live_scores'tan gelir — API isteği YOK.
+// Takvim (hangi takım hangi fixture'da) `fixtures` prop'undan alınır; oradan
+// fixture_id bulunup liveMap'te aranır:
+//   - Satır YOK → maç başlamadı (NS) → started=false.
+//   - Satır var, status IN_PLAY (veya eski canlı kodu) → canlı → started, !finished.
+//   - Satır var, status FT/AET/PEN/WO → bitmiş → started, finished.
+// Puanlar satırdaki players[].total/parts'tan okunur. Tabloyu GitHub Actions
+// cron'u besler (oynanırken 5 dk'da bir; bitince bir kez final 'FT' ile).
 //
 // finishedById auto-sub geçidi için (yalnızca FT), startedById gösterim için.
 // Dönüş: { ptsById, finishedById, startedById, partsById }
-export async function computeWeekScores(players, week, fixtures) {
+export async function computeWeekScores(players, week, fixtures, liveMap) {
+  const map = liveMap || new Map()
   const finishedById = new Map()
   const startedById = new Map()
-  const startedFixtureIds = new Set() // canlı + bitmiş → hepsi live_scores'tan okunur
-
-  for (const p of players) {
-    const fx = getTeamFixture(fixtures, p.club, week)
-    const status = fx?.fixture?.status?.short
-    const started = Boolean(status) && !NOT_STARTED.has(status) // canlı + bitmiş
-    finishedById.set(p.id, FINISHED.has(status))
-    startedById.set(p.id, started)
-    if (started && fx?.fixture?.id) startedFixtureIds.add(fx.fixture.id)
-  }
-
   const ptsById = new Map()
   const partsById = new Map()
 
-  // Puanları live_scores'tan oku (tek Supabase isteği; canlı ve final dahil, API YOK).
-  if (startedFixtureIds.size) {
-    const liveMap = await getLiveScoresByFixtures(startedFixtureIds)
-    for (const row of liveMap.values()) {
-      for (const pl of row.players || []) {
-        if (pl?.id == null) continue
-        ptsById.set(pl.id, pl.total ?? 0)
-        partsById.set(pl.id, pl.parts || [])
-      }
+  for (const p of players) {
+    const fx = getTeamFixture(fixtures, p.club, week)
+    const fid = fx?.fixture?.id
+    const row = fid != null ? map.get(fid) : null
+    const started = Boolean(row) // live_scores satırı varsa maç başlamış
+    startedById.set(p.id, started)
+    finishedById.set(p.id, started && FINISHED.has(row.status))
+  }
+
+  // Puanlar: haftanın live_scores satırlarındaki oyuncular (canlı + final dahil).
+  for (const row of map.values()) {
+    for (const pl of row.players || []) {
+      if (pl?.id == null) continue
+      ptsById.set(pl.id, pl.total ?? 0)
+      partsById.set(pl.id, pl.parts || [])
     }
   }
 

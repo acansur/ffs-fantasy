@@ -4,7 +4,7 @@ import { useAuth } from '../lib/auth.jsx'
 import { useSquad } from '../lib/squadStore.jsx'
 import { getVisibleWeeks, isLocked, formatDeadline, getTeamFixture } from '../lib/weeks.js'
 import { computeWeekScores, applyAutoSubs, computeTotalPoints } from '../lib/weekScores.js'
-import { getLivePlayerScore } from '../lib/liveScoresDb.js'
+import { getLivePlayerScore, getLiveScoresByFixtures } from '../lib/liveScoresDb.js'
 import { isSupabaseConfigured } from '../lib/supabase.js'
 import { useNow } from '../lib/useNow.js'
 import WeekBar from '../components/WeekBar.jsx'
@@ -25,7 +25,7 @@ import './Transfer.css' // .tr-btn-guide / .tr-overlay / .tr-guide / .tr-mclose 
 const POS_ORDER = ['KL', 'DF', 'OS', 'FW']
 
 // Maç durum kategorileri (kart durum noktası için)
-const MS_NOT_STARTED = new Set(['NS', 'TBD', 'PST', 'CANC', 'ABD', 'AWD'])
+// live_scores.status FT işareti (ve olası eski kodlar) → maç bitmiş
 const MS_FINISHED = new Set(['FT', 'AET', 'PEN', 'WO'])
 const roundNo = (r) => Number(String(r).match(/\d+/)?.[0] ?? 0)
 
@@ -173,7 +173,6 @@ export default function Takimim() {
     swapSlots,
     loadPlayers,
     routes = { squad: '/takimim', transfer: '/transfer' },
-    refreshFixtures,
     loadTransferMeta,
   } = useSquad()
 
@@ -214,31 +213,32 @@ export default function Takimim() {
     loadPlayers?.().catch(() => {})
   }, [loadPlayers])
 
-  // Canlı skor: seçili haftanın deadline'ı geçtiyse ve maçlar bitmediyse,
-  // fikstür DURUM/skor listesini periyodik tazele (canlı/bitmiş tespiti + skor
-  // başlığı için — TEK hafif /fixtures çağrısı). Oyuncu KART puanları artık API'den
-  // DEĞİL, Supabase live_scores tablosundan gelir (computeWeekScores); tabloyu
-  // GitHub Actions cron'u 5 dakikada bir günceller. Bu yüzden tazeleme aralığı da
-  // 5 dakikaya çekildi (cron ile hizalı) — /fixtures/players polling'i kaldırıldı,
-  // kota korunur. Ref'lerle döngüsüz.
-  const fixturesRef = useRef(fixtures)
-  const weeksRef = useRef(weeks)
-  fixturesRef.current = fixtures
-  weeksRef.current = weeks
+  // Canlı maç DURUMU + skoru + dakikası + puanları: TAMAMEN Supabase live_scores'tan.
+  // API çağrısı YOK. Takvim (hangi takım hangi fixture'da) sayfa açılışında bir kez
+  // yüklenen fixtures'tan gelir; canlı veri live_scores'tan okunur (sayfa açılınca +
+  // 5 dk'da bir; GitHub Actions cron'u tabloyu besler). Yalnızca deadline geçince
+  // (locked) çekilir — öncesinde maç yok. live_scores: Map<fixture_id, satır>.
+  const [liveScores, setLiveScores] = useState(() => new Map())
+  const weekFixtureIds = useMemo(
+    () => fixtures.filter((f) => roundNo(f.league?.round) === week && f.fixture?.id).map((f) => f.fixture.id),
+    [fixtures, week]
+  )
+  const idsKey = weekFixtureIds.join('-')
   useEffect(() => {
-    if (!refreshFixtures) return
-    const tick = () => {
-      const wk = weeksRef.current.find((w) => w.round === week)
-      if (!wk || Date.now() < wk.deadline) return // deadline öncesi: bekle
-      const cur = fixturesRef.current.filter((f) => roundNo(f.league?.round) === week)
-      const allDone = cur.length > 0 && cur.every((f) => MS_FINISHED.has(f.fixture?.status?.short))
-      if (allDone) return // hafta bitti → tazelemeye gerek yok
-      refreshFixtures()
+    if (!locked || !weekFixtureIds.length) {
+      setLiveScores(new Map())
+      return
     }
-    const id = setInterval(tick, 300000) // 5 dk (cron cadence'i ile hizalı)
-    tick()
-    return () => clearInterval(id)
-  }, [refreshFixtures, week])
+    let alive = true
+    const load = () =>
+      getLiveScoresByFixtures(weekFixtureIds)
+        .then((m) => { if (alive) setLiveScores(m) })
+        .catch(() => {})
+    load()
+    const id = setInterval(load, 300000) // 5 dk (cron cadence'i ile hizalı)
+    return () => { alive = false; clearInterval(id) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idsKey, locked])
 
   useEffect(() => {
     if (!saveMsg) return
@@ -246,22 +246,24 @@ export default function Takimim() {
     return () => clearTimeout(t)
   }, [saveMsg])
 
-  // Deadline geçtiğinde: kadrodaki her oyuncunun o haftaki puanını
-  // (tamamlanmış maçlardan) scoring.js ile hesapla.
-  // scoreKey'e maç DURUM imzası da katılır: maç NS→canlı→FT oldukça key değişir
-  // ve canlı puanlar yeniden hesaplanır (yalnızca oyuncu id'lerine bakılsaydı
-  // fikstür durumu değişse de recompute atlanırdı).
-  const statusSig = fixtures
-    .map((f) => `${f.fixture?.id}:${f.fixture?.status?.short}:${f.fixture?.status?.elapsed ?? ''}:${f.goals?.home ?? ''}-${f.goals?.away ?? ''}`)
-    .join(',')
-  const scoreKey = locked ? `${week}:${statusSig}:${rosterList.map((p) => p.id).join(',')}` : null
+  // Deadline geçtiğinde: kadrodaki her oyuncunun o haftaki puanını live_scores'tan
+  // hesapla. scoreKey'e live_scores İMZASI katılır: satır eklendikçe / status/skor/
+  // dakika değiştikçe (NS→canlı→FT) key değişir ve puanlar yeniden hesaplanır.
+  const liveSig = useMemo(() => {
+    const parts = []
+    for (const [fid, row] of liveScores) {
+      parts.push(`${fid}:${row.status}:${row.elapsed ?? ''}:${row.home_goals ?? ''}-${row.away_goals ?? ''}`)
+    }
+    return parts.sort().join(',')
+  }, [liveScores])
+  const scoreKey = locked ? `${week}:${liveSig}:${rosterList.map((p) => p.id).join(',')}` : null
   useEffect(() => {
     if (!locked || weeksLoading || squadLoading) return
     if (!fixtures.length || rosterList.length === 0) return
     if (scores.forKey === scoreKey) return
     let alive = true
     setScores((s) => ({ ...s, loading: true }))
-    computeWeekScores(rosterList, week, fixtures)
+    computeWeekScores(rosterList, week, fixtures, liveScores)
       .then((res) => {
         if (alive) setScores({ loading: false, ptsById: res.ptsById, finishedById: res.finishedById, startedById: res.startedById, partsById: res.partsById, forKey: scoreKey })
       })
@@ -286,12 +288,15 @@ export default function Takimim() {
   // Deadline öncesi yuva altı bilgisi (deadline sonrası puan renderView'da).
   // Deadline sonrası oyuncunun maçının durumu: 'live' | 'finished' | null
   // (null → başlamadı ya da deadline öncesi; nokta gösterilmez)
+  // Maç durumu live_scores'tan: satır yok → başlamadı (null); status FT → bitti;
+  // aksi (IN_PLAY / canlı) → canlı.
   const matchStateFor = (player) => {
     if (!locked || !player) return null
     const fx = getTeamFixture(fixtures, player.club, week)
-    const s = fx?.fixture?.status?.short
-    if (!s || MS_NOT_STARTED.has(s)) return null
-    return MS_FINISHED.has(s) ? 'finished' : 'live'
+    const fid = fx?.fixture?.id
+    const row = fid != null ? liveScores.get(fid) : null
+    if (!row) return null
+    return MS_FINISHED.has(row.status) ? 'finished' : 'live'
   }
 
   const slotInfoFor = (player) => {
@@ -437,6 +442,19 @@ export default function Takimim() {
   // Açık modal için oyuncu bilgileri (gösterilen oyuncu)
   const detailPlayer = detail?.player || null
   const detailFixture = detailPlayer ? getTeamFixture(fixtures, detailPlayer.club, week) : null
+  // Modal skor başlığı için: takvim fixture'ına live_scores DURUM/skor/dakikasını
+  // bindir. Satır yoksa maç başlamadı (status='NS' → skor '-'). API'ye bakmadan.
+  const detailRow = detailFixture?.fixture?.id != null ? liveScores.get(detailFixture.fixture.id) : null
+  const detailFixtureLive = detailFixture
+    ? {
+        ...detailFixture,
+        fixture: {
+          ...detailFixture.fixture,
+          status: { short: detailRow?.status || 'NS', elapsed: detailRow?.elapsed ?? null },
+        },
+        goals: { home: detailRow?.home_goals ?? null, away: detailRow?.away_goals ?? null },
+      }
+    : null
   const detailIsLive = detailPlayer ? matchStateFor(detailPlayer) === 'live' : false
 
   // Detay modalı canlı maç için: oyuncunun anlık kırılımını live_scores'tan OKU
@@ -721,7 +739,7 @@ export default function Takimim() {
           isCaptain={detailPlayer.id === captainId}
           locked={locked}
           week={week}
-          fixture={detailFixture}
+          fixture={detailFixtureLive}
           weeks={weeks}
           fixtures={fixtures}
           breakdown={detailBreakdown}
