@@ -23,6 +23,7 @@
 
 /* --- Güncelleme kartları (Oyuncular / Fikstür) --- */
 .adm-upd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.adm-upd-grid.one { grid-template-columns: 1fr; }
 @media (max-width: 640px) { .adm-upd-grid { grid-template-columns: 1fr; } }
 .adm-upd-card {
   background: rgba(255, 255, 255, 0.03);

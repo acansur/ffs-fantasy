@@ -186,13 +186,13 @@ function PlayersTab() {
   const [q, setQ] = useState('')
   const [edit, setEdit] = useState({}) // id → value string
   const [playersAt, setPlayersAt] = useState(null) // players tablosu son güncelleme
-  const [fixturesAt, setFixturesAt] = useState(null) // fixtures tablosu son güncelleme
+  const [playersSrc, setPlayersSrc] = useState(null) // 'auto' | 'manual' | null
   const load = () => { setRows(null); listPlayers().then(setRows).catch((e) => setMsg('⚠ ' + e.message)) }
   useEffect(() => {
     load()
-    // Sayfa yüklenince son güncelleme tarihleri Supabase'den gelir
+    // Sayfa yüklenince son güncelleme tarihi + kaynak Supabase'den gelir
     getPlayersUpdatedAt().then(setPlayersAt).catch(() => {})
-    getFixturesUpdatedAt().then(setFixturesAt).catch(() => {})
+    getDataSource('players').then((d) => setPlayersSrc(d?.source || null)).catch(() => {})
   }, [])
 
   const onSaveValue = async (p) => {
@@ -216,23 +216,16 @@ function PlayersTab() {
 
   return (
     <div>
-      {/* Güncelleme kartları — yan yana, belirgin */}
-      <div className="adm-upd-grid">
+      {/* Güncelleme kartı — yalnızca Oyuncular (Fikstür kendi sekmesinde) */}
+      <div className="adm-upd-grid one">
         <UpdateCard
           title="Oyuncular"
           buttonLabel="Oyuncu Listesini Güncelle"
-          color="gold"
+          color="cyan"
           onRun={(onProgress) => refreshPlayers(onProgress)}
           lastUpdated={playersAt}
-          onDone={(res) => { setPlayersAt(res.updatedAt); load() }}
-        />
-        <UpdateCard
-          title="Fikstür"
-          buttonLabel="Fikstürü Güncelle"
-          color="green"
-          onRun={(onProgress) => refreshFixtures(onProgress)}
-          lastUpdated={fixturesAt}
-          onDone={(res) => setFixturesAt(res.updatedAt)}
+          source={playersSrc}
+          onDone={(res) => { setPlayersAt(res.updatedAt); setPlayersSrc('manual'); load() }}
         />
       </div>
 
@@ -278,10 +271,8 @@ function PlayersTab() {
 
 /* ---------- 2b) Fikstür ---------- */
 function FixturesTab() {
-  const [playersAt, setPlayersAt] = useState(null)
   const [fixturesAt, setFixturesAt] = useState(null)
-  const [playersSrc, setPlayersSrc] = useState(null) // 'auto' | 'manual' | null
-  const [fixturesSrc, setFixturesSrc] = useState(null)
+  const [fixturesSrc, setFixturesSrc] = useState(null) // 'auto' | 'manual' | null
   const [rows, setRows] = useState(null) // fikstür önizleme satırları
   const [err, setErr] = useState('')
 
@@ -290,9 +281,7 @@ function FixturesTab() {
     listFixtures().then(setRows).catch((e) => { setErr(e.message); setRows([]) })
   }
   useEffect(() => {
-    getPlayersUpdatedAt().then(setPlayersAt).catch(() => {})
     getFixturesUpdatedAt().then(setFixturesAt).catch(() => {})
-    getDataSource('players').then((d) => setPlayersSrc(d?.source || null)).catch(() => {})
     getDataSource('fixtures').then((d) => setFixturesSrc(d?.source || null)).catch(() => {})
     loadPreview()
   }, [])
@@ -315,21 +304,12 @@ function FixturesTab() {
     <div>
       {/* Hatırlatma notu */}
       <div className="adm-remind">
-        🔔 <b>Her gün güncelle.</b> Oyuncu değerleri ve fikstür (maç tarihi/saati)
-        güncel kalması için günde bir kez API'den çekin.
+        🔔 <b>Her gün güncelle.</b> Maç tarih/saatleri ve sonuçların güncel kalması
+        için fikstürü günde bir kez API'den çekin.
       </div>
 
-      {/* Güncelleme kartları — yan yana, ayırt edici renkler */}
-      <div className="adm-upd-grid">
-        <UpdateCard
-          title="Oyuncular"
-          buttonLabel="Oyuncu Listesini Güncelle"
-          color="cyan"
-          onRun={(onProgress) => refreshPlayers(onProgress)}
-          lastUpdated={playersAt}
-          source={playersSrc}
-          onDone={(res) => { setPlayersAt(res.updatedAt); setPlayersSrc('manual') }}
-        />
+      {/* Güncelleme kartı — yalnızca Fikstür (Oyuncular kendi sekmesinde) */}
+      <div className="adm-upd-grid one">
         <UpdateCard
           title="Fikstür"
           buttonLabel="Fikstürü Güncelle"
