@@ -1,20 +1,27 @@
 // Saha görünümünün altında o haftanın fikstürü — timeline görünüm.
-// Durum (başlamadı/canlı/bitti), skor, dakika MEVCUT veriden (fixtures) okunur;
-// veri çekme/polling/hesap koduna dokunulmaz — burası yalnızca görsel katmandır.
+// Takvim (takımlar, gün, saat) `fixtures` prop'undan gelir; CANLI skor, maç
+// DURUMU ve DAKİKA ise Supabase live_scores tablosundan okunur — API polling YOK.
+// GitHub Actions cron'u tabloyu 5 dk'da bir günceller; bu bileşen de sayfa
+// açılınca ve 5 dk'da bir Supabase'den okur.
+//   - live_scores'ta satır yok → maç başlamadı (NS) → saat gösterilir
+//   - satır status='IN_PLAY' → canlı → skor + dakika (elapsed)
+//   - satır status='FT'      → maç sonu → final skor
 // Transfer: preMatchOnly → yalnızca saat (o sayfa deadline'da kapandığından
-// canlı/biten durumuna hiç ulaşmaz).
+// canlı/biten durumuna hiç ulaşmaz; live_scores da çekilmez).
 
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { normalizeText } from '../lib/normalize.js'
+import { getLiveScoresByFixtures } from '../lib/liveScoresDb.js'
 import './WeekFixtures.css'
 
 const roundNo = (r) => Number(String(r).match(/\d+/)?.[0] ?? 0)
-const NOT_STARTED = new Set(['NS', 'TBD', 'PST', 'CANC', 'ABD', 'AWD'])
-const FINISHED = new Set(['FT', 'AET', 'PEN', 'WO'])
-const isLive = (f) => {
-  const s = f.fixture?.status?.short
-  return Boolean(s) && !NOT_STARTED.has(s) && !FINISHED.has(s)
-}
+
+// live_scores.status kodları. Cron güncel olarak 'IN_PLAY'/'FT' yazar; eski
+// format kodlarına da (2H, HT, AET…) karşı dayanıklı olalım.
+const LIVE_CODES = new Set(['IN_PLAY', '1H', '2H', 'HT', 'ET', 'BT', 'P', 'LIVE', 'SUSP', 'INT'])
+const DONE_CODES = new Set(['FT', 'AET', 'PEN', 'WO'])
+const isRowLive = (row) => Boolean(row?.status) && LIVE_CODES.has(row.status)
+const isRowDone = (row) => Boolean(row?.status) && DONE_CODES.has(row.status)
 
 const fmtTime = (iso) =>
   new Date(iso).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Istanbul' })
@@ -79,6 +86,35 @@ export default function WeekFixtures({ fixtures, round, preMatchOnly = false }) 
     return [...groups.entries()]
   }, [fixtures, round])
 
+  // O haftanın fixture id'leri (canlı veri okuması için)
+  const roundIds = useMemo(
+    () =>
+      (fixtures || [])
+        .filter((f) => roundNo(f.league?.round) === round && f.fixture?.id)
+        .map((f) => f.fixture.id),
+    [fixtures, round]
+  )
+  const idsKey = roundIds.join('-')
+
+  // Canlı skor/durum/dakika: Supabase live_scores'tan — sayfa açılınca + 5 dk'da bir.
+  // preMatchOnly (Transfer) yalnızca saat gösterdiğinden hiç okuma yapılmaz.
+  const [liveMap, setLiveMap] = useState(() => new Map())
+  useEffect(() => {
+    if (preMatchOnly || !roundIds.length) {
+      setLiveMap(new Map())
+      return
+    }
+    let alive = true
+    const load = () =>
+      getLiveScoresByFixtures(roundIds)
+        .then((m) => { if (alive) setLiveMap(m) })
+        .catch(() => {})
+    load()
+    const id = setInterval(load, 300000) // 5 dk (cron cadence'i ile hizalı)
+    return () => { alive = false; clearInterval(id) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idsKey, preMatchOnly])
+
   if (!days.length) return null
 
   return (
@@ -90,14 +126,14 @@ export default function WeekFixtures({ fixtures, round, preMatchOnly = false }) 
         <span className="wk">Hafta {round}</span>
       </div>
       {days.map(([key, list]) => {
-        const hasLive = !preMatchOnly && list.some(isLive)
+        const hasLive = !preMatchOnly && list.some((f) => isRowLive(liveMap.get(f.fixture.id)))
         return (
           <div key={key} className={`wfx-day${hasLive ? ' hasLive' : ''}`}>
             <span className="wfx-node" />
             <div className="wfx-date">{fmtDay(list[0].fixture.date)}</div>
             <div className="wfx-list">
               {list.map((f) => (
-                <FxMatch key={f.fixture.id} f={f} preMatchOnly={preMatchOnly} />
+                <FxMatch key={f.fixture.id} f={f} live={liveMap.get(f.fixture.id) || null} preMatchOnly={preMatchOnly} />
               ))}
             </div>
           </div>
@@ -107,19 +143,20 @@ export default function WeekFixtures({ fixtures, round, preMatchOnly = false }) 
   )
 }
 
-function FxMatch({ f, preMatchOnly }) {
-  const status = f.fixture?.status?.short
-  const started = Boolean(status) && !NOT_STARTED.has(status)
-  const finished = FINISHED.has(status)
-  const live = !preMatchOnly && started && !finished
-  const done = !preMatchOnly && finished
+function FxMatch({ f, live: row, preMatchOnly }) {
   const home = f.teams?.home?.name || '—'
   const away = f.teams?.away?.name || '—'
   const hc = teamColor(home)
   const ac = teamColor(away)
-  const hs = f.goals?.home ?? 0
-  const as = f.goals?.away ?? 0
-  const elapsed = f.fixture?.status?.elapsed
+
+  // Canlı skor/durum/dakika Supabase live_scores satırından. Satır yoksa maç
+  // başlamamış (NS) → yalnızca saat. (preMatchOnly'de satır zaten çekilmez.)
+  const r = preMatchOnly ? null : row
+  const live = isRowLive(r)
+  const done = isRowDone(r)
+  const hs = r?.home_goals ?? 0
+  const as = r?.away_goals ?? 0
+  const elapsed = r?.elapsed
   const prog = Math.max(0, Math.min(100, ((elapsed ?? 0) / 90) * 100))
 
   return (
