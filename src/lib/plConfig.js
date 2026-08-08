@@ -8,6 +8,7 @@ import {
   loadPlSquad, savePlSquad, loadPlOverrides,
   loadPlPrevSquad, loadPlTransferMeta, savePlTransferMeta,
 } from './plTestDb.js'
+import { PL_FANTASY_POINTS } from './fantasyPointsDb.js'
 
 export const PL_CONFIG = {
   loadFixtures: loadPlFixtures,
@@ -19,6 +20,8 @@ export const PL_CONFIG = {
   loadTransferMeta: loadPlTransferMeta,
   saveTransferMeta: savePlTransferMeta,
   loadOverrides: loadPlOverrides,
+  saveFantasyWeekPoints: PL_FANTASY_POINTS.saveFantasyWeekPoints, // pl_test_fantasy_points
+  loadCumulativePoints: PL_FANTASY_POINTS.loadCumulativePoints,
   routes: { squad: '/pl-test', transfer: '/pl-test/transfer' },
   pickerClubs: PL_PICKER_CLUBS, // Transfer picker yalnızca bu kulüpleri gösterir (havuz 18, picker 14)
 }

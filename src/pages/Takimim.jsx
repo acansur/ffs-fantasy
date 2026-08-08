@@ -67,11 +67,6 @@ const IconSave = () => (
     <rect x="8.5" y="13" width="7" height="5" />
   </svg>
 )
-const IconBolt = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round">
-    <path d="M13 2L4 14h6l-1 8 9-12h-6z" />
-  </svg>
-)
 const IconGuide = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9" /><path d="M12 16v-4M12 8h.01" strokeLinecap="round" /></svg>
 )
@@ -174,6 +169,8 @@ export default function Takimim() {
     loadPlayers,
     routes = { squad: '/takimim', transfer: '/transfer' },
     loadTransferMeta,
+    loadCumulativePoints,
+    saveFantasyWeekPoints,
   } = useSquad()
 
   const [view, setView] = useState('next')
@@ -193,6 +190,19 @@ export default function Takimim() {
       .catch(() => alive && setPointDeductions(0))
     return () => { alive = false }
   }, [user, week, loadTransferMeta])
+
+  // Kümülatif (sezon) puan: Supabase'deki hafta hafta puanlar { [week]: points }
+  // (fantasy_points). Kullanıcı değişince yeniden yüklenir. Canlı haftanın anlık
+  // değeri seasonTotal hesabında ÜZERİNE yazılır (state'e değil) → yarış/sızıntı yok.
+  const [tableWeekPoints, setTableWeekPoints] = useState({})
+  useEffect(() => {
+    if (!user || !loadCumulativePoints) { setTableWeekPoints({}); return }
+    let alive = true
+    loadCumulativePoints(user.id)
+      .then((m) => alive && setTableWeekPoints(m || {}))
+      .catch(() => alive && setTableWeekPoints({}))
+    return () => { alive = false }
+  }, [user, loadCumulativePoints])
 
   const now = useNow(30000) // gerçek zamanlı deadline kontrolü (30 sn)
   const visibleWeeks = getVisibleWeeks(weeks, now)
@@ -358,6 +368,23 @@ export default function Takimim() {
     : scores.loading
       ? '…'
       : computeTotalPoints({ field: display.field, finishedById: scores.finishedById, startedById: scores.startedById, captainId: effectiveCaptainId }) - pointDeductions
+
+  // Hafta TAMAMEN bitince (weekAllFinished) o haftanın final puanını Supabase'e
+  // kalıcılaştır (idempotent) ve tablo haritasına yansıt.
+  useEffect(() => {
+    if (!weekAllFinished || typeof totalPoints !== 'number' || !user || !saveFantasyWeekPoints) return
+    saveFantasyWeekPoints(user.id, week, totalPoints).catch(() => {})
+    setTableWeekPoints((prev) => (prev[week] === totalPoints ? prev : { ...prev, [week]: totalPoints }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weekAllFinished, totalPoints, week, user])
+
+  // Sezon toplamı = tablo puanları Σ; içinde bulunulan hafta CANLI değeriyle üzerine
+  // yazılır (henüz kaydedilmese de toplam canlı görünsün, çift sayım olmadan).
+  const seasonTotal = useMemo(() => {
+    const merged = { ...tableWeekPoints }
+    if (typeof totalPoints === 'number') merged[week] = totalPoints
+    return Object.values(merged).reduce((s, v) => s + (v || 0), 0)
+  }, [tableWeekPoints, totalPoints, week])
 
   // Yuva tıklaması: yer değiştirme modundaysa hedef seç; değilse detay modalı aç
   const onSlotClick = (pos, index, viewPlayer, viewStarter) => {
@@ -557,27 +584,15 @@ export default function Takimim() {
           )}
         </div>
 
-        {/* Jokerlerim (deadline geçince Toplam Puan) */}
-        {locked ? (
-          <div className="tm-stat stat-total">
-            <div className="stat-head">
-              <span className="eyebrow">Toplam Puan</span>
-              <span className="stat-ico ico-gold"><IconStar /></span>
-            </div>
-            <div className="stat-val stat-total-val cond tnum">{totalPoints}<small> P</small></div>
+        {/* Toplam Puan — SEZON kümülatif toplamı (tüm haftaların Σ'sı). Bu haftanın
+            haftalık puanı hafta barında (seçili haftanın altında) gösterilir. */}
+        <div className="tm-stat stat-total">
+          <div className="stat-head">
+            <span className="eyebrow">Toplam Puan</span>
+            <span className="stat-ico ico-gold"><IconStar /></span>
           </div>
-        ) : (
-          <div className="tm-stat">
-            <div className="stat-head">
-              <span className="eyebrow">Jokerlerim</span>
-              <span className="stat-ico ico-gold"><IconBolt /></span>
-            </div>
-            <div className="joker-empty">
-              <span className="ji"><IconBolt /></span>
-              <span className="jt">Bu hafta aktif joker yok</span>
-            </div>
-          </div>
-        )}
+          <div className="stat-val stat-total-val cond tnum">{seasonTotal}<small> P</small></div>
+        </div>
       </div>
 
       {/* Hafta seçici + kontrol satırı */}

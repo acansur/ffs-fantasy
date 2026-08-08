@@ -8,6 +8,7 @@ import {
   saveSquadToDb, loadSquadFromDb, loadWeekOverrides,
   loadPrevSquadFromDb, loadTransferMetaFromDb, saveTransferMetaToDb,
 } from './squadDb.js'
+import { SL_FANTASY_POINTS } from './fantasyPointsDb.js'
 
 const POS_ORDER = ['KL', 'DF', 'OS', 'FW']
 const DB_TO_POS = { GK: 'KL', DF: 'DF', MF: 'OS', FW: 'FW' }
@@ -27,6 +28,8 @@ export const SUPER_LIG_CONFIG = {
   loadTransferMeta: loadTransferMetaFromDb, // ({userId, week}) → { transfer_count, point_deductions } | null
   saveTransferMeta: saveTransferMetaToDb, // ({userId, week, transferCount, pointDeductions})
   loadOverrides: loadWeekOverrides, // () → { round: locked }
+  saveFantasyWeekPoints: SL_FANTASY_POINTS.saveFantasyWeekPoints, // (userId, week, points)
+  loadCumulativePoints: SL_FANTASY_POINTS.loadCumulativePoints, // (userId) → { [week]: points }
   routes: { squad: '/takimim', transfer: '/transfer' },
 }
 
@@ -420,6 +423,8 @@ export function SquadProvider({ children, config = SUPER_LIG_CONFIG }) {
     refreshFixtures, // canlı skor için fikstürü taze çeker
     loadTransferMeta: config.loadTransferMeta, // ({userId, week}) → { transfer_count, point_deductions }
     saveTransferMeta: config.saveTransferMeta, // ({userId, week, transferCount, pointDeductions})
+    saveFantasyWeekPoints: config.saveFantasyWeekPoints, // (userId, week, points) — hafta bitince
+    loadCumulativePoints: config.loadCumulativePoints, // (userId) → { [week]: points } (sezon toplamı = Σ)
   }
   return <SquadContext.Provider value={value}>{children}</SquadContext.Provider>
 }
