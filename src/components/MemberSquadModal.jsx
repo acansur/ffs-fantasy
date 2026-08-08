@@ -43,8 +43,8 @@ export default function MemberSquadModal({ userId, username, week, onClose }) {
       <div className="msq" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
         <button className="msq-close" onClick={onClose} aria-label="Kapat">×</button>
         <div className="msq-head">
-          <div className="msq-name">{username}</div>
-          <div className="msq-sub">Hafta {week} kadrosu</div>
+          <div className="msq-name">{username} · Kadro</div>
+          <div className="msq-sub">Son deadline'ı gelmiş haftanın kadrosu · salt okunur</div>
         </div>
 
         {loading ? (
@@ -61,13 +61,13 @@ export default function MemberSquadModal({ userId, username, week, onClose }) {
                   <div className="msq-line-lbl">{POS_LABEL[pos]}</div>
                   <div className="msq-players">
                     {starters.map((s) => (
-                      <span key={s.player.id} className={`msq-pl${s.player.id === captainId ? ' cap' : ''}`}>
+                      <span key={s.player.id} className={`msq-pl pos-${pos}${s.player.id === captainId ? ' cap' : ''}`}>
                         {s.player.name}
                         {s.player.id === captainId && <span className="msq-c">C</span>}
                       </span>
                     ))}
                     {bench.map((s) => (
-                      <span key={s.player.id} className="msq-pl bench">{s.player.name}</span>
+                      <span key={s.player.id} className={`msq-pl pos-${pos} bench`}>{s.player.name}</span>
                     ))}
                   </div>
                 </div>

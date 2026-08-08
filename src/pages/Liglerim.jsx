@@ -4,6 +4,7 @@ import { useAuth } from '../lib/auth.jsx'
 import { loadCachedFixtures } from '../lib/dataCache.js'
 import { buildWeeks } from '../lib/weeks.js'
 import { useNow } from '../lib/useNow.js'
+import { clubColors } from '../lib/apiFootball.js'
 import {
   createLeague, joinLeague, leaveLeague, deleteLeague, kickMember, increasePersonCount,
   listMyLeagues, getLeagueMembers, loadStandingsData, computeStandings,
@@ -14,6 +15,10 @@ import './Liglerim.css'
 
 const PAGE_SIZE = 30
 const MEDALS = ['🥇', '🥈', '🥉']
+const initialOf = (n) => (n || '?').trim().charAt(0).toLocaleUpperCase('tr')
+const teamColor = (name) => {
+  try { return clubColors(name)?.bg || '#3a7fe6' } catch { return '#3a7fe6' }
+}
 
 export default function Liglerim() {
   const { user } = useAuth()
@@ -43,6 +48,12 @@ export default function Liglerim() {
     return m
   }, [data.users])
 
+  // Kullanıcının toplam fantasy puanı (hero paneli — mevcut ptsRows'tan)
+  const myTotal = useMemo(
+    () => data.ptsRows.filter((r) => r.user_id === user?.id).reduce((s, r) => s + (r.points || 0), 0),
+    [data.ptsRows, user?.id]
+  )
+
   useEffect(() => {
     loadCachedFixtures().then((res) => setWeeks(res ? buildWeeks(res.fixtures) : [])).catch(() => {})
   }, [])
@@ -60,10 +71,15 @@ export default function Liglerim() {
   if (!user) {
     return (
       <div className="lg">
-        <div className="lg-hero"><h1>Liglerim</h1><p>Liglerini görmek için giriş yap.</p></div>
+        <div className="lg-hero">
+          <div className="lg-hero-main">
+            <div className="lg-hero-word">LİGLERİM</div>
+            <p className="lg-hero-sub">Liglerini görmek için giriş yap.</p>
+          </div>
+        </div>
         <div className="lg-authbtns">
           <Link to="/giris" className="lg-btn gold">Giriş Yap</Link>
-          <Link to="/kayit" className="lg-btn">Kayıt Ol</Link>
+          <Link to="/kayit" className="lg-btn ghost">Kayıt Ol</Link>
         </div>
       </div>
     )
@@ -80,12 +96,12 @@ export default function Liglerim() {
     if (desc.type === 'favorite') return data.users.filter((u) => u.favorite_team === desc.team)
     return null
   }
-  const myRankIn = (desc) => {
+  const previewOf = (desc) => {
     const subset = subsetFor(desc)
     if (!subset) return null
     const s = computeStandings(subset, data, { milestoneWeek: desc.milestoneWeek })
     const i = s.findIndex((r) => r.id === user.id)
-    return i < 0 ? null : { rank: i + 1, total: s.length }
+    return { rank: i < 0 ? null : i + 1, total: s.length, top3: s.slice(0, 3) }
   }
 
   if (selected) {
@@ -105,39 +121,50 @@ export default function Liglerim() {
 
   return (
     <div className="lg">
-      <div className="lg-hero"><h1>Liglerim</h1><p>Genel, favori takım ve özel liglerdeki sıralaman.</p></div>
+      {/* HERO */}
+      <div className="lg-hero">
+        <div className="lg-hero-main">
+          <div className="lg-hero-word">LİGLERİM</div>
+          <p className="lg-hero-sub">Genel, favori takım ve özel liglerdeki sıralaman.</p>
+        </div>
+        <div className="lg-hero-stat">
+          <div className="l">Toplam Puanın</div>
+          <div className="v">{myTotal}</div>
+        </div>
+      </div>
 
-      {/* Genel + Favori */}
+      {/* OTOMATİK LİGLER */}
       <div className="lg-sec-title">Otomatik Ligler</div>
-      <div className="lg-cards">
-        <LeagueCard desc={generalDesc} sub="Tüm oyuncular" rank={myRankIn(generalDesc)} onOpen={() => setSelected(generalDesc)} />
+      <div className="lg-grid2">
+        <AutoLeagueCard desc={generalDesc} accent="#f0a500" icon="🌍" sub="Tüm oyuncular" preview={previewOf(generalDesc)} onOpen={() => setSelected(generalDesc)} />
         {favDesc && (
-          <LeagueCard desc={favDesc} sub="Favori takımını seçenler" rank={myRankIn(favDesc)} onOpen={() => setSelected(favDesc)} />
+          <AutoLeagueCard desc={favDesc} accent={teamColor(favDesc.team)} icon="⭐" sub="Favori takımını seçenler" preview={previewOf(favDesc)} onOpen={() => setSelected(favDesc)} />
         )}
       </div>
 
-      {/* Özel ligler */}
+      {/* ÖZEL LİGLER */}
       <div className="lg-sec-title lg-row-between">
-        <span>Özel Liglerim <b className="lg-count">{myLeagues.length}/{MAX_MEMBERSHIPS}</b></span>
+        <span>Özel Liglerim <span className="lg-chip">{myLeagues.length}/{MAX_MEMBERSHIPS}</span></span>
         <div className="lg-actions">
           <button className="lg-btn gold sm" onClick={() => setModal('create')}>+ Lig Yarat</button>
-          <button className="lg-btn sm" onClick={() => setModal('join')}>Lige Katıl</button>
+          <button className="lg-btn ghost sm" onClick={() => setModal('join')}>Lige Katıl</button>
         </div>
       </div>
       {loading ? (
         <div className="lg-note">Yükleniyor…</div>
-      ) : myLeagues.length === 0 ? (
-        <div className="lg-note">Henüz bir özel ligde değilsin. Bir lig yarat ya da koda katıl.</div>
       ) : (
-        <div className="lg-cards">
+        <div className="lg-grid2">
           {myLeagues.map((l) => (
-            <LeagueCard
+            <PrivateLeagueCard
               key={l.id}
-              desc={{ type: 'private', key: l.id, name: l.name }}
-              sub={`${l.member_count}${l.person_count ? '/' + l.person_count : ''} üye${l.is_owner ? ' · admin' : ''}`}
+              league={l}
               onOpen={() => setSelected({ type: 'private', key: l.id, name: l.name, milestoneWeek: l.milestone_week, league: l })}
             />
           ))}
+          <button className="lg-addcard" onClick={() => setModal('create')}>
+            <span className="lg-addplus">+</span>
+            <span className="lg-addtxt">Yeni özel lig kur ya da <b>Lige Katıl</b></span>
+          </button>
         </div>
       )}
 
@@ -151,13 +178,48 @@ export default function Liglerim() {
   )
 }
 
-function LeagueCard({ desc, sub, rank, onOpen }) {
+/* ---------- Otomatik lig vitrin kartı ---------- */
+function AutoLeagueCard({ desc, accent, icon, sub, preview, onOpen }) {
   return (
-    <button className="lg-card" onClick={onOpen}>
-      <div className="lg-card-name">{desc.name}</div>
-      <div className="lg-card-sub">{sub}</div>
-      {rank && <div className="lg-card-rank">Sıran <b>#{rank.rank}</b> <span>/ {rank.total}</span></div>}
-      <span className="lg-card-go">Sıralamayı gör →</span>
+    <button className="lg-lcard" style={{ '--accent': accent }} onClick={onOpen}>
+      <span className="lg-lcard-strip" />
+      <div className="lg-lcard-top">
+        <span className="lg-lcard-badge">{icon}</span>
+        <div className="lg-lcard-id">
+          <div className="lg-lcard-name">{desc.name}</div>
+          <div className="lg-lcard-sub">{sub}</div>
+        </div>
+        {preview?.rank && (
+          <div className="lg-lcard-rank">#{preview.rank}<span>/{preview.total}</span></div>
+        )}
+      </div>
+      <div className="lg-mini">
+        {preview && preview.top3.length > 0 ? (
+          preview.top3.map((r, i) => (
+            <div key={r.id} className="lg-mini-row">
+              <span className={`lg-mini-medal m${i + 1}`}>{i + 1}</span>
+              <span className="lg-mini-name">{r.username}</span>
+              <span className="lg-mini-pts">{r.points}</span>
+            </div>
+          ))
+        ) : (
+          <div className="lg-mini-empty">Henüz sıralama yok</div>
+        )}
+      </div>
+      <span className="lg-lcard-go">Sıralamayı gör →</span>
+    </button>
+  )
+}
+
+/* ---------- Özel lig kartı ---------- */
+function PrivateLeagueCard({ league, onOpen }) {
+  return (
+    <button className="lg-pcard" onClick={onOpen}>
+      <div className="lg-pcard-name">{league.name}</div>
+      <div className="lg-pcard-sub">
+        {league.member_count}{league.person_count ? '/' + league.person_count : ''} üye{league.is_owner ? ' · admin' : ''}
+      </div>
+      <span className="lg-lcard-go">Sıralamayı gör →</span>
     </button>
   )
 }
@@ -202,33 +264,36 @@ function LeagueDetail({ descriptor, user, data, usersById, passedWeeks, lastPass
   const leaders = standings.slice(0, 3)
 
   const ownerName = isPrivate ? (usersById[league.owner_id]?.username || '—') : null
+  const openMember = (r) => { if (r && lastPassedWeek != null) setMemberModal({ userId: r.id, username: r.username }) }
 
-  const openMember = (r) => { if (lastPassedWeek != null) setMemberModal({ userId: r.id, username: r.username }) }
-
-  const Row = ({ r, rank }) => (
-    <tr className={`lg-tr${r.id === user.id ? ' me' : ''}${rank <= 3 ? ' medal m' + rank : ''}`}>
-      <td className="lg-rank">{rank <= 3 ? MEDALS[rank - 1] : rank}</td>
-      <td className="lg-uname"><button className="lg-namebtn" onClick={() => openMember(r)}>{r.username}</button></td>
-      <td className="lg-pts tnum">{r.points}</td>
-      <td className="lg-jok tnum">{r.jokers}</td>
-    </tr>
-  )
+  // Podyum sırası: 2 - 1 - 3 (ortadaki en yüksek)
+  const podium = [
+    { r: leaders[1], place: 2 },
+    { r: leaders[0], place: 1 },
+    { r: leaders[2], place: 3 },
+  ]
 
   return (
     <div className="lg">
       <button className="lg-back" onClick={onBack}>← Liglerim</button>
 
       <div className="lg-detail-head">
-        <div>
-          <h1 className="lg-detail-name">{descriptor.name}</h1>
+        <div className="lg-detail-id">
+          <h2 className="lg-detail-name">{descriptor.name}</h2>
           <div className="lg-detail-sub">{standings.length} katılımcı{isPrivate && league.person_count ? ` · limit ${league.person_count}` : ''}</div>
         </div>
-        {isPrivate && (
-          <div className="lg-detail-tools">
-            <button className="lg-icobtn" onClick={() => { setMenuOpen((v) => !v); setGearOpen(false) }} aria-label="Menü">⋯</button>
-            <button className="lg-icobtn" onClick={() => { setGearOpen((v) => !v); setMenuOpen(false) }} aria-label="Ayarlar">⚙</button>
-          </div>
-        )}
+        <div className="lg-detail-right">
+          <select className="lg-wsel" value={weekFilter ?? 'all'} onChange={(e) => setWeekFilter(e.target.value === 'all' ? null : Number(e.target.value))}>
+            <option value="all">Tüm haftalar</option>
+            {passedWeeks.map((w) => <option key={w} value={w}>Hafta {w}</option>)}
+          </select>
+          {isPrivate && (
+            <>
+              <button className="lg-icobtn" onClick={() => { setMenuOpen((v) => !v); setGearOpen(false) }} aria-label="Menü">⋯</button>
+              <button className="lg-icobtn" onClick={() => { setGearOpen((v) => !v); setMenuOpen(false) }} aria-label="Ayarlar">⚙</button>
+            </>
+          )}
+        </div>
       </div>
 
       {msg && <div className="lg-msg">{msg}</div>}
@@ -250,7 +315,7 @@ function LeagueDetail({ descriptor, user, data, usersById, passedWeeks, lastPass
         </div>
       )}
 
-      {/* Çark — kod / paylaş / geçmiş dahil / admin + admin ekstraları */}
+      {/* Çark paneli */}
       {isPrivate && gearOpen && (
         <GearPanel
           league={league} isOwner={isOwner} ownerName={ownerName} members={members || []} user={user}
@@ -259,36 +324,51 @@ function LeagueDetail({ descriptor, user, data, usersById, passedWeeks, lastPass
         />
       )}
 
-      {/* Haftalık filtre */}
-      <div className="lg-filter">
-        <span className="lg-filter-lbl">Hafta:</span>
-        <select value={weekFilter ?? 'all'} onChange={(e) => setWeekFilter(e.target.value === 'all' ? null : Number(e.target.value))}>
-          <option value="all">Tüm haftalar</option>
-          {passedWeeks.map((w) => <option key={w} value={w}>Hafta {w}</option>)}
-        </select>
-      </div>
-
-      {/* Sıralama tablosu */}
-      <div className="lg-tablewrap">
-        <table className="lg-table">
-          <thead>
-            <tr><th>Sıra</th><th>Kullanıcı</th><th>Toplam Puan</th><th>Joker</th></tr>
-          </thead>
-          <tbody>
-            {/* 1. sayfa hariç: ilk 3 lider üstte sabit */}
-            {page > 0 && (
-              <>
-                {leaders.map((r, i) => <Row key={'ld' + r.id} r={r} rank={i + 1} />)}
-                <tr className="lg-divider"><td colSpan={4}>Sayfa {page + 1}</td></tr>
-              </>
-            )}
-            {pageRows.length === 0 ? (
-              <tr><td colSpan={4} className="lg-empty">Bu sıralamada henüz kimse yok.</td></tr>
+      {/* PODYUM */}
+      {standings.length > 0 && (
+        <div className="lg-podium">
+          {podium.map(({ r, place }) =>
+            r ? (
+              <button key={r.id} className={`lg-pod p${place}`} onClick={() => openMember(r)}>
+                <span className="lg-pod-medal">{MEDALS[place - 1]}</span>
+                <span className="lg-pod-ava">{initialOf(r.username)}</span>
+                <span className="lg-pod-name">{r.username}</span>
+                <span className="lg-pod-pts">{r.points}<small> P</small></span>
+                <span className="lg-pod-block">{place}</span>
+              </button>
             ) : (
-              pageRows.map((r, i) => <Row key={r.id} r={r} rank={page * PAGE_SIZE + i + 1} />)
-            )}
-          </tbody>
-        </table>
+              <div key={'e' + place} className={`lg-pod p${place} empty`}><span className="lg-pod-block">{place}</span></div>
+            )
+          )}
+        </div>
+      )}
+
+      {/* SIRALAMA LİSTESİ */}
+      <div className="lg-list">
+        <div className="lg-list-head">
+          <span>Sıra</span><span>Kullanıcı</span><span>Toplam Puan</span><span>Joker</span>
+        </div>
+        {page > 0 && (
+          <div className="lg-list-divider">Sayfa {page + 1}</div>
+        )}
+        {pageRows.length === 0 ? (
+          <div className="lg-empty">Bu sıralamada henüz kimse yok.</div>
+        ) : (
+          pageRows.map((r, i) => {
+            const rank = page * PAGE_SIZE + i + 1
+            return (
+              <div key={r.id} className={`lg-lrow${r.id === user.id ? ' lg-me' : ''}${rank <= 3 ? ' lg-medal m' + rank : ''}`}>
+                <span className="lg-lrank">{rank <= 3 ? MEDALS[rank - 1] : rank}</span>
+                <button className="lg-luser" onClick={() => openMember(r)}>
+                  <span className="lg-lava">{initialOf(r.username)}</span>
+                  <span className="lg-lname">{r.username}</span>
+                </button>
+                <span className="lg-lpts tnum">{r.points}</span>
+                <span className="lg-ljok tnum">{r.jokers}</span>
+              </div>
+            )
+          })
+        )}
       </div>
 
       {/* Sayfalama */}
@@ -357,7 +437,7 @@ function GearPanel({ league, isOwner, ownerName, members, user, memberCount, onM
           <div className="lg-memberlist">
             {members.map((m) => (
               <div key={m.id} className="lg-member">
-                <span>{m.username}{m.id === league.owner_id ? ' (admin)' : ''}</span>
+                <span className="lg-member-name"><span className="lg-lava sm">{initialOf(m.username)}</span>{m.username}{m.id === league.owner_id ? ' · admin' : ''}</span>
                 {m.id !== league.owner_id && (
                   <button className="lg-btn danger sm" onClick={() => setConfirmKick({ id: m.id, username: m.username })}>Ligden Çıkar</button>
                 )}
@@ -422,12 +502,12 @@ function CreateLeagueModal({ user, openWeek, onClose, onDone }) {
     <div className="lg-overlay" onClick={onClose}>
       <div className="lg-modal" onClick={(e) => e.stopPropagation()}>
         <button className="lg-mclose" onClick={onClose}>×</button>
-        <h2>Lig Yarat</h2>
+        <h2 className="lg-modal-title">Lig Yarat</h2>
         {created ? (
           <div className="lg-created">
             <p>Lig oluşturuldu! Kod:</p>
             <div className="lg-code big">{created.code}</div>
-            <button className="lg-btn gold" onClick={onDone}>Tamam</button>
+            <button className="lg-btn gold big" onClick={onDone}>Tamam</button>
           </div>
         ) : (
           <>
@@ -437,13 +517,14 @@ function CreateLeagueModal({ user, openWeek, onClose, onDone }) {
             <label className="lg-field"><span>Kişi Sayısı (opsiyonel)</span>
               <input className="lg-inp" type="number" min={1} value={personCount} onChange={(e) => setPersonCount(e.target.value)} placeholder="Sınırsız" />
             </label>
-            <div className="lg-check">
-              <label>
-                <input type="checkbox" checked={includePast} onChange={(e) => setIncludePast(e.target.checked)} />
+            <label className="lg-chk">
+              <input type="checkbox" checked={includePast} onChange={(e) => setIncludePast(e.target.checked)} />
+              <span className="lg-chk-t">
                 Önceki hafta puanları geçerli sayılsın
-              </label>
-              <button className="lg-info" onClick={() => setInfoOpen((v) => !v)} aria-label="Bilgi">ⓘ</button>
-            </div>
+                <span className="lg-info" role="button" tabIndex={0}
+                  onClick={(e) => { e.preventDefault(); setInfoOpen((v) => !v) }}>i</span>
+              </span>
+            </label>
             {infoOpen && (
               <p className="lg-infobox">
                 Bu seçenek işaretlenirse, lige katılan herkes oyunun başından bu yana topladığı tüm puanlarla sıralamaya girer.
@@ -481,7 +562,7 @@ function JoinLeagueModal({ user, onClose, onDone }) {
     <div className="lg-overlay" onClick={onClose}>
       <div className="lg-modal" onClick={(e) => e.stopPropagation()}>
         <button className="lg-mclose" onClick={onClose}>×</button>
-        <h2>Lige Katıl</h2>
+        <h2 className="lg-modal-title">Lige Katıl</h2>
         <label className="lg-field"><span>5 Haneli Kod</span>
           <input className="lg-inp code" value={code} maxLength={5}
             onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="ABC12" />

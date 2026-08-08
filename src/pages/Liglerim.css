@@ -1,128 +1,223 @@
-/* /liglerim — ligler sayfası (koyu tema) */
+/* /liglerim — ligler sayfası (yeniden tasarım). Tüm sınıflar .lg- önekli. */
 .lg {
-  --gold: #f0a500; --gold-soft: #ffcb52; --ink: #eaf3ec; --ink-2: #9cb0a4;
-  --surface: #132019; --border: rgba(255, 255, 255, 0.1); --border-s: rgba(255, 255, 255, 0.18);
-  font-family: 'Inter', system-ui, sans-serif; color: var(--ink); max-width: 900px; margin: 0 auto; padding: 4px;
+  --gold: #f0a500; --gold-soft: #ffcb52; --gold-deep: #c98600;
+  --ink: #eaf3ec; --ink-2: #9cb0a4; --ink-3: #6d8175;
+  --surface: #132019; --surface-2: #1a2a21;
+  --border: rgba(255, 255, 255, 0.09); --border-s: rgba(255, 255, 255, 0.16);
+  --red: #f0605e;
+  font-family: 'Inter', system-ui, sans-serif; color: var(--ink); max-width: 940px; margin: 0 auto; padding: 4px;
 }
-.lg-hero h1 { font-family: 'Barlow Semi Condensed', sans-serif; font-size: 1.9rem; font-weight: 800; margin: 0 0 4px; }
-.lg-hero p { color: var(--ink-2); margin: 0 0 18px; font-size: 0.92rem; }
 
-.lg-authbtns { display: flex; gap: 12px; justify-content: center; margin-top: 20px; }
-.lg-note { text-align: center; color: var(--ink-2); padding: 28px 0; }
-
-.lg-sec-title { font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 1.05rem; letter-spacing: 0.02em; margin: 20px 0 10px; }
-.lg-count { color: var(--gold-soft); }
-.lg-row-between { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
-.lg-actions { display: flex; gap: 8px; }
-
-.lg-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
-.lg-card {
-  text-align: left; background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
-  padding: 15px 16px; cursor: pointer; transition: 0.15s; color: var(--ink); display: flex; flex-direction: column; gap: 3px;
+/* ---------- HERO ---------- */
+.lg-hero {
+  position: relative; overflow: hidden; border-radius: 22px; padding: 26px 30px;
+  display: flex; align-items: center; gap: 22px; min-height: 130px;
+  background:
+    radial-gradient(560px 240px at 88% -40%, rgba(240, 165, 0, 0.18), transparent 60%),
+    radial-gradient(600px 300px at 12% 130%, rgba(26, 95, 63, 0.22), transparent 62%),
+    linear-gradient(135deg, #28352f 0%, #1d2a24 50%, #14201b 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
 }
-.lg-card:hover { border-color: rgba(240, 165, 0, 0.4); transform: translateY(-2px); }
-.lg-card-name { font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 1.1rem; }
-.lg-card-sub { font-size: 0.82rem; color: var(--ink-2); }
-.lg-card-rank { font-size: 0.9rem; margin-top: 6px; }
-.lg-card-rank b { color: var(--gold-soft); font-size: 1.05rem; }
-.lg-card-rank span { color: var(--ink-2); }
-.lg-card-go { margin-top: 8px; font-size: 0.8rem; font-weight: 700; color: var(--gold-soft); }
+.lg-hero-main { min-width: 0; }
+.lg-hero-word {
+  font-family: 'Anton', 'Barlow Semi Condensed', sans-serif; font-size: clamp(38px, 6vw, 58px);
+  text-transform: uppercase; letter-spacing: 0.03em; line-height: 0.95;
+  background: linear-gradient(180deg, #ffe08a, #f0a500 65%, #b9760a);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+.lg-hero-sub { color: var(--ink-2); margin: 8px 0 0; font-size: 0.9rem; }
+.lg-hero-stat {
+  margin-left: auto; text-align: center; background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 16px; padding: 16px 22px; min-width: 130px; flex: none;
+}
+.lg-hero-stat .l { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
+.lg-hero-stat .v { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 40px; color: var(--gold-soft); line-height: 1; margin-top: 2px; }
+@media (max-width: 560px) {
+  .lg-hero { padding: 22px; flex-direction: column; align-items: flex-start; gap: 16px; }
+  .lg-hero-stat { margin-left: 0; align-self: stretch; }
+}
 
-/* Butonlar */
-.lg-btn { font-family: inherit; font-weight: 700; font-size: 0.86rem; cursor: pointer; color: var(--ink);
-  background: rgba(255, 255, 255, 0.06); border: 1px solid var(--border-s); padding: 10px 16px; border-radius: 10px; transition: 0.14s; }
+.lg-authbtns { display: flex; gap: 12px; justify-content: center; margin-top: 22px; }
+
+/* ---------- Butonlar ---------- */
+.lg-btn {
+  font-family: inherit; font-weight: 700; font-size: 0.86rem; cursor: pointer; color: var(--ink);
+  background: rgba(255, 255, 255, 0.06); border: 1px solid var(--border-s); padding: 10px 16px; border-radius: 11px; transition: 0.14s;
+}
 .lg-btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.12); }
 .lg-btn:disabled { opacity: 0.45; cursor: default; }
-.lg-btn.gold { color: #3a2a00; background: linear-gradient(180deg, var(--gold-soft), var(--gold)); border-color: #c98600; }
+.lg-btn.gold { color: #3a2a00; background: linear-gradient(180deg, var(--gold-soft), var(--gold)); border-color: var(--gold-deep); box-shadow: 0 6px 16px rgba(240, 165, 0, 0.25); }
+.lg-btn.gold:hover:not(:disabled) { filter: brightness(1.05); }
+.lg-btn.ghost { background: rgba(255, 255, 255, 0.03); }
 .lg-btn.danger { color: #fca5a5; background: rgba(240, 96, 94, 0.12); border-color: rgba(240, 96, 94, 0.4); }
-.lg-btn.sm { padding: 6px 11px; font-size: 0.78rem; }
-.lg-btn.big { width: 100%; padding: 13px; font-size: 0.95rem; margin-top: 6px; }
+.lg-btn.danger:hover:not(:disabled) { background: rgba(240, 96, 94, 0.2); }
+.lg-btn.sm { padding: 7px 12px; font-size: 0.78rem; border-radius: 9px; }
+.lg-btn.big { width: 100%; padding: 13px; font-size: 0.95rem; margin-top: 8px; }
 
-/* Detay */
-.lg-back { background: none; border: none; color: var(--ink-2); font-weight: 700; cursor: pointer; padding: 4px 0; margin-bottom: 8px; font-size: 0.9rem; }
-.lg-detail-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
-.lg-detail-name { font-family: 'Barlow Semi Condensed', sans-serif; font-size: 1.6rem; font-weight: 800; margin: 0; }
+/* ---------- Bölüm başlıkları ---------- */
+.lg-sec-title { font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 1.15rem; letter-spacing: 0.02em; margin: 26px 0 12px; display: flex; align-items: center; gap: 10px; }
+.lg-row-between { justify-content: space-between; flex-wrap: wrap; }
+.lg-chip { font-size: 0.72rem; font-weight: 800; color: var(--gold-soft); background: rgba(240, 165, 0, 0.14); padding: 3px 9px; border-radius: 99px; }
+.lg-actions { display: flex; gap: 8px; }
+.lg-note { text-align: center; color: var(--ink-2); padding: 26px 0; }
+
+.lg-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 620px) { .lg-grid2 { grid-template-columns: 1fr; } }
+
+/* ---------- Otomatik lig vitrin kartı ---------- */
+.lg-lcard {
+  position: relative; overflow: hidden; border-radius: 18px; padding: 20px; text-align: left;
+  background: linear-gradient(180deg, var(--surface-2), var(--surface)); border: 1px solid var(--border);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); cursor: pointer; transition: 0.18s; color: var(--ink);
+  display: flex; flex-direction: column; gap: 14px;
+}
+.lg-lcard:hover { transform: translateY(-2px); border-color: rgba(255, 255, 255, 0.15); }
+.lg-lcard-strip { position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--accent, var(--gold)); }
+.lg-lcard-top { display: flex; align-items: center; gap: 12px; }
+.lg-lcard-badge {
+  flex: none; width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; font-size: 22px;
+  background: color-mix(in srgb, var(--accent, #f0a500) 22%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent, #f0a500) 45%, transparent);
+}
+.lg-lcard-id { min-width: 0; flex: 1; }
+.lg-lcard-name { font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 1.2rem; line-height: 1.1; }
+.lg-lcard-sub { font-size: 0.8rem; color: var(--ink-2); margin-top: 2px; }
+.lg-lcard-rank { flex: none; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 1.9rem; color: var(--gold-soft); line-height: 1; }
+.lg-lcard-rank span { font-size: 0.9rem; color: var(--ink-2); }
+.lg-lcard-go { font-size: 0.82rem; font-weight: 700; color: var(--gold-soft); }
+
+.lg-mini { display: flex; flex-direction: column; gap: 5px; background: rgba(0, 0, 0, 0.2); border-radius: 12px; padding: 9px 11px; }
+.lg-mini-row { display: flex; align-items: center; gap: 9px; font-size: 0.85rem; }
+.lg-mini-medal { flex: none; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 0.72rem; font-weight: 800; color: #2a2000; }
+.lg-mini-medal.m1 { background: linear-gradient(180deg, #ffd76a, #d99a1a); }
+.lg-mini-medal.m2 { background: linear-gradient(180deg, #e6e9ee, #a7adba); }
+.lg-mini-medal.m3 { background: linear-gradient(180deg, #e6a878, #b06a34); color: #2a1400; }
+.lg-mini-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.lg-mini-pts { font-weight: 800; color: var(--gold-soft); font-variant-numeric: tabular-nums; }
+.lg-mini-empty { font-size: 0.82rem; color: var(--ink-3); text-align: center; padding: 4px 0; }
+
+/* ---------- Özel lig kartı + ekle ---------- */
+.lg-pcard {
+  text-align: left; border-radius: 18px; padding: 18px 20px; cursor: pointer; transition: 0.18s; color: var(--ink);
+  background: linear-gradient(180deg, var(--surface-2), var(--surface)); border: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 4px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+.lg-pcard:hover { transform: translateY(-2px); border-color: rgba(255, 255, 255, 0.15); }
+.lg-pcard-name { font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 1.15rem; }
+.lg-pcard-sub { font-size: 0.82rem; color: var(--ink-2); }
+.lg-pcard .lg-lcard-go { margin-top: 8px; }
+.lg-addcard {
+  border-radius: 18px; padding: 18px 20px; cursor: pointer; color: var(--ink-2);
+  background: transparent; border: 1.5px dashed var(--border-s);
+  display: flex; align-items: center; gap: 12px; transition: 0.16s; font-family: inherit; font-size: 0.9rem;
+}
+.lg-addcard:hover { border-color: var(--gold-deep); color: var(--ink); }
+.lg-addplus { flex: none; width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; font-size: 22px; background: rgba(240, 165, 0, 0.12); color: var(--gold-soft); }
+.lg-addtxt b { color: var(--gold-soft); }
+
+/* ---------- Detay başlık ---------- */
+.lg-back { background: none; border: none; color: var(--ink-2); font-weight: 700; cursor: pointer; padding: 4px 0; margin-bottom: 10px; font-size: 0.9rem; }
+.lg-back:hover { color: var(--ink); }
+.lg-detail-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.lg-detail-name { font-family: 'Barlow Semi Condensed', sans-serif; font-size: 1.7rem; font-weight: 800; margin: 0; }
 .lg-detail-sub { color: var(--ink-2); font-size: 0.85rem; margin-top: 2px; }
-.lg-detail-tools { display: flex; gap: 8px; flex: none; }
-.lg-icobtn { width: 38px; height: 38px; border-radius: 10px; border: 1px solid var(--border-s); background: rgba(255, 255, 255, 0.05);
-  color: var(--ink); font-size: 1.1rem; cursor: pointer; }
+.lg-detail-right { display: flex; align-items: center; gap: 8px; }
+.lg-wsel { font-family: inherit; font-size: 0.84rem; color: var(--ink); background: #0f1a24; border: 1px solid var(--border-s); border-radius: 10px; padding: 8px 11px; }
+.lg-icobtn { width: 40px; height: 40px; border-radius: 11px; border: 1px solid var(--border-s); background: rgba(255, 255, 255, 0.05); color: var(--ink); font-size: 1.1rem; cursor: pointer; }
 .lg-icobtn:hover { background: rgba(255, 255, 255, 0.1); }
 
-.lg-msg { background: rgba(240, 165, 0, 0.12); border: 1px solid rgba(240, 165, 0, 0.35); color: #ffe6ab;
-  padding: 8px 12px; border-radius: 9px; font-size: 0.85rem; margin: 10px 0; }
+.lg-msg { background: rgba(240, 165, 0, 0.12); border: 1px solid rgba(240, 165, 0, 0.35); color: #ffe6ab; padding: 9px 13px; border-radius: 10px; font-size: 0.85rem; margin: 12px 0; }
 
-.lg-pop { background: var(--surface); border: 1px solid var(--border-s); border-radius: 12px; padding: 6px; margin: 8px 0; max-width: 260px; }
-.lg-pop-item { width: 100%; text-align: left; background: none; border: none; color: var(--ink); font-weight: 600; padding: 10px 12px; border-radius: 8px; cursor: pointer; }
+.lg-pop { background: var(--surface); border: 1px solid var(--border-s); border-radius: 12px; padding: 6px; margin: 10px 0; max-width: 280px; box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5); }
+.lg-pop-item { width: 100%; text-align: left; background: none; border: none; color: var(--ink); font-weight: 600; padding: 11px 13px; border-radius: 9px; cursor: pointer; }
 .lg-pop-item.danger { color: #fca5a5; }
 .lg-pop-item:hover:not(:disabled) { background: rgba(255, 255, 255, 0.06); }
 .lg-pop-item:disabled { opacity: 0.5; cursor: default; }
 
-/* Çark paneli */
-.lg-gear { background: var(--surface); border: 1px solid var(--border-s); border-radius: 14px; padding: 14px 16px; margin: 10px 0; }
-.lg-gear-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
-.lg-gear-row .l { color: var(--ink-2); font-size: 0.85rem; flex: 1; min-width: 120px; }
+/* ---------- Çark paneli ---------- */
+.lg-gear { background: var(--surface); border: 1px solid var(--border-s); border-radius: 16px; padding: 15px 17px; margin: 12px 0; box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45); }
+.lg-gear-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.lg-gear-row .l { color: var(--ink-2); font-size: 0.85rem; flex: 1; min-width: 130px; }
 .lg-gear-row b { color: var(--ink); }
-.lg-code { font-family: 'Barlow Condensed', monospace; font-weight: 800; letter-spacing: 0.15em; font-size: 1.1rem; color: var(--gold-soft);
-  background: rgba(240, 165, 0, 0.12); padding: 3px 10px; border-radius: 7px; }
-.lg-code.big { font-size: 2rem; display: inline-block; margin: 12px 0; }
+.lg-code { font-family: 'Barlow Condensed', ui-monospace, monospace; font-weight: 800; letter-spacing: 0.18em; font-size: 1.15rem; color: var(--gold-soft); background: rgba(240, 165, 0, 0.12); padding: 4px 12px; border-radius: 8px; }
+.lg-code.big { font-size: 2.4rem; display: inline-block; margin: 14px 0; }
 .lg-admin { margin-top: 12px; }
-.lg-admin-title { font-weight: 800; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--gold-soft); margin: 12px 0 6px; }
-.lg-memberlist { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; max-height: 220px; overflow-y: auto; }
-.lg-member { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 0.88rem; padding: 4px 0; }
-.lg-inp { font-family: inherit; font-size: 0.9rem; color: var(--ink); background: #0f1a24; border: 1px solid var(--border-s); border-radius: 8px; padding: 9px 11px; width: 100%; }
+.lg-admin-title { font-weight: 800; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--gold-soft); margin: 14px 0 7px; }
+.lg-memberlist { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; max-height: 240px; overflow-y: auto; }
+.lg-member { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 0.88rem; padding: 3px 0; }
+.lg-member-name { display: flex; align-items: center; gap: 8px; }
+.lg-inp { font-family: inherit; font-size: 0.9rem; color: var(--ink); background: #0f1a24; border: 1px solid var(--border-s); border-radius: 9px; padding: 10px 12px; width: 100%; }
 .lg-inp.sm { width: 90px; }
-.lg-inp.code { letter-spacing: 0.3em; text-align: center; text-transform: uppercase; font-weight: 700; }
-.lg-confirm { background: rgba(240, 96, 94, 0.08); border: 1px solid rgba(240, 96, 94, 0.3); border-radius: 10px; padding: 10px 12px; font-size: 0.85rem; }
-.lg-confirm.floating { margin-top: 10px; }
-.lg-confirm-btns { display: flex; gap: 8px; margin-top: 8px; }
-.lg-gear-close { display: block; margin: 12px auto 0; background: none; border: none; color: var(--ink-2); cursor: pointer; font-weight: 700; }
+.lg-inp.code { letter-spacing: 0.35em; text-align: center; text-transform: uppercase; font-weight: 700; font-size: 1.3rem; }
+.lg-confirm { background: rgba(240, 96, 94, 0.08); border: 1px solid rgba(240, 96, 94, 0.3); border-radius: 11px; padding: 11px 13px; font-size: 0.85rem; }
+.lg-confirm.floating { margin-top: 12px; }
+.lg-confirm-btns { display: flex; gap: 8px; margin-top: 9px; }
+.lg-gear-close { display: block; margin: 14px auto 0; background: none; border: none; color: var(--ink-2); cursor: pointer; font-weight: 700; }
 
-/* Filtre */
-.lg-filter { display: flex; align-items: center; gap: 8px; margin: 14px 0 8px; }
-.lg-filter-lbl { color: var(--ink-2); font-size: 0.85rem; }
-.lg-filter select { font-family: inherit; font-size: 0.86rem; color: var(--ink); background: #0f1a24; border: 1px solid var(--border-s); border-radius: 8px; padding: 7px 10px; }
+/* ---------- PODYUM ---------- */
+.lg-podium { display: grid; grid-template-columns: 1fr 1fr 1fr; align-items: end; gap: 10px; margin: 18px 0 6px; }
+.lg-pod { display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; background: none; border: none; color: var(--ink); padding: 0; }
+.lg-pod.empty { opacity: 0.35; cursor: default; }
+.lg-pod-medal { font-size: 1.3rem; }
+.lg-pod-ava { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 800; font-size: 1.2rem; color: #0b130e; background: linear-gradient(180deg, #cfe0d4, #8fae9c); }
+.lg-pod-name { font-weight: 700; font-size: 0.86rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lg-pod-pts { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 1.3rem; color: var(--gold-soft); line-height: 1; }
+.lg-pod-pts small { font-size: 0.6em; color: var(--ink-2); }
+.lg-pod-block { width: 100%; border-radius: 12px 12px 0 0; display: grid; place-items: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 1.4rem; color: rgba(0, 0, 0, 0.4); margin-top: 4px; }
+.lg-pod.p1 .lg-pod-block { height: 96px; background: linear-gradient(180deg, #ffd76a, #d99a1a); }
+.lg-pod.p2 .lg-pod-block { height: 70px; background: linear-gradient(180deg, #e6e9ee, #a7adba); }
+.lg-pod.p3 .lg-pod-block { height: 54px; background: linear-gradient(180deg, #e6a878, #b06a34); }
+.lg-pod.p1 .lg-pod-ava { background: linear-gradient(180deg, #ffe08a, #f0a500); box-shadow: 0 4px 14px rgba(240, 165, 0, 0.4); }
 
-/* Tablo */
-.lg-tablewrap { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
-.lg-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-.lg-table thead th { background: #0f1a24; text-align: left; padding: 10px 14px; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-2); }
-.lg-table thead th:nth-child(3), .lg-table thead th:nth-child(4) { text-align: right; }
-.lg-tr td { padding: 11px 14px; border-top: 1px solid var(--border); }
-.lg-rank { width: 48px; font-weight: 700; color: var(--ink-2); font-size: 1.05rem; }
-.lg-uname { width: auto; }
-.lg-namebtn { background: none; border: none; color: var(--ink); font-weight: 600; font-size: 0.92rem; cursor: pointer; padding: 0; text-align: left; }
-.lg-namebtn:hover { color: var(--gold-soft); text-decoration: underline; }
-.lg-pts, .lg-jok { text-align: right; }
-.lg-pts { font-weight: 800; color: var(--gold-soft); }
-.lg-jok { color: var(--ink-2); }
-.lg-tr.me { background: rgba(58, 127, 230, 0.16); }
-.lg-tr.me .lg-namebtn { color: #7fb0ff; font-weight: 800; }
-.lg-tr.medal.m1 { background: rgba(240, 165, 0, 0.14); }
-.lg-tr.medal.m2 { background: rgba(190, 200, 210, 0.12); }
-.lg-tr.medal.m3 { background: rgba(205, 127, 50, 0.12); }
-.lg-tr.medal .lg-rank { font-size: 1.2rem; }
-.lg-tr.medal .lg-namebtn { font-weight: 800; }
-.lg-divider td { background: #0b130e; color: var(--ink-2); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; padding: 6px 14px; }
-.lg-empty { text-align: center; color: var(--ink-2); padding: 24px 0; }
+/* ---------- SIRALAMA LİSTESİ ---------- */
+.lg-list { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; margin-top: 14px; }
+.lg-list-head, .lg-lrow { display: grid; grid-template-columns: 50px 1fr auto auto; align-items: center; gap: 12px; padding: 11px 16px; }
+.lg-list-head { background: #0f1a24; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-2); font-weight: 700; }
+.lg-list-head span:nth-child(3), .lg-list-head span:nth-child(4) { text-align: right; }
+.lg-list-divider { background: #0b130e; color: var(--ink-2); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; padding: 6px 16px; }
+.lg-lrow { border-top: 1px solid var(--border); position: relative; }
+.lg-lrank { font-weight: 700; color: var(--ink-2); font-size: 1.05rem; }
+.lg-luser { display: flex; align-items: center; gap: 10px; background: none; border: none; color: var(--ink); cursor: pointer; min-width: 0; padding: 0; text-align: left; }
+.lg-lava { flex: none; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 800; font-size: 0.9rem; color: #0b130e; background: linear-gradient(180deg, #cfe0d4, #8fae9c); }
+.lg-lava.sm { width: 26px; height: 26px; font-size: 0.78rem; }
+.lg-lname { font-weight: 600; font-size: 0.92rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lg-luser:hover .lg-lname { color: var(--gold-soft); }
+.lg-lpts { text-align: right; font-weight: 800; color: var(--gold-soft); }
+.lg-ljok { text-align: right; color: var(--ink-2); min-width: 30px; }
+.lg-empty { text-align: center; color: var(--ink-2); padding: 26px 0; }
 
-/* Sayfalama */
-.lg-pager { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 14px 0 4px; }
-.lg-pager button { width: 36px; height: 36px; border-radius: 9px; border: 1px solid var(--border-s); background: rgba(255, 255, 255, 0.05); color: var(--ink); font-size: 1.1rem; cursor: pointer; }
+/* madalyalı ilk 3 */
+.lg-medal .lg-lrank { font-size: 1.25rem; }
+.lg-medal.m1 { background: rgba(240, 165, 0, 0.1); }
+.lg-medal.m2 { background: rgba(190, 200, 210, 0.08); }
+.lg-medal.m3 { background: rgba(205, 127, 50, 0.09); }
+.lg-medal .lg-lname { font-weight: 800; }
+
+/* kullanıcının kendi satırı */
+.lg-me { background: linear-gradient(90deg, rgba(240, 165, 0, 0.2), rgba(240, 165, 0, 0.04) 55%, transparent); }
+.lg-me::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--gold); }
+.lg-me .lg-lname, .lg-me .lg-lrank { color: var(--gold-soft); font-weight: 800; }
+.lg-me .lg-lava { background: linear-gradient(180deg, #ffe08a, #f0a500); }
+
+/* ---------- Sayfalama ---------- */
+.lg-pager { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 16px 0 4px; }
+.lg-pager button { width: 38px; height: 38px; border-radius: 10px; border: 1px solid var(--border-s); background: rgba(255, 255, 255, 0.05); color: var(--ink); font-size: 1.1rem; cursor: pointer; }
 .lg-pager button:disabled { opacity: 0.35; cursor: default; }
 .lg-pager span { font-size: 0.85rem; color: var(--ink-2); font-variant-numeric: tabular-nums; }
 .lg-firstpage { display: block; margin: 6px auto 0; background: none; border: none; color: var(--gold-soft); font-weight: 700; cursor: pointer; font-size: 0.85rem; }
 
-/* Modal */
-.lg-overlay { position: fixed; inset: 0; z-index: 210; display: grid; place-items: center; padding: 18px; background: rgba(4, 10, 7, 0.66); backdrop-filter: blur(4px); }
-.lg-modal { position: relative; width: min(420px, 100%); max-height: 92vh; overflow-y: auto; background: var(--surface); border: 1px solid var(--border-s); border-radius: 18px; padding: 22px; }
-.lg-mclose { position: absolute; top: 12px; right: 12px; width: 30px; height: 30px; border-radius: 50%; border: none; background: rgba(0, 0, 0, 0.28); color: #fff; font-size: 16px; cursor: pointer; }
-.lg-modal h2 { font-family: 'Barlow Semi Condensed', sans-serif; font-size: 1.4rem; margin: 0 0 16px; }
-.lg-field { display: block; margin-bottom: 14px; }
+/* ---------- Modal ---------- */
+.lg-overlay { position: fixed; inset: 0; z-index: 210; display: grid; place-items: center; padding: 18px; background: rgba(4, 8, 6, 0.72); backdrop-filter: blur(4px); }
+.lg-modal { position: relative; width: min(440px, 100%); max-height: 92vh; overflow-y: auto; border-radius: 20px; padding: 24px; background: linear-gradient(180deg, #1b2a22, #12201a); border: 1px solid var(--border-s); box-shadow: 0 40px 90px rgba(0, 0, 0, 0.7); }
+.lg-mclose { position: absolute; top: 13px; right: 13px; width: 30px; height: 30px; border-radius: 50%; border: none; background: rgba(0, 0, 0, 0.3); color: #fff; font-size: 16px; cursor: pointer; }
+.lg-modal-title { font-family: 'Barlow Semi Condensed', sans-serif; font-size: 1.5rem; margin: 0 0 18px; }
+.lg-field { display: block; margin-bottom: 15px; }
 .lg-field span { display: block; font-size: 0.82rem; color: var(--ink-2); margin-bottom: 6px; }
-.lg-check { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-.lg-check label { display: flex; align-items: center; gap: 8px; font-size: 0.88rem; cursor: pointer; }
-.lg-info { background: none; border: none; color: var(--gold-soft); font-size: 1rem; cursor: pointer; }
-.lg-infobox { font-size: 0.8rem; line-height: 1.5; color: var(--ink-2); background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin: 6px 0 12px; }
-.lg-hint { font-size: 0.75rem; color: var(--ink-2); text-align: center; margin: 10px 0 0; }
+.lg-chk { display: flex; align-items: flex-start; gap: 10px; margin: 4px 0 6px; cursor: pointer; }
+.lg-chk input { flex: none; margin-top: 1px; width: 17px; height: 17px; accent-color: var(--gold); }
+.lg-chk-t { line-height: 1.4; font-size: 0.9rem; }
+.lg-info { display: inline-flex; vertical-align: middle; margin-left: 4px; width: 18px; height: 18px; border-radius: 50%; border: 1px solid var(--gold-deep); color: var(--gold-soft); font-size: 11px; font-style: italic; font-weight: 700; align-items: center; justify-content: center; cursor: pointer; }
+.lg-infobox { font-size: 0.8rem; line-height: 1.55; color: var(--ink-2); background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border); border-radius: 11px; padding: 11px 13px; margin: 8px 0 12px; }
+.lg-hint { font-size: 0.75rem; color: var(--ink-3); text-align: center; margin: 12px 0 0; }
 .lg-created { text-align: center; }
 .lg-created p { color: var(--ink-2); }
