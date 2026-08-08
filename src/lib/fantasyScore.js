@@ -105,7 +105,9 @@ export function computeTotalPoints({ field, finishedById, startedById, captainId
 // finishedById / startedById: Map benzeri (.get(id)) — hafta tamamen bitmişse
 //   her oyuncu için true dönen bir nesne verilebilir.
 // pointDeductions: o haftanın ekstra transfer kesintisi.
-export function computeSquadWeekTotal({ rows, captainPlayerId, ptsById, finishedById, startedById, pointDeductions = 0 }) {
+// apply: otomatik yedek uygulansın mı (final=true; canlı/provizyonel=false — hafta
+//   bitmeden Takımım da auto-sub uygulamaz).
+export function computeSquadWeekTotal({ rows, captainPlayerId, ptsById, finishedById, startedById, pointDeductions = 0, apply = true }) {
   const fieldByPos = { KL: [], DF: [], OS: [], FW: [] }
   const benchList = []
   ;(rows || []).forEach((r, index) => {
@@ -125,7 +127,7 @@ export function computeSquadWeekTotal({ rows, captainPlayerId, ptsById, finished
     benchEntries,
     ptsById,
     finishedById,
-    apply: true,
+    apply,
     captainId: captainPlayerId ?? null,
   })
   const total = computeTotalPoints({ field, finishedById, startedById, captainId: effectiveCaptainId })
