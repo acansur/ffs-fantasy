@@ -1,0 +1,9 @@
+# Cloudflare Worker — GitHub Actions "live-scores" workflow'unu her 5 dakikada
+# güvenilir şekilde tetikler (GitHub'ın kendi cron'u gecikince devreye girer).
+name = "ffs-live-trigger"
+main = "src/index.js"
+compatibility_date = "2024-09-01"
+
+# Her 5 dakikada bir çalışır (Cloudflare cron trigger — GitHub'dan çok daha güvenilir)
+[triggers]
+crons = ["*/5 * * * *"]
