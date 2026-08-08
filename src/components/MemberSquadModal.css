@@ -1,39 +1,65 @@
 .msq-overlay {
   position: fixed; inset: 0; z-index: 220; display: grid; place-items: center; padding: 18px;
-  background: rgba(4, 10, 7, 0.66); backdrop-filter: blur(4px);
+  background: rgba(4, 10, 7, 0.68); backdrop-filter: blur(4px);
   font-family: 'Inter', system-ui, sans-serif;
 }
 .msq {
-  position: relative; width: min(440px, 100%); max-height: 90vh; overflow-y: auto;
+  position: relative; width: min(480px, 100%); max-height: 92vh; overflow-y: auto;
   background: #132019; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 18px;
   color: #eaf3ec; box-shadow: 0 40px 90px rgba(0, 0, 0, 0.7);
 }
 .msq-close {
-  position: absolute; top: 12px; right: 12px; width: 30px; height: 30px; border-radius: 50%;
-  border: none; background: rgba(0, 0, 0, 0.28); color: #fff; font-size: 16px; cursor: pointer;
-  display: grid; place-items: center;
+  position: absolute; top: 12px; right: 12px; z-index: 5; width: 30px; height: 30px; border-radius: 50%;
+  border: none; background: rgba(0, 0, 0, 0.3); color: #fff; font-size: 16px; cursor: pointer; display: grid; place-items: center;
 }
-.msq-head { padding: 20px 22px 14px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
-.msq-name { font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 22px; text-transform: uppercase; }
-.msq-sub { font-size: 13px; color: #9cb0a4; margin-top: 3px; }
-.msq-note { padding: 34px 0; text-align: center; color: #9cb0a4; }
-.msq-body { padding: 14px 20px 20px; }
-.msq-line { padding: 9px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
-.msq-line-lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #9cb0a4; margin-bottom: 7px; }
-.msq-players { display: flex; flex-wrap: wrap; gap: 7px; }
-.msq-pl {
-  display: inline-flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 600;
-  background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.1);
-  border-left: 3px solid var(--pos, #888); padding: 5px 10px 5px 9px; border-radius: 8px;
+.msq-head { padding: 20px 22px 12px; }
+.msq-name { font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 22px; text-transform: uppercase; line-height: 1; }
+.msq-sub { font-size: 13px; color: #9cb0a4; margin-top: 4px; }
+.msq-note { padding: 40px 20px; text-align: center; color: #9cb0a4; }
+
+/* --- Saha --- */
+.msq-pitch {
+  position: relative; margin: 6px 14px 0; border-radius: 14px; overflow: hidden;
+  background:
+    repeating-linear-gradient(180deg, rgba(255,255,255,0.03) 0 32px, transparent 32px 64px),
+    linear-gradient(180deg, #1c6a45, #14502f 55%, #0f3f26);
+  border: 1px solid rgba(255, 255, 255, 0.08); padding: 14px 8px;
 }
-/* Pozisyon renkleri: KL yeşil · DF kırmızı · OS mavi · FW turuncu */
-.msq-pl.pos-KL { --pos: #1bb87c; }
-.msq-pl.pos-DF { --pos: #f05a58; }
-.msq-pl.pos-OS { --pos: #4a8bf0; }
-.msq-pl.pos-FW { --pos: #f4903a; }
-.msq-pl.bench { opacity: 0.5; }
-.msq-pl.cap { border-color: rgba(240, 165, 0, 0.5); border-left-color: var(--pos, #888); background: rgba(240, 165, 0, 0.12); }
-.msq-c { font-size: 10px; font-weight: 800; color: #3a2a00; background: #ffcb52; border-radius: 4px; padding: 1px 4px; }
-.msq-legend { margin-top: 12px; font-size: 11.5px; color: #9cb0a4; text-align: center; }
-.msq-legend .dim { opacity: 0.7; }
-.msq-legend b { color: #ffcb52; }
+.msq-lines { position: absolute; inset: 0; pointer-events: none; }
+.msq-halfway { position: absolute; left: 6%; right: 6%; top: 50%; height: 2px; background: rgba(255, 255, 255, 0.14); }
+.msq-circle { position: absolute; left: 50%; top: 50%; width: 92px; height: 92px; transform: translate(-50%, -50%); border: 2px solid rgba(255, 255, 255, 0.14); border-radius: 50%; }
+.msq-box { position: absolute; left: 50%; transform: translateX(-50%); width: 150px; height: 42px; border: 2px solid rgba(255, 255, 255, 0.12); }
+.msq-box.top { top: 0; border-top: none; }
+.msq-box.bot { bottom: 0; border-bottom: none; }
+
+.msq-rows { position: relative; z-index: 2; display: flex; flex-direction: column; gap: 12px; }
+.msq-row { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px 14px; }
+
+.msq-card { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; width: 66px; }
+.msq-card.bench { width: 60px; }
+.msq-ava {
+  position: relative; width: 46px; height: 46px; border-radius: 50%; overflow: hidden;
+  background: rgba(0, 0, 0, 0.25); box-shadow: 0 0 0 2.5px var(--pos, #888), 0 3px 8px rgba(0, 0, 0, 0.4);
+}
+.msq-card.bench .msq-ava { width: 40px; height: 40px; box-shadow: 0 0 0 2px var(--pos, #888); }
+.msq-ava > * { width: 100%; height: 100%; }
+.msq-ava img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.msq-nm {
+  max-width: 100%; font-size: 11.5px; font-weight: 600; text-align: center; line-height: 1.15;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  background: rgba(0, 0, 0, 0.4); padding: 2px 6px; border-radius: 6px;
+}
+.msq-capc {
+  position: absolute; top: -4px; right: 6px; z-index: 3; width: 17px; height: 17px; border-radius: 50%;
+  background: #ffcb52; color: #3a2a00; font-size: 10px; font-weight: 800; display: grid; place-items: center; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+/* Pozisyon renkleri (halka): KL yeşil · DF kırmızı · OS mavi · FW turuncu */
+.msq-card.pos-KL { --pos: #1bb87c; }
+.msq-card.pos-DF { --pos: #f05a58; }
+.msq-card.pos-OS { --pos: #4a8bf0; }
+.msq-card.pos-FW { --pos: #f4903a; }
+
+/* --- Yedekler --- */
+.msq-benchbar { display: flex; align-items: center; gap: 10px; margin: 14px 20px 8px; color: #9cb0a4; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; }
+.msq-benchbar::after { content: ''; flex: 1; height: 1px; background: rgba(255, 255, 255, 0.1); }
+.msq-bench { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 14px; padding: 0 14px 20px; }

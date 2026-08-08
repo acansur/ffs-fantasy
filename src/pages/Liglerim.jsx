@@ -392,7 +392,7 @@ function LeagueDetail({ descriptor, user, data, usersById, passedWeeks, lastPass
         <MemberSquadModal
           userId={memberModal.userId}
           username={memberModal.username}
-          week={lastPassedWeek}
+          week={weekFilter != null ? weekFilter : lastPassedWeek}
           onClose={() => setMemberModal(null)}
         />
       )}
