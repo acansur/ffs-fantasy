@@ -264,7 +264,8 @@ function LeagueDetail({ descriptor, user, data, usersById, passedWeeks, lastPass
   const leaders = standings.slice(0, 3)
 
   const ownerName = isPrivate ? (usersById[league.owner_id]?.username || '—') : null
-  const openMember = (r) => { if (r && lastPassedWeek != null) setMemberModal({ userId: r.id, username: r.username }) }
+  // İsme tıklama modalı hep açar; oynanmış hafta yoksa modal içinde bilgi gösterilir.
+  const openMember = (r) => { if (r) setMemberModal({ userId: r.id, username: r.username }) }
 
   // Podyum sırası: 2 - 1 - 3 (ortadaki en yüksek)
   const podium = [

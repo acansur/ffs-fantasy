@@ -14,6 +14,11 @@ export default function MemberSquadModal({ userId, username, week, onClose }) {
   const [state, setState] = useState({ loading: true, roster: null, captainId: null, error: '' })
 
   useEffect(() => {
+    // Henüz deadline'ı geçmiş (oynanmış) hafta yoksa kadro da yoktur → bilgi göster.
+    if (week == null) {
+      setState({ loading: false, roster: null, captainId: null, error: 'Henüz oynanmış hafta yok — kadrolar ilk hafta deadline\'ından sonra görünür.' })
+      return
+    }
     let alive = true
     ;(async () => {
       try {
@@ -44,7 +49,7 @@ export default function MemberSquadModal({ userId, username, week, onClose }) {
         <button className="msq-close" onClick={onClose} aria-label="Kapat">×</button>
         <div className="msq-head">
           <div className="msq-name">{username} · Kadro</div>
-          <div className="msq-sub">Son deadline'ı gelmiş haftanın kadrosu · salt okunur</div>
+          <div className="msq-sub">{week != null ? 'Son deadline\'ı gelmiş haftanın kadrosu · salt okunur' : 'Salt okunur'}</div>
         </div>
 
         {loading ? (
