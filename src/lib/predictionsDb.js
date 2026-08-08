@@ -6,18 +6,23 @@ import { supabase, isSupabaseConfigured } from './supabase.js'
 const ok = () => isSupabaseConfigured && supabase
 const FINISHED = new Set(['FT', 'AET', 'PEN', 'WO'])
 
-// Tamamlanmış maçın sonucu → 'home' | 'draw' | 'away' | null
-export function fixtureOutcome(fx) {
-  const h = fx?.goals?.home
-  const a = fx?.goals?.away
+// Bir live_scores satırından maç sonucu → 'home' | 'draw' | 'away' | null.
+// row: { home_goals, away_goals } (Supabase live_scores). Skor yoksa null.
+export function fixtureOutcome(row) {
+  const h = row?.home_goals
+  const a = row?.away_goals
   if (h == null || a == null) return null
   return h > a ? 'home' : h < a ? 'away' : 'draw'
 }
 
-// Kullanıcının o haftaki tahminlerini yükle; biten maçları puanla; toplamı yaz.
+// Kullanıcının o haftaki tahminlerini yükle; BİTEN (live_scores status=FT) maçları
+// puanla; toplamı yaz. Maç sonucu/skoru API'den DEĞİL, Supabase live_scores'tan
+// (liveMap: Map<fixture_id, satır>) okunur. Yalnız status=FT olan maç puanlanır
+// (canlı/IN_PLAY anlık skorla erken puanlama YOK).
 // Dönüş: { byFixture: { [fixture_id]: row }, total }
-export async function loadAndScoreWeek(userId, week, fixtures) {
+export async function loadAndScoreWeek(userId, week, fixtures, liveMap) {
   if (!ok() || !userId) return { byFixture: {}, total: 0 }
+  const map = liveMap || new Map()
   const { data: rows, error } = await supabase
     .from('match_predictions')
     .select('*')
@@ -33,8 +38,9 @@ export async function loadAndScoreWeek(userId, week, fixtures) {
     const fid = fx.fixture?.id
     const pred = byFixture[fid]
     if (!pred) continue
-    if (!FINISHED.has(fx.fixture?.status?.short)) continue
-    const out = fixtureOutcome(fx)
+    const live = map.get(fid)
+    if (!live || !FINISHED.has(live.status)) continue // yalnız live_scores FT
+    const out = fixtureOutcome(live)
     if (out == null) continue
     const isCorrect = pred.prediction === out
     const pts = isCorrect ? 1 : 0

@@ -10,9 +10,12 @@ const ok = () => isSupabaseConfigured && supabase
 const FINISHED = new Set(['FT', 'AET', 'PEN', 'WO'])
 const TABLE = 'pl_test_predictions'
 
-// Kullanıcının o haftaki tahminlerini yükle; biten maçları puanla; toplamı döndür.
-export async function loadAndScorePlWeek(userId, week, fixtures) {
+// Kullanıcının o haftaki tahminlerini yükle; BİTEN (live_scores status=FT) maçları
+// puanla; toplamı döndür. Sonuç/skor Supabase live_scores'tan (liveMap) okunur;
+// yalnız status=FT puanlanır. (predictionsDb ile birebir aynı mantık.)
+export async function loadAndScorePlWeek(userId, week, fixtures, liveMap) {
   if (!ok() || !userId) return { byFixture: {}, total: 0 }
+  const map = liveMap || new Map()
   const { data: rows, error } = await supabase
     .from(TABLE)
     .select('*')
@@ -28,8 +31,9 @@ export async function loadAndScorePlWeek(userId, week, fixtures) {
     const fid = fx.fixture?.id
     const pred = byFixture[fid]
     if (!pred) continue
-    if (!FINISHED.has(fx.fixture?.status?.short)) continue
-    const out = fixtureOutcome(fx)
+    const live = map.get(fid)
+    if (!live || !FINISHED.has(live.status)) continue // yalnız live_scores FT
+    const out = fixtureOutcome(live)
     if (out == null) continue
     const isCorrect = pred.prediction === out
     const pts = isCorrect ? 1 : 0

@@ -5,6 +5,7 @@ import { useSquad } from '../lib/squadStore.jsx'
 import { getVisibleWeeks, getActiveRound, isLocked, formatDeadline } from '../lib/weeks.js'
 import { useNow } from '../lib/useNow.js'
 import { loadAndScoreWeek, savePrediction, loadAllWeekPoints, fixtureOutcome } from '../lib/predictionsDb.js'
+import { getLiveScoresByFixtures } from '../lib/liveScoresDb.js'
 import './KimKazanir.css'
 
 // Varsayılan (Süper Lig) tahmin veri katmanı. /pl-test/kim-kazanir kendi
@@ -57,18 +58,48 @@ export default function KimKazanir({ predDb = SL_PRED_DB }) {
     return fixtures.filter((f) => roundNo(f.league?.round) === week).sort((a, b) => new Date(a.fixture.date) - new Date(b.fixture.date))
   }, [fixtures, week])
 
+  // Maç SONUÇLARI/skorları: Supabase live_scores'tan — API çağrısı YOK. Açık
+  // haftanın fixture'ları için sayfa açılınca + 5 dk'da bir okunur (cron besliyor).
+  // Yalnızca hafta kilitliyken (deadline geçmiş → maçlar var) çekilir.
+  const [liveScores, setLiveScores] = useState(() => new Map())
+  const weekIds = useMemo(() => weekFixtures.map((f) => f.fixture?.id).filter((x) => x != null), [weekFixtures])
+  const idsKey = weekIds.join('-')
+  const weekLocked = week != null ? lockedFor(week) : false
+  useEffect(() => {
+    if (!weekLocked || !weekIds.length) {
+      setLiveScores(new Map())
+      return
+    }
+    let alive = true
+    const load = () =>
+      getLiveScoresByFixtures(weekIds)
+        .then((m) => { if (alive) setLiveScores(m) })
+        .catch(() => {})
+    load()
+    const id = setInterval(load, 300000) // 5 dk (cron cadence'i ile hizalı)
+    return () => { alive = false; clearInterval(id) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idsKey, weekLocked])
+
+  // live_scores imzası — FT sonucu/skor değiştikçe puanlama yeniden çalışır
+  const liveSig = useMemo(() => {
+    const parts = []
+    for (const [fid, r] of liveScores) parts.push(`${fid}:${r.status}:${r.home_goals ?? ''}-${r.away_goals ?? ''}`)
+    return parts.sort().join(',')
+  }, [liveScores])
+
   // Tüm hafta puanlarını (başlık rozetleri) bir kez oku
   useEffect(() => {
     if (!user) return
     loadAllWeekPoints(user.id).then(setAllPoints).catch(() => {})
   }, [user])
 
-  // Açık haftanın tahminlerini yükle + biten maçları puanla
+  // Açık haftanın tahminlerini yükle + biten (live_scores FT) maçları puanla
   useEffect(() => {
     if (!user || week == null || !weekFixtures.length) return
     let alive = true
     setState((s) => ({ ...s, loading: true }))
-    loadAndScoreWeek(user.id, week, weekFixtures)
+    loadAndScoreWeek(user.id, week, weekFixtures, liveScores)
       .then((res) => {
         if (!alive) return
         setState({ loading: false, byFixture: res.byFixture, total: res.total })
@@ -79,7 +110,7 @@ export default function KimKazanir({ predDb = SL_PRED_DB }) {
       alive = false
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, week, weekFixtures.length])
+  }, [user, week, weekFixtures.length, liveSig])
 
   const toggle = (round) => {
     setMsg('')
@@ -162,6 +193,7 @@ export default function KimKazanir({ predDb = SL_PRED_DB }) {
                 <div className="wk-body">
                   <div className="wk-inner">{open && <WeekBody
                     fixtures={weekFixtures}
+                    liveScores={liveScores}
                     byFixture={state.byFixture}
                     loading={state.loading}
                     locked={locked}
@@ -197,7 +229,7 @@ function Hero({ total }) {
   )
 }
 
-function WeekBody({ fixtures, byFixture, loading, locked, total, onPick, savedAt }) {
+function WeekBody({ fixtures, liveScores, byFixture, loading, locked, total, onPick, savedAt }) {
   // "✓ Kaydedildi" görsel teyidi: savedAt değişince ~1.5 sn görünür (yalnızca UX).
   const [showSaved, setShowSaved] = useState(false)
   useEffect(() => {
@@ -237,16 +269,18 @@ function WeekBody({ fixtures, byFixture, loading, locked, total, onPick, savedAt
       {fixtures.map((f) => {
         const fid = f.fixture.id
         const pred = byFixture[fid]?.prediction
-        const finished = FINISHED.has(f.fixture?.status?.short)
-        const out = finished ? fixtureOutcome(f) : null
+        // Sonuç/skor Supabase live_scores'tan: satır FT ise bitmiş sayılır.
+        const row = liveScores?.get(fid) || null
+        const finished = row ? FINISHED.has(row.status) : false
+        const out = finished ? fixtureOutcome(row) : null
         const correctPick = byFixture[fid]?.is_correct
         return (
           <div key={fid} className="match">
             <div className="match-head">
               <div className="kk-teams">
                 <span className="tn">{f.teams.home.name}</span>
-                {finished && f.goals?.home != null ? (
-                  <span className="ms">{f.goals.home}-{f.goals.away}</span>
+                {finished && row?.home_goals != null ? (
+                  <span className="ms">{row.home_goals}-{row.away_goals}</span>
                 ) : (
                   <span className="vs">vs</span>
                 )}
