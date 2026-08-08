@@ -155,9 +155,12 @@
 .lg-gear-close { display: block; margin: 14px auto 0; background: none; border: none; color: var(--ink-2); cursor: pointer; font-weight: 700; }
 
 /* ---------- PODYUM ---------- */
-.lg-podium { display: grid; grid-template-columns: 1fr 1fr 1fr; align-items: end; gap: 10px; margin: 18px 0 6px; }
-.lg-pod { display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; background: none; border: none; color: var(--ink); padding: 0; }
-.lg-pod.empty { opacity: 0.35; cursor: default; }
+.lg-podium { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: end; gap: 10px; margin: 18px 0 6px; }
+.lg-pod { display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; background: none; border: none; color: var(--ink); padding: 0; width: 100%; min-width: 0; }
+.lg-pod.empty { cursor: default; }
+.lg-pod.empty .lg-pod-ava { background: rgba(255, 255, 255, 0.05); color: var(--ink-3); box-shadow: none; }
+.lg-pod.empty .lg-pod-name, .lg-pod.empty .lg-pod-pts, .lg-pod.empty .lg-pod-medal { color: var(--ink-3); }
+.lg-pod.empty .lg-pod-block { opacity: 0.3; }
 .lg-pod-medal { font-size: 1.3rem; }
 .lg-pod-ava { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 800; font-size: 1.2rem; color: #0b130e; background: linear-gradient(180deg, #cfe0d4, #8fae9c); }
 .lg-pod-name { font-weight: 700; font-size: 0.86rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

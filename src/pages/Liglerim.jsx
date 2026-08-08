@@ -337,7 +337,13 @@ function LeagueDetail({ descriptor, user, data, usersById, passedWeeks, lastPass
                 <span className="lg-pod-block">{place}</span>
               </button>
             ) : (
-              <div key={'e' + place} className={`lg-pod p${place} empty`}><span className="lg-pod-block">{place}</span></div>
+              <div key={'e' + place} className={`lg-pod p${place} empty`}>
+                <span className="lg-pod-medal">·</span>
+                <span className="lg-pod-ava">–</span>
+                <span className="lg-pod-name">—</span>
+                <span className="lg-pod-pts">–</span>
+                <span className="lg-pod-block">{place}</span>
+              </div>
             )
           )}
         </div>
