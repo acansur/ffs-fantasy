@@ -22,6 +22,7 @@
 // İsteğe bağlı: LEAGUE_IDS (tire ile; varsayılan "203-106")
 
 import { scoreFixture } from '../src/lib/scoring.js'
+import { computeSquadWeekTotal } from '../src/lib/fantasyScore.js'
 
 const API_KEY = process.env.API_FOOTBALL_KEY
 const SUPABASE_URL = process.env.SUPABASE_URL
@@ -148,6 +149,113 @@ async function fetchFixtureStatuses(ids) {
   return map
 }
 
+/* ==================== FANTASY PUAN FINALIZE ==================== */
+// Bir haftanın (round) SON maçı FT olunca, o haftanın TÜM kullanıcılarının fantasy
+// puanını kadroları + live_scores'tan hesaplayıp fantasy_points'e yazar. Kullanıcının
+// siteye girmesi GEREKMEZ. Puanlama client ile ORTAK modülden (fantasyScore.js) gelir
+// → mantık ikiliği yok. league_id → dataset (SL/pl-test) eşlemesi:
+const DATASETS = {
+  203: { squads: 'squads', players: 'squad_players', transfers: 'squad_transfers', points: 'fantasy_points' },
+  106: { squads: 'pl_test_squads', players: 'pl_test_squad_players', transfers: 'pl_test_squad_transfers', points: 'pl_test_fantasy_points' },
+}
+// Hafta TAMAMEN bitmiş → her oyuncu için "başladı/bitti" = true (Map benzeri).
+const ALL_TRUE = { get: () => true }
+const roundNumber = (round) => {
+  const m = String(round || '').match(/\d+/)
+  return m ? Number(m[0]) : null
+}
+
+// Supabase okuma (PostgREST GET). Hata → null.
+async function sbSelect(pathAndQuery) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${pathAndQuery}`, {
+    headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+  })
+  if (!res.ok) {
+    console.error(`Supabase select ${res.status}: ${await res.text().catch(() => '')}`)
+    return null
+  }
+  return res.json().catch(() => null)
+}
+
+// Verilen tabloya on_conflict ile upsert.
+async function sbUpsert(table, conflict, rows) {
+  if (!rows.length) return
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?on_conflict=${conflict}`, {
+    method: 'POST',
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      'Content-Type': 'application/json',
+      Prefer: 'resolution=merge-duplicates,return=minimal',
+    },
+    body: JSON.stringify(rows),
+  })
+  if (!res.ok) throw new Error(`Supabase upsert ${table} ${res.status}: ${await res.text().catch(() => '')}`)
+}
+
+async function finalizeFantasyForRound(leagueId, season, round) {
+  const ds = DATASETS[leagueId]
+  const week = roundNumber(round)
+  if (!ds || week == null) return
+
+  // 1) Round'un TÜM maçları FT mi? (yetkili kaynak: API)
+  const rf = await apiGet(`/fixtures?league=${leagueId}&season=${season}&round=${encodeURIComponent(round)}`)
+  const roundFx = rf?.response || []
+  if (!roundFx.length) return
+  const doneCount = roundFx.filter((f) => FINISHED.has(f?.fixture?.status?.short)).length
+  if (doneCount < roundFx.length) {
+    console.log(`  [fantasy] ${ds.points} hafta ${week}: ${doneCount}/${roundFx.length} maç bitti — bekle`)
+    return
+  }
+
+  // 2) İdempotent: bu hafta zaten yazıldıysa atla (tek toplu upsert → all-or-nothing).
+  const existing = await sbSelect(`${ds.points}?week=eq.${week}&select=user_id&limit=1`)
+  if (Array.isArray(existing) && existing.length) {
+    console.log(`  [fantasy] ${ds.points} hafta ${week}: zaten finalize edilmiş`)
+    return
+  }
+
+  // 3) Round'un live_scores oyuncu toplamları → ptsById
+  const fids = roundFx.map((f) => f.fixture.id)
+  const ls = await sbSelect(`live_scores?fixture_id=in.(${fids.join(',')})&select=players`)
+  const ptsById = new Map()
+  for (const r of ls || []) for (const p of r.players || []) if (p?.id != null) ptsById.set(p.id, p.total ?? 0)
+
+  // 4) O haftanın kadroları + oyuncuları + transfer kesintileri
+  const squads = await sbSelect(`${ds.squads}?week=eq.${week}&select=id,user_id,captain_player_id`)
+  if (!Array.isArray(squads) || !squads.length) {
+    console.log(`  [fantasy] ${ds.points} hafta ${week}: kadro yok`)
+    return
+  }
+  const squadIdList = squads.map((s) => `"${s.id}"`).join(',')
+  const players = await sbSelect(`${ds.players}?squad_id=in.(${squadIdList})&select=squad_id,player_id,position_type,is_starter,bench_order`)
+  const bySquad = new Map()
+  for (const p of players || []) {
+    if (!bySquad.has(p.squad_id)) bySquad.set(p.squad_id, [])
+    bySquad.get(p.squad_id).push(p)
+  }
+  const transfers = await sbSelect(`${ds.transfers}?week=eq.${week}&select=user_id,point_deductions`)
+  const dedByUser = new Map((Array.isArray(transfers) ? transfers : []).map((t) => [t.user_id, t.point_deductions || 0]))
+
+  // 5) Her kullanıcı için ortak mantıkla hesapla (auto-sub + kaptan ×2 − kesinti)
+  const stampIso = new Date().toISOString()
+  const outRows = squads.map((s) => ({
+    user_id: s.user_id,
+    week,
+    points: computeSquadWeekTotal({
+      rows: bySquad.get(s.id) || [],
+      captainPlayerId: s.captain_player_id,
+      ptsById,
+      finishedById: ALL_TRUE,
+      startedById: ALL_TRUE,
+      pointDeductions: dedByUser.get(s.user_id) || 0,
+    }),
+    updated_at: stampIso,
+  }))
+  await sbUpsert(ds.points, 'user_id,week', outRows)
+  console.log(`  [fantasy] ${ds.points} hafta ${week}: ${outRows.length} kullanıcı finalize edildi ✅`)
+}
+
 async function main() {
   requireEnv()
   const nowIso = new Date().toISOString()
@@ -159,6 +267,7 @@ async function main() {
   console.log(`Canlı maç: ${liveFixtures.length}`)
 
   const rows = []
+  const finalizedFixtures = [] // bu turda FT'ye geçen maçlar (fantasy finalize için)
 
   // 2) FINALIZE (FT): 'IN_PLAY' işaretli olup artık canlı listede OLMAYAN maçlar
   //    bitmiş olabilir. Gerçek durumlarını doğrula; final olanların istatistiğini
@@ -181,6 +290,7 @@ async function main() {
       ])
       const scored = scoreFixture(pl?.response || [], ev?.response || [])
       rows.push(buildRow(f, scored, 'FT', nowIso))
+      finalizedFixtures.push(f)
       console.log(`  fixture ${id} (${short}): FINAL yazıldı — ${scored.length} oyuncu`)
       await sleep(300)
     }
@@ -207,6 +317,23 @@ async function main() {
   await upsertLiveScores(rows)
   const finalCount = rows.filter((r) => r.status === 'FT').length
   console.log(`live_scores güncellendi: ${rows.length} maç (${finalCount} final)`)
+
+  // 5) FANTASY FINALIZE: bu turda FT'ye geçen maçların round'ları için, o round'un
+  //    TÜM maçları bittiyse o haftanın fantasy puanlarını herkese hesapla/yaz.
+  //    Hata olsa bile live-scores işini bozmaz (try/catch). Kullanıcı girişi gerekmez.
+  if (finalizedFixtures.length) {
+    const seen = new Set()
+    for (const f of finalizedFixtures) {
+      const key = `${f.league?.id}:${f.league?.season}:${f.league?.round}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      try {
+        await finalizeFantasyForRound(f.league?.id, f.league?.season, f.league?.round)
+      } catch (e) {
+        console.error(`  [fantasy] hata (${key}):`, e?.message || e)
+      }
+    }
+  }
 }
 
 main().catch((e) => {
