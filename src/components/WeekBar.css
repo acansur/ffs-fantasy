@@ -142,8 +142,13 @@
 .gw-card.sel .st-future {
   color: rgba(255, 255, 255, 0.75);
 }
+/* Seçili haftanın toplam puanı — dikkat çekici: büyük, altın, parıltılı */
 .gw-card.sel .st-points {
   color: var(--gw-gold-soft);
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1;
+  text-shadow: 0 2px 12px rgba(240, 165, 0, 0.45);
 }
 .gw-card.sel .wkdot {
   background: #84f0c2;

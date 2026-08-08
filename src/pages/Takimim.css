@@ -177,6 +177,19 @@
 .tm-page .stat-val.warn { color: var(--gold-soft); font-size: 22px; }
 .tm-page .stat-val.deadline { color: var(--gold-soft); }
 
+/* Toplam Puan stat kartı — belirgin, altın, büyük */
+.tm-page .tm-stat.stat-total {
+  border-color: rgba(240, 165, 0, 0.5);
+  background: linear-gradient(160deg, rgba(240, 165, 0, 0.15), rgba(240, 165, 0, 0.04));
+  box-shadow: inset 0 0 0 1px rgba(240, 165, 0, 0.14), 0 8px 24px rgba(240, 165, 0, 0.2);
+}
+.tm-page .stat-val.stat-total-val {
+  font-size: 46px;
+  color: var(--gold-soft);
+  text-shadow: 0 2px 16px rgba(240, 165, 0, 0.4);
+}
+.tm-page .stat-val.stat-total-val small { color: var(--gold-deep); font-size: 20px; }
+
 .tm-page .budget-bar { height: 6px; border-radius: 99px; background: rgba(255, 255, 255, 0.08); overflow: hidden; margin-top: 2px; }
 .tm-page .budget-fill {
   height: 100%;

@@ -398,6 +398,17 @@ export default function Takimim() {
     setSaveMsg('Takım kaydedildi ✓')
   }
 
+  // Kart puanı: kaptan ise ve ×2 uygulanıyorsa puanı iki katına göster.
+  // computeTotalPoints ile BİREBİR aynı kural: kaptan + (maç bitti VEYA puan > 0) → ×2.
+  const cardPoints = (player, pts) => {
+    const base = pts ?? 0
+    if (player && player.id === effectiveCaptainId) {
+      const capFinished = Boolean(scores.finishedById.get(player.id))
+      if (capFinished || base > 0) return base * 2
+    }
+    return base
+  }
+
   // view = { pos, index, player, starter, subIn, subOut, pts, finished } (gösterim nesnesi)
   const renderView = (view, opts = {}) => {
     const { pos, index, player, starter, subIn, subOut } = view
@@ -406,14 +417,14 @@ export default function Takimim() {
     const isTarget =
       Boolean(swapMode) && !isSwapSource && (swapMode.targetType === 'bench' ? !starter : starter)
     // Deadline sonrası puan: maç BAŞLADIYSA (canlı veya bitmiş) "N P" — canlı
-    // puanlar da akar; başlamadıysa "-". Öncesinde görünüm dropdown'ına göre.
+    // puanlar da akar; kaptan ×2 karta yansır; başlamadıysa "-". Öncesinde görünüm.
     const info = !player
       ? null
       : locked
         ? scores.loading
           ? '…'
           : scores.startedById.get(player.id)
-            ? `${view.pts ?? 0} P`
+            ? `${cardPoints(player, view.pts)} P`
             : '-'
         : slotInfoFor(player)
     return (
@@ -548,12 +559,12 @@ export default function Takimim() {
 
         {/* Jokerlerim (deadline geçince Toplam Puan) */}
         {locked ? (
-          <div className="tm-stat">
+          <div className="tm-stat stat-total">
             <div className="stat-head">
               <span className="eyebrow">Toplam Puan</span>
               <span className="stat-ico ico-gold"><IconStar /></span>
             </div>
-            <div className="stat-val cond tnum">{totalPoints}<small> P</small></div>
+            <div className="stat-val stat-total-val cond tnum">{totalPoints}<small> P</small></div>
           </div>
         ) : (
           <div className="tm-stat">
